@@ -1,0 +1,19 @@
+[project]
+name = "flydoom"
+version = "0.1.0"
+description = "A frozen Drosophila connectome plays Doom"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "polars>=1.0",
+    "pyarrow>=15",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# torch and vizdoom land at M1/M5 respectively; the M0 resolver needs neither.
+sim = ["torch>=2.4"]
+doom = ["vizdoom>=1.2", "gymnasium>=0.29"]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,27 @@
+# FlyWire data is CC BY-NC 4.0 — never vendor it into git.
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+# belt and braces: connectome exports anywhere in the tree
+*.csv
+*.csv.gz
+*.crdownload
+*.feather
+*.zip
+sk_lod1_*
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+logs/
+runs/
+*.mp4
+
+# downloaded papers
+full.html
+*.pdf
+full_files/
