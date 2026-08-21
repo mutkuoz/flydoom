@@ -36,6 +36,7 @@ from .doom import DoomConfig, DoomSession, DoomVision
 from .graph import ConnectomeGraph
 from .interocept import Interoception, InteroceptConfig
 from .lif import LIFNetwork, LIFParams
+from .olfaction import Olfaction, OlfactionConfig
 from .motor import MotorConfig, MotorDecoder
 from .registry import by_name
 from .retina import Retina
@@ -46,6 +47,17 @@ class AgentConfig:
     doom: DoomConfig = field(default_factory=DoomConfig)
     motor: MotorConfig = field(default_factory=MotorConfig)
     intero: InteroceptConfig = field(default_factory=InteroceptConfig)
+    olfaction: OlfactionConfig = field(default_factory=OlfactionConfig)
+    smell: bool = False
+    """Enable the odour channel. OFF by default, and deliberately so.
+
+    Doom renders no smells, so this stands in for a sensor the engine lacks —
+    legitimate in itself. But the source distances come from the label buffer,
+    which means the game is telling the agent that enemies exist. The channel
+    is built weak on purpose (no direction, slow, saturating) so it cannot
+    substitute for vision, yet any result gathered with it on must say so:
+    an agent reacting to enemies here is not evidence the connectome detects
+    enemies. M6 and M7 are only valid with this off."""
     site: tuple[str, ...] = ("L1", "L2", "L3")
     graded: bool = True
     slow_delay_s: float = config.T_DLY_SLOW
@@ -100,6 +112,17 @@ class FlyDoomAgent:
             self._idx("sugar_GRN"), self._idx("bitter_GRN"),
             self.net.n, config.DT, c.intero, c.device,
         )
+        self.smell = None
+        if c.smell:
+            if not c.doom.labels:
+                raise ValueError(
+                    "smell=True needs DoomConfig(labels=True) — source "
+                    "distances come from the label buffer"
+                )
+            self.smell = Olfaction(
+                self._idx("ORN_DA1"), self._idx("ORN_DM1"),
+                self.net.n, config.DT, c.olfaction, c.device, c.seed,
+            )
 
         self.gext = None
         if c.bias_mv:
@@ -158,6 +181,8 @@ class FlyDoomAgent:
         self.vision.reset()
         self.motor.reset()
         self.intero.reset()
+        if self.smell is not None:
+            self.smell.reset()
         self.history.clear()
 
     def tic(self, tic_index: int) -> TicRecord | None:
@@ -171,14 +196,22 @@ class FlyDoomAgent:
         )
         self.last_luminance = column_lum
 
+        if self.smell is not None:
+            # azimuth is passed but deliberately discarded inside — see
+            # olfaction.py for why that is the point
+            self.smell.on_tic(self.doom.threats())
+
         # ---- 57 substeps, frame HELD ----
         for _ in range(self.substeps):
             taste = self.intero.substep()
+            drive = taste
+            if self.smell is not None:
+                drive = drive + self.smell.substep()
             forced = None
-            if self.intero.active:
+            if self.intero.active or (self.smell is not None and self.smell.active):
                 forced = (torch.rand(self.net.n, generator=self.net.gen,
                                      device=self.net.device)
-                          < (taste * config.DT).clamp(0, 1))
+                          < (drive * config.DT).clamp(0, 1))
             self.net.step(g_ext=self.gext,
                           out_set=out_set if self.graded else None,
                           forced=forced)
@@ -223,6 +256,8 @@ class FlyDoomAgent:
             self.vision.summary(),
             self.motor.summary(),
             self.intero.summary(),
+            self.smell.summary() if self.smell is not None
+            else "smell:    off (M6/M7 valid)",
             f"synapses: {self.net.conductance_summary}",
             f"delays:   {self.net.delay_summary}",
             f"graded:   {int(self.net.graded.sum()):,} non-spiking neurons"

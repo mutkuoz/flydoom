@@ -17,6 +17,9 @@ ViZDoom. Nothing is trained. This document is the honest state of it.
 .venv/bin/python experiments/m4_looming.py --live
 .venv/bin/python experiments/m5_closed_loop.py --live --tics 600   # play Doom
 .venv/bin/python experiments/m6_enemy.py --live
+.venv/bin/python experiments/m7_fixation.py            # is there an aim signal?
+.venv/bin/python experiments/m8_olfactory_valence.py   # smell -> motor output
+.venv/bin/python experiments/m8_olfactory_valence.py --shuffled   # its control
 ```
 
 `--live` opens a dashboard: both eyes as hexagonal ommatidial lattices, a bar
@@ -40,8 +43,10 @@ Runs at **1.01x realtime** on an RTX 5070 Ti: 139,255 neurons, 2.7M edges,
 | M4 | looming | **FAIL** — looming indistinguishable from receding |
 | M5 | closed loop | **PASS** — stable, no chatter, no spin |
 | M6 | enemy | **FAIL** — LPLC2 r = +0.000 vs true angular size |
+| M7 | object fixation | **FAIL** — LC10a silent; no aim signal anywhere |
+| M8 | olfactory valence | **PASS** — and it beats the shuffled control |
 
-110 unit tests.
+124 unit tests.
 
 ---
 
@@ -91,6 +96,70 @@ inhibition 558, and the measured conductance ratio is 37×. Mi1 fires at 2–9 H
 because L1 (−77.3, glutamatergic) suppresses it. The ON pathway is
 disinhibitory and never rebalances; the OFF pathway, which does not depend on
 it, conducts fine (T5a 58 Hz against T4a 2 Hz).
+
+---
+
+## The one thing that beat its control
+
+Everything above is visual, and all of it failed. The exception came from a
+different sense entirely.
+
+Doom renders light and nothing else, but a real fly in a room with a large
+animal in it genuinely smells that animal. Simulating only vision does not make
+the model more honest — it makes it impoverished. So `olfaction.py` stands in
+for a sensor the engine lacks, feeding two real labelled lines of the fly's
+nose: `ORN_DA1` (a pheromone — "another fly is here") and `ORN_DM1` (vinegar —
+food).
+
+It is built deliberately **weak**, because the point is that it must not be
+able to substitute for vision:
+
+* **no direction** — a fly's antennae are 0.3 mm apart and cannot triangulate,
+  so left and right receive bit-identical drive
+* saturating, slow, and patchy, with a plume that lingers after its source goes
+  out of sight
+
+Tested open loop, agent held still so the visual scene evolves identically in
+both arms, smell the only difference, three seeds:
+
+```
+population    smell off   smell on     change    shuffled control
+LHN                0.31      17.63     +11.59       +0.01
+DNp01            160.02     138.23     -14.19       +0.41
+DNa02            200.00     216.41     +10.69       +0.01
+LC4               96.85      96.94      +0.06       +0.07   <- control
+```
+
+The lateral horn — the innate-valence pathway, dormant at 0.31 Hz — wakes to
+17.6 Hz and propagates in **one hop** to the descending neurons. `DNp01`, the
+escape neuron, is **suppressed**, which is the sign the wiring predicts:
+`lateral horn -> DNp01` is −248 synapses, inhibitory. `LC4` moving 0.06 Hz is
+the control confirming both arms saw the same scene.
+
+And the degree-preserving shuffle produces **nothing** — 0.01 against 11.59, a
+thousandfold difference, with residuals that flip sign between seeds where the
+intact effects are consistent. **This effect is attributable to the wiring.**
+
+A sensory channel changes motor output through the frozen connectome, via the
+anatomical route the biology names, with the sign the wiring predicts, and it
+beats its control. Nothing was fitted.
+
+Two caveats belong permanently attached. Odour source distances come from
+Doom's label buffer, so we *told* the fly enemies exist — this is not evidence
+the connectome detects them. And 1,227 lateral horn neurons pooled together
+mixes many functional channels.
+
+### Why this path worked when the aggression path did not
+
+Routing the same odour at the `pC1` aggression neurons failed flat — 0.00 Hz
+across a 10× sweep of drive. The reason is structural, and it is a lesson worth
+keeping: **a path existing is not a path carrying.** `DA1` reaches `pC1` in
+three hops touching 8 of its 10 cells, which looked convincing, but its
+contribution is a rounding error against pC1's ±523/548 of balanced input — and
+`pC1` is a bistable *latch* that must be pushed over, not nudged.
+
+The lateral horn receives **24% of the odour relay's entire output**, has no
+latch, and sits one hop from the output. Check weight, not hop count.
 
 ---
 

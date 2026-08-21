@@ -4,240 +4,250 @@
 
 A fruit fly's brain plays Doom.
 
-Not a metaphor. This loads the [FlyWire FAFB v783 connectome](https://codex.flywire.ai) —
-the complete synapse-level wiring diagram of an adult *Drosophila melanogaster* brain,
-139,255 neurons and 54.5 million synapses reconstructed from electron microscopy — runs
-it as a spiking network with **weights taken directly from synapse counts**, feeds it
-Doom frames through the fly's photoreceptors, and reads keypresses out of its descending
-neurons.
+Not a metaphor. Scientists sliced a real fly's brain into seven thousand layers,
+photographed every layer with an electron microscope, and traced all 139,255 neurons
+through the stack. That wiring diagram is public. This project loads it, simulates every
+neuron, shows it Doom through the fly's eyes, and reads keypresses out of the nerves that
+would normally go to its legs.
 
-Nothing is trained. There is no policy network, no reward, no gradient. The weights are
-the fly's.
+**Nothing is trained.** There is no neural network being fitted, no reward, no learning of
+any kind. The connections are the fly's, exactly as they were measured, and they never
+change.
 
-> **Status: built, and it produced a negative result.** All six milestones run. The
-> taste pathway reproduces published fly behaviour; the visual motion pathway does not,
-> and we can say exactly why. It plays Doom at realtime.
-> **[RESULTS.md](RESULTS.md) is the writeup** — read that first.
+> 📘 **[TECHNICAL.md](TECHNICAL.md)** — the detailed version: neuron equations, cell types,
+> every parameter and where it came from.
+> 📊 **[RESULTS.md](RESULTS.md)** — what the experiments measured.
+>
+> This page is the plain-language one. No neuroscience assumed.
+
+> **Status: built, and it produced a real result — just not the one we were aiming for.**
+> Ten experiments run. The taste circuit works beautifully. The motion-vision circuit
+> doesn't, and we can say precisely why. Then smell turned out to work, which nobody
+> expected. It plays Doom at full speed.
 
 ---
 
 ## It is going to be bad at Doom
 
-This is the expected result, and saying so up front saves everyone time.
+Saying so up front saves everyone time.
 
-The connectome is fixed. A frozen brain cannot learn a game it never evolved to play, and
-the fly's learning centre (the mushroom body) is not in the loop here. What you get instead
-is **fly behavior inside Doom**: optomotor wall-following, phototaxis, looming escape.
-It will run away from a Cacodemon with real biological fidelity and then walk into a wall.
-
-That is the interesting part. The question is not "can it clear E1M1." It is "what does a
-real nervous system do when you drop it somewhere it has never been."
+A frozen brain cannot learn a game it never evolved to play. What you get instead is **fly
+behaviour inside Doom** — and the interesting question was never "can it finish the level."
+It's *what does a real nervous system do when you drop it somewhere it has never been.*
 
 ---
 
-## The one thing that was supposed to make it work
+## What a connectome is
 
-Doom's threat model is already implemented in the fly, and we should get it for free.
+A brain is neurons wired to each other. A **connectome** is the complete list of that
+wiring: which neuron connects to which, and how strongly.
 
-The optic lobe has ~30 hardwired visual feature detectors. Two of them matter here:
+What you actually download is a spreadsheet. Each row says: *neuron A connects to neuron B
+with N synapses, using chemical T.* A few million rows of that.
 
-- **`LC11` / `LC10a`** — small moving object detectors. A distant enemy is a small object.
-  These drive **approach and fixation**.
-- **`LPLC2` / `LC4`** — looming detectors. A close enemy is an expanding blob. These drive
-  the giant fiber and **escape**.
+The crucial thing to understand is what this **doesn't** give you. It's a circuit diagram
+printed with no component values — every wire is known, but nothing about voltages or
+timing. All of that has to be supplied separately, and that gap is where essentially every
+problem in this project lived.
 
-Same demon. Different angular size. Opposite behavior.
-
-So engage-vs-flee is not a heuristic anyone wrote — it should fall out of the wiring, and
-the crossover angular size is a real biological parameter you could measure against the
-looming-escape literature. That measurement was meant to be the output of this project.
-
-**It does not work, and that turned out to be the more interesting result.**
-
-The wiring is all there. `LC4` and `LPLC2` resolve cleanly, they project to the giant
-fiber, and the upstream motion detectors have textbook geometry — fast input centred,
-slow inputs on opposite flanks, four subtypes for four directions. What is missing is the
-computation: this class of model cannot recover the *temporal order* in which neighbouring
-ommatidia fire, and both "which way is it moving" and "is it growing or shrinking" are
-order problems. `LPLC2` fires identically for an expanding disc and a contracting one.
-
-Six candidate fixes were implemented and tested. Five did nothing. The sixth — modelling
-the lamina and medulla as graded, non-spiking cells, which is what they actually are —
-produced direction selectivity that is correctly signed and about **2% of a real fly's**.
-
-And the control that stops you fooling yourself: a degree-preserving **shuffled**
-connectome, shown the same stimulus, performs the same as the real one. Whatever response
-survives is not coming from the wiring diagram.
-
-Full detail, including every departure from the reference model and why: **[RESULTS.md](RESULTS.md)**.
+A neuron itself is simpler than you'd think. It's a leaky bucket holding a voltage that
+constantly drains back toward rest. Inputs nudge it up or down. If it climbs past a
+threshold it fires a single all-or-nothing pulse to everything downstream, then resets.
+That's it. We run 139,255 of those at once, stepping time forward in half-millisecond
+ticks — 57 of them for every frame Doom draws, because a fly is faster than the game.
 
 ---
 
-## How it maps
+## The idea that was supposed to make this work
 
-Doom's action space is five buttons. The fly has ~1,300 descending neurons — the wires
-leaving the brain for the body. A handful of them are individually named and
-well-characterised, so the mapping is by hand, not learned:
+Doom's threat model is already built into the fly, and we should get it for free.
 
-| Doom | Neuron | What it does in a real fly |
+The fly's visual system has around 30 hardwired detectors, each firing for exactly one kind
+of thing. Two of them matter here:
+
+- **small-object detectors** — a distant enemy is a small moving object. These drive
+  *approach*.
+- **looming detectors** — a close enemy is an expanding blob filling your view. These drive
+  the giant fibre, the fly's panic button, and cause *escape*.
+
+Same demon. Different size on the retina. Opposite behaviour.
+
+So engage-versus-flee shouldn't need any code from us. It should fall out of the wiring —
+and the exact size at which the fly flips from "chase it" to "run away" is a real
+biological number you could measure against published experiments. That measurement was
+meant to be the whole point of the project.
+
+### It doesn't work, and that turned out to be more interesting
+
+**Seeing motion isn't about noticing that something changed. It's about noticing which
+way** — and that information lives entirely in the *order* two neighbouring eye-lenses fire
+in.
+
+```
+moving right:   A fires, then B fires
+moving left:    B fires, then A fires
+```
+
+Both cases: A fired and B fired. Same events. The only difference is which came first.
+
+Here's the problem. A neuron adds up everything arriving from all its inputs into one
+total, then fires if the total is big enough. **Addition doesn't care about order** — `A+B`
+is the same number as `B+A`. A cell that sums its inputs and applies one threshold to the
+sum literally cannot tell the two cases apart. Not a tuning problem. Arithmetic.
+
+Real brains solve this by making one input line slower than the other, then *multiplying*
+rather than adding. Multiplying "what was there a moment ago" against "what's here now" is
+large for one direction of motion and small for the other.
+
+We built both ingredients. We also tried four other fixes. Direction selectivity went from
+exactly zero to about **2% of a real fly's** — present, correctly signed, and useless.
+
+And the check that stops you fooling yourself: we took the same brain, **randomly rewired
+it** while keeping every neuron's connection count identical, and showed it the same thing.
+The scrambled brain performed the same as the real one. Whatever visual response survives
+isn't coming from the wiring.
+
+Why the fix didn't take, in one line: the "what's here now" signal is held down by an
+inhibitory input, so it whispers at 2 Hz while the "a moment ago" signal shouts at 78. You
+can't compare two voices when one is 37 times louder.
+
+---
+
+## The thing that did work: smell
+
+Doom draws pictures and nothing else. But a real fly standing in a room with a large animal
+in it doesn't just *see* it — it **smells** it. Simulating only vision doesn't make the fly
+more honest, it makes it half-blind in a way the real creature never is.
+
+So we built the missing sense. A fly's nose is essentially **50 labelled wires**, each
+meaning one specific thing — *another fly is here*, *food*, *danger*. We used two: enemies
+go down the first, health packs down the "food" one.
+
+The critical design choice is that the smell carries **no direction at all**. A fly's
+antennae sit 0.3 mm apart, far too close to work out where a smell came from — which is why
+real flies find things by zigzagging rather than walking straight at them. So both sides get
+an identical signal. If smell could tell the fly *where* the enemy was, we'd have handed it
+the answer to the exact problem the eyes are supposed to solve.
+
+To test it fairly we **held the fly still** and ran the game twice with the same random
+seed — same enemies, same movements, same everything on screen. The only difference was
+whether the nose was switched on.
+
+```
+                       nose off    nose on     scrambled brain
+"good or bad?" region      0.31      17.63          +0.01
+escape neuron            160.02     138.23          +0.41
+steering                 200.00     216.41          +0.01
+a vision cell             96.85      96.94          +0.07   ← control
+```
+
+The vision cell barely moving is the check that makes the rest believable — both runs
+genuinely saw the same thing.
+
+The fly's hardwired "is this good or bad?" region was sitting dormant and **woke up**, then
+reached the neurons that drive the body in a single step. The escape neuron got turned
+**down** — and we'd already measured that this particular connection is a negative one, so
+the wiring predicted that in advance.
+
+**And the scrambled brain does nothing.** A thousandfold difference. This is the one result
+in the project where the real wiring beats a shuffled copy of itself.
+
+One caveat that belongs permanently attached: the smell strength is computed from how far
+away enemies are, and the game tells us that. So this is **not** evidence the connectome can
+detect enemies — we handed it that. What it shows is what the connectome does with a signal
+once it has one.
+
+---
+
+## How it maps to the keyboard
+
+Everything a fly's brain tells its body goes through about 1,300 nerves. Because that
+bottleneck is so narrow, scientists have worked out what individual ones do — switch this
+one on in a live fly and it turns; that one and it walks backwards. So we just watch about
+eight of them.
+
+| Doom | What we read | What it does in a real fly |
 |---|---|---|
-| `MOVE_FORWARD` | `BPN` | Bolt protocerebral neuron. Sprinting. Named after Usain Bolt. |
-| `MOVE_BACKWARD` | `MDN` | Moonwalker descending neuron. Reverse gear. |
-| `TURN_LEFT/RIGHT` | `DNa02` | Steering. One per hemisphere — the L−R difference is yaw. |
-| dodge | `DNp01` | The giant fiber. Biggest, fastest neuron in the fly. Panic button. |
-| `USE` | proboscis motor output | The fly's tongue. Picks things up. |
-| item pickup | `Gr64f` | Sugar taste cells. A health pack tastes sweet. |
-| taking damage | `Gr66a` | Bitter taste cells. |
-| `ATTACK` | `pC1`/`aIPg` + `LC10a` | Aggression state gates it, object fixation aims it. |
+| turn left / right | `DNa02` | Steering. One per side — the difference between them is the turn. |
+| walk forward | `BPN` | Fast walking. |
+| walk backward | `MDN` | The "moonwalker" neuron. Reverse gear. |
+| dodge | `DNp01` | The giant fibre — biggest, fastest cell in the fly. Panic button. |
+| pick something up | proboscis nerves | The fly's tongue. |
+| health pack | sugar taste cells | A medkit tastes sweet. |
+| taking damage | bitter taste cells | Getting hurt tastes foul. |
 
-Health packs are sugar. Damage is bitter. This is not a joke — those are current
-injections into real gustatory receptor neurons, and the fly's feeding circuit handles
-item pickup because that is what it is for.
-
-`P1` is crossed out above for a reason worth knowing: FAFB is a **female** brain and P1 is
-male-specific, so it cannot resolve. `pC1`/`aIPg` are the female homologues that actually
-exist in this dataset.
+Health packs being sugar isn't a joke. Those are genuine injections into the fly's real
+taste neurons, and its feeding circuit handles item pickup because that is what a feeding
+circuit is *for*.
 
 ---
 
-## Architecture
-
-```
-Doom frame (35 tics/s)
-      ↓  hex-sampled onto ~800 ommatidial columns per eye
-  photoreceptors  R1-6 (luminance) · R7/R8 (colour, mostly wasted — Doom is brown)
-      ↓
-  optic lobe      77,873 neurons — 56% of the brain. Retinotopic, ~4 layers deep,
-      ↓           800 repeating columns = hardware weight sharing
-  LC cells        ~30 feature detectors, each pooling the whole visual field
-      ↓
-  central brain   central complex (ring-attractor compass, path integration)
-      ↓           mushroom body (present, not trained)
-  descending      ~1,300 wires out
-      ↓
-Doom buttons
-```
-
-57 leaky integrate-and-fire substeps per Doom tic at `dt = 0.5 ms`. One step is a
-2.7M-edge scatter-add (54.5M synapses collapse to 2.7M connections at the standard
-≥5-synapse threshold) and takes ~300 µs on a consumer GPU. The whole graph is 31 MB of
-VRAM — smaller than BERT-base by orders of magnitude.
-
-**Measured: 1.01× realtime.** Compute was never the hard part here; biology is.
-
----
-
-## Install
+## Running it
 
 ```bash
 git clone https://github.com/mutkuoz/flydoom
 cd flydoom
-uv venv --python 3.12 .venv          # 3.13+ has no torch wheels yet
+uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python -e ".[sim,doom,dev]"
+./scripts/fetch_data.sh        # prints how to download the connectome
 ```
 
-Requires Python 3.11–3.12, PyTorch with CUDA, and a GPU with ≥8 GB. Developed on an
-RTX 5070 Ti (12 GB); the graph itself only needs 31 MB, the rest is headroom.
-
-ViZDoom ships Freedoom, so **no commercial WAD is required**.
-
-### Getting the connectome
-
-The connectome CSVs are **not** in this repo — see [licensing](#licensing).
+Then watch it play:
 
 ```bash
-./scripts/fetch_data.sh   # prints the manual download steps
+.venv/bin/python experiments/m5_closed_loop.py --live --tics 600
 ```
 
-Download from [codex.flywire.ai](https://codex.flywire.ai) → Info → Download Data,
-dataset **FAFB**, snapshot **v783**. Do not use a different snapshot; v783 has been
-frozen since October 2023 and every number in this repo assumes it.
+That opens Doom plus a live dashboard: both eyes drawn as hexagonal grids of lenses shaded
+by what each one currently sees, a bar for each cell type, and the steering signal over
+time. It runs at about one second of game per second of real time.
+
+Needs Python 3.11–3.12, a CUDA GPU with 8 GB or more, and a connectome download (free, but
+requires signing in). Doom itself is covered — ViZDoom ships the free Freedoom, so no
+commercial game files are needed.
+
+### The experiments
+
+Each one prints pass or fail.
+
+| | Test | |
+|---|---|---|
+| M0 | Can we find the neurons we need? | ✅ |
+| M1 | Does the wiring diagram load correctly? | ✅ |
+| M1.5 | Does the simulator match the textbook maths? | ✅ |
+| M2 | **Sugar makes it stick its tongue out** | ✅ |
+| M3 | Moving stripes make it turn | ⚠️ 2% of a real fly |
+| M4 | An approaching object makes it flinch | ❌ |
+| M5 | It plays Doom without falling over | ✅ |
+| M6 | It runs from an enemy, unprompted | ❌ |
+| M7 | It can tell which side a target is on | ❌ |
+| M8 | **Smell changes what it does** | ✅ beats the control |
+
+124 automated tests.
+
+**M2 is the one that matters most.** Stimulate the sugar-tasting neurons and the muscle
+that extends the fly's tongue fires at 77 Hz. Stimulate the bitter ones and it drops to
+zero. Do both at once and it's 99% suppressed — and nobody programmed that suppression, it
+falls out of the wiring. This is a real fly behaviour reproduced from a frozen wiring
+diagram, and it's what proves the simulator works when the vision experiments fail.
 
 ---
 
-## Milestones
+## What we're openly faking
 
-Each is a script under `experiments/` that prints pass/fail. They gate each other.
+- **No body.** The dataset is brain-only — the fly's equivalent of a spinal cord is a
+  separate animal in a separate dataset. Doom's movement code stands in for legs, which
+  means any claim about *timing* is Doom's, not a fly's.
+- **The fly sees far more than Doom shows.** We push Doom to its widest view, which still
+  only covers about 40% of the fly's lenses. The rest are filled with average brightness
+  rather than black — a black surround would look like a permanent object sitting there.
+- **One brain, and its two halves aren't identical.** It's a real animal, not an idealised
+  diagram, so one steering neuron sits about twice as active as its partner. Left
+  uncorrected, the fly spins in circles forever.
+- **We told it enemies exist.** The smell channel gets enemy distances from the game.
 
-```bash
-.venv/bin/python experiments/m5_closed_loop.py --live --tics 600   # watch it play
-```
-
-`--live` opens a dashboard beside the Doom window: both eyes drawn as hexagonal
-ommatidial lattices, a bar per monitored cell type, and the steering trace.
-
-| | Test | Status | |
-|---|---|---|---|
-| M0 | Named cells resolve in v783 | ✅ | 50 handles, every required one found |
-| M1 | Graph loads, counts assert clean | ✅ | 2,710,038 edges, 31 MB, 2.1 s |
-| M1.5 | LIF integrator vs closed form | ✅ | 0.03% error |
-| M2 | **Sugar → proboscis extension** | ✅ | 8/8 checks, 99% bitter suppression |
-| M3 | Drifting grating → optomotor turning | ⚠️ | correct sign, 2% of biological strength |
-| M4 | Looming disc → giant fiber spike | ❌ | looming ≡ receding |
-| M5 | Closed loop, no chatter, no spin | ✅ | 1.01× realtime |
-| M6 | Flees an enemy with no flee rule | ❌ | r = +0.00 vs true angular size |
-
-110 unit tests.
-
-**M2 is the one that matters, and it passes.** Injecting current into the sugar-sensing
-neurons drives the proboscis motor pool to 77 Hz; bitter drives it to zero; the two
-together are 99% suppressed. Nobody fitted that suppression — it falls out of the wiring.
-It is the only test that validates neurotransmitter signs, synaptic gain and LIF dynamics
-simultaneously, so it is also the positive control that proves the simulator is sound when
-M3 and M4 fail.
-
-One caveat stated plainly: `W_syn` is the model's single free parameter and the reference
-paper fitted it *on this result*, so we refit it the same way rather than copying. That
-makes the sugar arm partly true by construction. What M2 genuinely tests is that *some*
-single scalar reproduces the behaviour at all — a graph with flipped signs has no such
-scalar — plus the controls nobody fitted for.
-
----
-
-## Known cheats
-
-Stated plainly rather than buried:
-
-- **No ventral nerve cord.** FAFB is brain-only. Real motor output happens in the VNC,
-  which is a different animal in a different dataset. We stop at descending neurons and
-  let Doom's kinematics stand in for legs. ([BANC v888](https://blog.flywire.ai/2025/11/03/the-banc-brain-and-nerve-cord/)
-  fixes this and is the right dataset the moment this goes embodied.)
-- **No gap junctions.** EM reconstruction captures chemical synapses. The giant fiber's
-  fastest output is electrical, so the escape reflex is partly invisible to us.
-- **No neuromodulation.** Dopamine and octopamine are treated as fast transmitters.
-- **Field of view.** The fly sees nearly 360°; Doom is pushed to 130°, the widest that
-  still renders sanely. About 40% of ommatidial columns fall inside the viewport; the rest
-  are filled with the frame's **mean** luminance, not black — a dark surround would be a
-  permanent high-contrast edge and the looming detectors would read it as an object.
-- **Angular scale is calibrated, not measured.** The ommatidial lattice is real (796
-  columns per eye, hex coordinates straight from `column_assignment.csv`) but its axes are
-  not isotropic in visual angle, so the field of view is scaled to the published
-  170° × 150°. Any absolute angular claim inherits that.
-- **n = 1 brain, and its halves are not mirror images.** `DNa02_R` sits ~2× above
-  `DNa02_L`, which is a standing turn command until it is adapted out.
-- **`GLUT` is inhibitory.** In flies, glutamate is usually inhibitory via GluCl. This is
-  the mistake everyone porting vertebrate intuitions makes, and it is asserted in the tests.
-  It is 18% of all edges here, not the ~10% usually assumed.
-
----
-
-## Deliberate departures from the reference model
-
-Not cheats — considered changes, each with a measured reason and each switchable. The
-reference is [Shiu et al. 2024](https://www.nature.com/articles/s41586-024-07763-9), whose
-parameters were read off its Table 1 (served as a bitmap, so this took some digging).
-
-| Change | Why |
-|---|---|
-| **Histamine override** on photoreceptors | Histamine is not one of FlyWire's six predicted transmitters, so 83% of `R1-6` output edges are mispredicted as *excitatory* when the true sign is inhibitory. Left alone, the entire optic lobe reads a negative image. |
-| **Conductance-based synapses** | Verified divisive: shunting cuts the input–output *slope* by >40% where subtraction preserves it. M2 still passes, and conduction to the descending neurons went from nothing to `DNa02` 124 Hz. |
-| **Per-cell-type conduction delays** | Table 1's single global `T_dly` cannot express a correlator. (Incidentally, the spec omitted `T_dly = 1.8 ms` entirely — every *other* value it guessed was correct.) |
-| **Graded, non-spiking optic lobe** | Photoreceptors and lamina monopolars do not fire action potentials. This is the only change that produced sign-correct direction selectivity. |
-| **Weber contrast adaptation** | Doom scene brightness varies enormously; this also gives automatic gain control. |
-| **L1/L2 transient vs L3 sustained** | Required, not cosmetic. Doom is temporally *static* from a stationary agent (frame-to-frame mean luminance moves by 0.0003), so an all-adapting retina washes out to nothing and the loop can never start. |
-
-`W_syn` was refit rather than copied — **0.165 mV** against the paper's 0.275 mV, because
-they used snapshot v630 and a different synapse-detection pipeline.
+The full list, with the measurements behind each one, is in
+[TECHNICAL.md](TECHNICAL.md).
 
 ---
 
@@ -245,7 +255,7 @@ they used snapshot v630 and a different synapse-detection pipeline.
 
 Code is MIT.
 
-**The connectome data is CC BY-NC 4.0 — non-commercial only.** It is not vendored here and
+**The connectome data is CC BY-NC 4.0 — non-commercial only.** It is not included here and
 must be downloaded separately. If you use this, cite:
 
 ```bibtex
