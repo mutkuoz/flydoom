@@ -71,10 +71,107 @@ INTEROMMATIDIAL_DEG = 5.0   # nominal, for reporting only
 
 SQRT3_2 = math.sqrt(3.0) / 2.0
 
+# ---- Doom viewport geometry ------------------------------------------------
+DOOM_FOV_DEG = 130.0
+"""Horizontal field of view we ask Doom for. Vanilla is 90; ZDoom accepts up to
+179 but the projection distorts badly past ~130, so this is the widest value
+that still renders sanely. Set with `+fov` at init and reported by the agent,
+because every angular claim downstream depends on it."""
+
+EYE_SPLAY_DEG = 40.0
+"""How far each eye's gaze is rotated away from straight ahead.
+
+Spec 6.1 says to split the frame down the middle and give each half to one eye.
+That works but is geometrically wrong, and the geometry matters here: our
+retina centres each eye's azimuth on its OWN gaze direction, so mapping both
+eyes' azimuth-zero onto screen centre makes them see identical images. The
+DNa02 left-minus-right differential is then zero BY CONSTRUCTION and the agent
+can never turn.
+
+Splaying the two gaze directions apart reproduces the real arrangement and
+gives a genuine binocular difference. At 40 deg the eyes overlap across the
+central ~50 deg of the Doom viewport, which is roughly the fly's binocular
+overlap."""
+
+ACCEPTANCE_RATIO = 1.15
+"""Gaussian acceptance width as a multiple of interommatidial spacing. Fly
+optics give an acceptance angle slightly wider than the sampling angle, which
+is what stops the eye from aliasing. Spec 6.1 asks for a Gaussian acceptance
+function rather than nearest-neighbour sampling, and this is that width."""
+
 
 def hex_to_cartesian(p: np.ndarray, q: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Axial hex coordinates to cartesian, in units of one ommatidium."""
     return p + q / 2.0, q * SQRT3_2
+
+
+TAU_ADAPT = 0.25
+"""Seconds. Time constant of luminance adaptation in the photoreceptor/lamina
+stage. Published fly adaptation is fast -- tens to a few hundred ms -- and this
+sits in that range while being slow relative to the stimuli we care about
+(2 Hz gratings, 40 ms looming)."""
+
+CONTRAST_GAIN = 2.5
+"""How much contrast maps to drive. Contrast is dimensionless and typically
+well under 1, so this scales it into the usable range of the activation."""
+
+
+class LuminanceAdaptation:
+    """Weber-style contrast coding: remove the DC, keep the change.
+
+    THIS IS NOT A CONVENIENCE. It is the fix for a measured failure.
+
+    Photoreceptors and lamina monopolar cells adapt: they respond to CONTRAST,
+    (I - <I>) / <I>, not to absolute intensity. A model that passes luminance
+    straight through gives L1 a large constant output under any steady scene,
+    and since L1 is glutamatergic (inhibitory, -77.3 onto Mi1) that constant
+    output crushes the fast arm of the motion correlator.
+
+    Measured before adaptation: Mi1 8.6 Hz against Mi9 77.9 Hz, a 9x imbalance
+    that leaves direction selectivity ~50x weaker than a real fly's. A
+    correlator needs its two arms comparable in drive, and DC removal is what
+    the fly's own optics do to achieve that.
+
+    Adaptation is per-column and multiplicative, which also buys automatic gain
+    control: the same contrast produces the same response in bright and dim
+    scenes, so Doom's wildly varying scene brightness cannot swamp the retina.
+    """
+
+    def __init__(self, n_columns_by_side: dict[str, int], dt: float,
+                 tau: float = TAU_ADAPT, gain: float = CONTRAST_GAIN,
+                 device: str = "cuda") -> None:
+        import torch
+
+        self.dt = dt
+        self.gain = gain
+        self.decay = math.exp(-dt / tau)
+        self.mean = {
+            side: torch.full((n,), 0.5, dtype=torch.float32, device=device)
+            for side, n in n_columns_by_side.items()
+        }
+        self._torch = torch
+
+    def reset(self, level: float = 0.5) -> None:
+        for m in self.mean.values():
+            m.fill_(level)
+
+    def contrast(self, side: str, luminance):
+        """Update the running mean and return Weber contrast, roughly [-1, 1]."""
+        m = self.mean[side]
+        m.mul_(self.decay).add_(luminance * (1.0 - self.decay))
+        c = (luminance - m) / m.clamp(min=1e-3)
+        return (c * self.gain).clamp(-1.0, 1.0)
+
+    def drive(self, side: str, luminance, invert: bool):
+        """Contrast mapped into [0, 1] activation, centred at 0.5.
+
+        Centring matters: a rectified drive sitting at zero cannot be
+        disinhibited, and the whole ON pathway is disinhibitory.
+        """
+        c = self.contrast(side, luminance)
+        if invert:
+            c = -c
+        return (0.5 + 0.5 * c).clamp(0.0, 1.0)
 
 
 @dataclass
@@ -113,10 +210,33 @@ class Retina:
 
     LAMINA_SITES = ("L1", "L2", "L3")
 
+    SUSTAINED_SITES = ("L3",)
+    """Which lamina lines carry a SUSTAINED rather than transient signal.
+
+    L1 and L2 are strongly adapting -- they high-pass, and report change. L3 is
+    the sustained luminance channel; the registry entry for it says so, and the
+    distinction is load-bearing rather than trivia.
+
+    MEASURED, and this is why: Doom's scene is spatially rich (Weber contrast
+    0.41) but temporally near-static from a stationary agent (frame-to-frame
+    mean luminance changes by 0.0003). With every line adapting, the whole
+    retina washes out to zero within a second and the agent can never generate
+    the optic flow that would un-wash it. Keeping L3 sustained means a static
+    scene still produces spatially structured drive, so the loop can start."""
+
     def __init__(self, eyes: dict[str, Eye], site: str, n_neurons: int) -> None:
         self.eyes = eyes
         self.site = site
         self.n_neurons = n_neurons
+        self.site_of: dict[int, str] = {}
+
+    def sustained_mask(self, neuron_idx) -> np.ndarray:
+        """True where a driven neuron belongs to a sustained line."""
+        return np.array(
+            [self.site_of.get(int(i), "") in self.SUSTAINED_SITES
+             for i in neuron_idx],
+            dtype=bool,
+        )
 
     @property
     def inverts(self) -> bool:
@@ -132,7 +252,7 @@ class Retina:
         whole optic lobe read a negative image and reverses the optomotor
         response, which is exactly what M3 would catch.
         """
-        return self.site in self.LAMINA_SITES
+        return all(part in self.LAMINA_SITES for part in self.site.split("+"))
 
     # -- construction ----------------------------------------------------
 
@@ -142,7 +262,7 @@ class Retina:
         graph: ConnectomeGraph,
         ann: AnnotationTable | None = None,
         raw_dir: Path | str = config.RAW_DIR,
-        site: str = "L1",
+        site: str | tuple[str, ...] = ("L1", "L2", "L3"),
     ) -> Retina:
         raw = Path(raw_dir)
         ann = ann or AnnotationTable.load(raw)
@@ -186,10 +306,29 @@ class Retina:
             )
 
         # ---- neuron -> column ----
-        if site == "R1-6":
-            mapping = cls._derive_photoreceptor_columns(graph, ann, ca)
-        else:
-            mapping = cls._native_columns(graph, ann, ca, site)
+        # MEASURED, and the reason this takes a LIST: the fast and slow arms of
+        # the T4/T5 correlator are fed by DIFFERENT lamina monopolars.
+        #
+        #     Mi1  (fast) <- L1  -77.3
+        #     Mi9  (slow) <- L3  +40.8
+        #     Tm9  (slow) <- L3  +18.2
+        #
+        # Injecting at L1 alone drives the fast arm and leaves the slow arm
+        # dead -- measured Mi9 modulation was 0.009 mV against Mi1's 4.58 mV,
+        # 500x weaker -- and a correlator with one arm silent has no direction
+        # preference to express. Real photoreceptors drive L1, L2 and L3
+        # together, so by default so do we.
+        sites = (site,) if isinstance(site, str) else tuple(site)
+        mapping = {}
+        site_of: dict[int, str] = {}
+        for one in sites:
+            if one == "R1-6":
+                m = cls._derive_photoreceptor_columns(graph, ann, ca)
+            else:
+                m = cls._native_columns(graph, ann, ca, one)
+            mapping.update(m)
+            for k in m:
+                site_of[k] = one
 
         for side, eye in eyes.items():
             pos = {int(c): i for i, c in enumerate(eye.column_ids)}
@@ -201,7 +340,9 @@ class Retina:
             eye.neuron_idx = np.asarray(idx, dtype=np.int32)
             eye.neuron_column = np.asarray(col, dtype=np.int32)
 
-        return cls(eyes, site, graph.n_neurons)
+        obj = cls(eyes, "+".join(sites), graph.n_neurons)
+        obj.site_of = site_of
+        return obj
 
     @staticmethod
     def _native_columns(graph, ann, ca, site) -> dict[int, tuple[str, int]]:
@@ -348,6 +489,48 @@ class Retina:
         """(side, p, q, azimuth, elevation) per eye, for plotting."""
         return {s: (e.p, e.q, e.azimuth_deg, e.elevation_deg)
                 for s, e in self.eyes.items()}
+
+    # -- Doom viewport ----------------------------------------------------
+
+    def doom_sampler(self, device: str = "cuda",
+                     fov_deg: float = DOOM_FOV_DEG,
+                     splay_deg: float = EYE_SPLAY_DEG):
+        """Precompute where each ommatidial column looks in the Doom frame.
+
+        Returns (grid, inside, order) where `grid` is a normalised sampling
+        grid for torch.grid_sample, `inside` marks the columns that fall within
+        Doom's viewport at all, and `order` maps rows back to neuron indices.
+
+        Columns outside the viewport are NOT left dark. A dark surround is a
+        huge static high-contrast edge sitting at a fixed retinotopic position,
+        and the looming detectors read it as a permanent object; they get the
+        frame's mean luminance instead, so they carry no contrast.
+        """
+        import torch
+
+        idx, az, el = [], [], []
+        for side, eye in self.eyes.items():
+            if not eye.neuron_idx.size:
+                continue
+            gaze = -splay_deg if side == "left" else splay_deg
+            idx.append(eye.neuron_idx)
+            az.append(eye.azimuth_deg[eye.neuron_column] + gaze)
+            el.append(eye.elevation_deg[eye.neuron_column])
+        idx = np.concatenate(idx)
+        az = np.concatenate(az)
+        el = np.concatenate(el)
+
+        half_h = fov_deg / 2.0
+        # Doom's vertical FOV follows from the aspect ratio of the viewport;
+        # the caller supplies it via aspect when sampling.
+        x = az / half_h
+        inside = np.abs(x) <= 1.0
+        return (
+            torch.as_tensor(x, dtype=torch.float32, device=device),
+            torch.as_tensor(el, dtype=torch.float32, device=device),
+            torch.as_tensor(inside, device=device),
+            torch.as_tensor(idx.astype(np.int64), device=device),
+        )
 
     # -- reporting -------------------------------------------------------
 

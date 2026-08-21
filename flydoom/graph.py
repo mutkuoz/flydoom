@@ -233,6 +233,84 @@ class ConnectomeGraph:
 
     # -- gpu -------------------------------------------------------------
 
+    def edge_delay_steps(
+        self,
+        ann,
+        dt: float,
+        t_fast: float = None,
+        t_slow: float = None,
+    ) -> np.ndarray:
+        """Per-edge conduction delay, in timesteps, keyed on the PRESYNAPTIC
+        cell type. See config.SLOW_LINES for why this exists."""
+        import polars as pl
+
+        t_fast = config.T_DLY if t_fast is None else t_fast
+        t_slow = config.T_DLY_SLOW if t_slow is None else t_slow
+
+        fast_steps = max(1, int(round(t_fast / dt)))
+        slow_steps = max(1, int(round(t_slow / dt)))
+
+        delay = np.full(self.n_edges, fast_steps, dtype=np.int32)
+        if slow_steps == fast_steps:
+            return delay
+
+        slow_idx: set[int] = set()
+        for name in config.SLOW_LINES:
+            hits = ann.df.filter(
+                pl.col("primary_type").cast(pl.Utf8) == name
+            )["root_id"].drop_nulls().to_list()
+            if not hits:
+                continue
+            try:
+                slow_idx.update(self.index_of(hits).tolist())
+            except KeyError:
+                continue
+        if slow_idx:
+            mask = np.isin(self.pre_idx, np.fromiter(slow_idx, dtype=np.int32))
+            delay[mask] = slow_steps
+        return delay
+
+    def tau_mem_by_type(
+        self, ann, tau_fast: float = None, tau_slow: float = None
+    ) -> np.ndarray:
+        """Per-neuron membrane time constant keyed on cell type."""
+        import polars as pl
+
+        tau_fast = config.TAU_MEM_FAST if tau_fast is None else tau_fast
+        tau_slow = config.TAU_MEM_SLOW if tau_slow is None else tau_slow
+
+        tau = np.full(self.n_neurons, config.TAU_MEM, dtype=np.float64)
+        for names, value in ((config.FAST_LINES, tau_fast),
+                             (config.SLOW_LINES, tau_slow)):
+            ids: list[int] = []
+            for name in names:
+                ids.extend(
+                    ann.df.filter(pl.col("primary_type").cast(pl.Utf8) == name)
+                    ["root_id"].drop_nulls().to_list()
+                )
+            if not ids:
+                continue
+            try:
+                tau[self.index_of(ids)] = value
+            except KeyError:
+                continue
+        return tau
+
+    def graded_mask(self, ann, super_classes=None) -> np.ndarray:
+        """Boolean per neuron: True where the cell signals continuously."""
+        import polars as pl
+
+        names = list(super_classes or config.GRADED_SUPER_CLASSES)
+        mask = np.zeros(self.n_neurons, dtype=bool)
+        if "super_class" not in ann.df.columns:
+            return mask
+        ids = ann.df.filter(
+            pl.col("super_class").cast(pl.Utf8).is_in(names)
+        )["root_id"].drop_nulls().to_list()
+        if ids:
+            mask[self.index_of(ids)] = True
+        return mask
+
     def to_torch(self, device: str = "cuda"):
         """Move the three arrays to a torch device. Returns (pre, post, signed)."""
         import torch

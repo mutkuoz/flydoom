@@ -243,6 +243,163 @@ OUR_SNAPSHOT = "v783"        # 139,255 neurons -- the spec pins this
 # vote is a no-op. See sources.DALES_LAW_HOLDS.
 
 # ==========================================================================
+# Conductance-based synapses  --  THE LARGEST DEPARTURE FROM THE PAPER
+# ==========================================================================
+#
+# Shiu et al. make inhibition SUBTRACTIVE: a spike adds a signed voltage offset
+# to g, and v decays toward V_rest + g. That is fine for feedforward excitatory
+# circuits -- M2 (taste) passes cleanly on it.
+#
+# It cannot compute motion. MEASURED: M3 finds no direction selectivity (T4a
+# and T4b never show opposite-signed DSI) and M4 finds no looming selectivity
+# (LPLC2 fires 0.42 Hz for expansion AND 0.42 Hz for contraction). Both are
+# computations over the TEMPORAL ORDER of neighbouring columns, and with linear
+# summation into a single threshold, threshold(A+B) is symmetric in A and B --
+# "A then B" is indistinguishable from "B then A". Per-type delays and per-type
+# time constants change WHEN terms arrive but not the linearity of their
+# combination, which is why neither rescued it.
+#
+# A correlator needs MULTIPLICATION. Real circuits get it from SHUNTING
+# inhibition: GABA and GluCl open chloride channels, raising membrane
+# CONDUCTANCE and therefore DIVIDING the effect of excitation.
+#
+#     tau*dv/dt = (V_rest - v) + g_e*(E_exc - v) + g_i*(E_inh - v) + I_ext
+#
+# g_e and g_i are dimensionless, in units of the leak conductance. Note what
+# this buys: the effective time constant becomes tau_mem/(1+g_e+g_i), so a
+# strongly driven neuron is FASTER as well as less sensitive. That is the
+# divisive nonlinearity a correlator is built from.
+#
+# With no synaptic input g_e = g_i = 0 and the equation reduces EXACTLY to the
+# subtractive form, so M1.5's closed-form checks stay valid in both modes.
+
+SYNAPSE_MODEL = "conductance"   # "subtractive" (paper) | "conductance" (ours)
+
+E_EXC = 0.0        # V  [PUBLISHED] cation reversal for nicotinic ACh, ~0 mV
+E_INH = -70e-3     # V  [PUBLISHED] chloride reversal for GABA-A / GluCl.
+# Sits 18 mV below V_rest, so inhibition here both hyperpolarises AND shunts.
+# Moving E_INH toward V_REST makes it purely divisive; that is the knob to
+# sweep if shunting turns out to be the active ingredient.
+
+G_SYN = 0.00278    # dimensionless conductance per synapse  [FITTED]
+# [FITTED] 2026-08-21 by m2_per.py against the Buhmann v783 graph, same
+# protocol as W_SYN: sugar GRNs at 100 Hz Poisson -> 79.8% of the saturating
+# MN9 response. M2 passes in conductance mode with all eight checks, including
+# 99% bitter suppression, so the model change does not cost the positive
+# control.
+# The conductance-mode analogue of W_SYN, and like it a free parameter fitted
+# on M2 rather than assumed. The a-priori estimate matching the subtractive
+# model's gain at rest was 0.0032; the fit landed at 0.00278, 13% below.
+
+# ==========================================================================
+# Graded (non-spiking) units  --  THE LAST STRUCTURAL CHANGE
+# ==========================================================================
+#
+# Photoreceptors and most lamina/medulla neurons in the fly DO NOT SPIKE. They
+# release transmitter continuously in proportion to membrane potential. Shiu
+# et al. model every neuron as spiking, which is fine for the SEZ but inverts
+# the balance in the optic lobe.
+#
+# MEASURED, and this is the reason for the change. Weighting T4a's inputs by
+# actual firing rate rather than synapse count:
+#
+#     Mi1  +30.6 syn x  3.5 Hz = +109      <- fast excitatory arm
+#     CT1  -10.0 syn x 40.0 Hz = -402      <- slow inhibitory arms
+#     Mi9   -7.4 syn x 16.3 Hz = -121
+#                    excitation 189 vs inhibition 558
+#     measured conductance: g_exc 0.0018 vs g_inh 0.0667  =  37x
+#
+# The fast arm is starved 37:1. Mi1 sits at 3.5 Hz because L1 (-77.3,
+# glutamatergic) suppresses it -- the ON pathway is DISINHIBITORY, and a
+# spiking L1 with a high tonic baseline simply holds Mi1 shut. A correlator
+# needs its two arms comparable in drive.
+#
+# A graded L1 instead releases transmitter in proportion to its membrane
+# potential, so light MODULATES its release continuously rather than gating a
+# spike train. That is what disinhibition actually needs.
+
+GRADED_SUPER_CLASSES = ("optic",)
+# Neurons that signal continuously rather than by spikes. `optic` covers the
+# lamina and medulla, 77,873 neurons. Lobula projection cells
+# (`visual_projection`) and everything central keep spiking, which is right --
+# LC/LPLC and descending neurons do fire action potentials.
+
+GRADED_MAX_RATE = 200.0   # Hz  [OURS]
+# Graded output is expressed in spike-equivalents so both populations use the
+# same synaptic machinery: a graded neuron driven to threshold delivers the
+# same conductance per second as a spiking neuron firing at this rate. The
+# activation is rectified-linear in (v - V_rest)/(V_thresh - V_rest), saturating
+# at 1. That saturation is itself a useful nonlinearity, and in conductance mode
+# v is bounded by E_EXC anyway.
+
+# ==========================================================================
+# Per-cell-type conduction delays  --  A DELIBERATE DEPARTURE FROM THE PAPER
+# ==========================================================================
+#
+# Shiu et al. give every synapse one global delay (T_dly = 1.8 ms) and every
+# neuron one membrane time constant. That is fine for the SEZ taste circuit
+# they validated on, which is feedforward-excitatory. It cannot express the
+# optic lobe.
+#
+# MEASURED on this graph, T4a's inputs per cell:
+#
+#     Mi1   +30.6      Tm3  +7.0        <- fast, excitatory, centre
+#     CT1   -10.0      Mi9  -7.4        <- slow, inhibitory, flanks
+#     Mi4    -3.4
+#
+# That is a textbook three-arm motion detector, and the SPATIAL offsets are
+# already in the wiring -- T4 takes Mi1 from its own column and Mi9/Mi4/CT1
+# from neighbours. What is missing is the TIME. A correlator needs one arm
+# delayed relative to the other; with a single global delay both arms arrive
+# together and the direction preference cancels exactly, which is the DSI =
+# 0.000 that M3 measured.
+#
+# So we give the known slow lines a longer conduction delay. This is a change
+# to the MODEL, not a tuning knob, and it must be reported as a deviation.
+# Set T_DLY_SLOW = T_DLY to switch it off and recover the paper's behaviour.
+
+BIASED_SUPER_CLASSES = ("optic", "visual_projection", "visual_centrifugal")
+# Which neurons receive the tonic depolarising drive that makes an
+# inhibition-dominated circuit conduct at all.
+#
+# MEASURED, and a trap worth recording: the lobula columnar cells -- LC4,
+# LPLC2, LC11, LC6, every output of the visual system -- are classified
+# `visual_projection` (7,684 neurons), NOT `optic` (77,873). Biasing only
+# `optic` leaves every LC below threshold, so the whole cascade fires happily
+# through the medulla and lobula and then reads out exactly 0.00 Hz. That looked
+# like "looming detection does not work" when it was actually "the readout layer
+# was never switched on".
+
+FAST_LINES = ("Mi1", "Tm3", "Tm1", "Tm2", "Tm4")
+# [PUBLISHED] The fast, transient medulla lines feeding T4 (ON) and T5 (OFF).
+
+SLOW_LINES = ("Mi9", "Mi4", "CT1", "Tm9")
+# [PUBLISHED] The slow, sustained lines. Mi9 is glutamatergic (inhibitory in
+# fly), Mi4 and CT1 GABAergic; Tm9 is the slow OFF line into T5. Together they
+# form the delayed arms of the detector. 370,109 edges, 13.7% of the graph.
+
+TAU_MEM_FAST = 10e-3   # s  [OURS] transient lines: Mi1, Tm3, Tm1, Tm2, Tm4
+TAU_MEM_SLOW = 100e-3  # s  [OURS] sustained lines: Mi9, Mi4, CT1, Tm9
+# Per-cell-type MEMBRANE time constants, distinct from conduction delay above.
+# A delay shifts a waveform; a time constant also SMOOTHS it, and the smoothing
+# is what makes Mi9/Mi4 sustained where Mi1/Tm3 are transient. This is the
+# mechanism the real T4 correlator is built from, so it is the more faithful
+# implementation of "per-type time constants".
+#
+# CAVEAT worth knowing before reading any result: in a LIF, firing rate falls
+# roughly as 1/tau_mem. Giving Mi9 a 5x longer tau also makes it fire ~5x less,
+# so this manipulation changes GAIN as well as timing. That confound is real
+# and is why the conduction-delay version was tried first.
+
+T_DLY_SLOW = 80e-3   # s   [OURS -- FITTED, see below]
+# The delay on SLOW_LINES. Not a published value: it is set by the geometry of
+# the stimulus we want the detector tuned to. Neighbouring ommatidia are ~5 deg
+# apart, so at a 30 deg spatial period and 2 Hz the pattern crosses one column
+# in (5/30)/2 = 83 ms. A correlator is maximally direction-selective when its
+# delay matches that crossing time, which is why ~80 ms is the starting point.
+# Sweep it with `m3_optomotor.py --slow-sweep`.
+
+# ==========================================================================
 # Doom I/O  --  not used before M5
 # ==========================================================================
 

@@ -78,7 +78,24 @@ class GratingRig:
         self.max_rate = max_rate_hz
         self.inverts = retina.inverts
         self.rate_buf = torch.zeros(net.n, dtype=torch.float32, device=device)
+        self.out_buf = torch.full((net.n,), -1.0, dtype=torch.float32,
+                                  device=device)
         self.sp = spatial_period_deg
+        # Weber adaptation state, per driven neuron. Removes the DC so L1
+        # codes contrast rather than luminance -- see retina.LuminanceAdaptation
+        # for why this is load-bearing rather than cosmetic.
+        self.adapt_mean = torch.full_like(self.base_phase, 0.5)
+        self.adapt_decay = math.exp(-net.p.dt / 0.25)
+        self.adapt_gain = 2.5
+        self.adapting = True
+
+    def reset_adaptation(self):
+        self.adapt_mean.fill_(0.5)
+
+    def _contrast(self, lum):
+        self.adapt_mean.mul_(self.adapt_decay).add_(lum * (1 - self.adapt_decay))
+        c = (lum - self.adapt_mean) / self.adapt_mean.clamp(min=1e-3)
+        return (c * self.adapt_gain).clamp(-1.0, 1.0)
 
     def luminance(self, t, tf_hz, direction):
         phase = self.base_phase - direction * tf_hz * t
@@ -92,13 +109,36 @@ class GratingRig:
         self.rate_buf[self.idx] = self.max_rate * lum
         return self.rate_buf
 
+    def out_set(self, t, tf_hz, direction, graded_max_rate, dt):
+        """Direct output override for a GRADED input population.
+
+        Returns -1 (free) everywhere except the injection sites, whose release
+        is set continuously by luminance. This is what a photoreceptor does;
+        Poisson spikes into a non-spiking cell would be a category error.
+        """
+        lum = self.luminance(t, tf_hz, direction)
+        if self.adapting:
+            c = self._contrast(lum)
+            if self.inverts:
+                c = -c
+            act = (0.5 + 0.5 * c).clamp(0.0, 1.0)
+        else:
+            act = 1.0 - lum if self.inverts else lum
+        self.out_buf.fill_(-1.0)
+        self.out_buf[self.idx] = act * (graded_max_rate * dt)
+        return self.out_buf
+
 
 def run_grating(net, rig, duration, tf_hz, direction, monitors,
                 dash=None, retina=None, dash_every=25, banner="", gext=None):
     """Step the network under a drifting grating; return spike counts."""
     dt = net.p.dt
     n_steps = int(round(duration / dt))
-    counts = torch.zeros(net.n, dtype=torch.int32, device=net.device)
+    # Accumulate OUT, not spikes. out is in spike-equivalents -- 1.0 on the
+    # step a spiking cell fires, rate*dt every step for a graded cell -- so
+    # sum(out)/duration is a firing rate for both populations. Counting spikes
+    # would report exactly 0.00 Hz for every graded neuron.
+    counts = torch.zeros(net.n, dtype=torch.float32, device=net.device)
     net.reset()
 
     # exponential rate estimate for the live display only
@@ -107,13 +147,19 @@ def run_grating(net, rig, duration, tf_hz, direction, monitors,
     filt = torch.zeros(net.n, dtype=torch.float32, device=net.device)
 
     trace_t, trace_d = [], []
+    graded_input = bool(net.any_graded) and bool(net.graded[rig.idx].all())
     for step in range(n_steps):
         t = step * dt
-        rate = rig.drive(t, tf_hz, direction)
-        forced = torch.rand(net.n, generator=net.gen,
-                            device=net.device) < (rate * dt).clamp(0, 1)
-        s = net.step(g_ext=gext, forced=forced)
-        counts += s
+        if graded_input:
+            s = net.step(g_ext=gext,
+                         out_set=rig.out_set(t, tf_hz, direction,
+                                             net.p.graded_max_rate, dt))
+        else:
+            rate = rig.drive(t, tf_hz, direction)
+            forced = torch.rand(net.n, generator=net.gen,
+                                device=net.device) < (rate * dt).clamp(0, 1)
+            s = net.step(g_ext=gext, forced=forced)
+        counts += net.out
         filt.mul_(decay).add_(s.float() * (1 - decay) / tau)
 
         if dash is not None and step % dash_every == 0:
@@ -152,7 +198,7 @@ def _luminance_by_column(retina, lum_t, idx_t):
 def rate(counts, idx, duration):
     if counts is None or len(idx) == 0:
         return 0.0
-    return float(counts[idx].float().mean()) / duration
+    return float(counts[idx].mean()) / duration
 
 
 # --------------------------------------------------------------------------
@@ -167,7 +213,12 @@ def main() -> int:
     ap.add_argument("--tf", type=float, default=2.0, help="temporal freq (Hz)")
     ap.add_argument("--period", type=float, default=30.0,
                     help="spatial period (deg)")
-    ap.add_argument("--site", default="L1", choices=["L1", "L2", "R1-6"])
+    ap.add_argument("--site", default="L1+L2+L3",
+                    help="injection site(s), '+'-separated. Default drives all "
+                         "three lamina monopolars because the fast and slow "
+                         "arms of the T4 correlator are fed by DIFFERENT ones "
+                         "(Mi1<-L1, Mi9<-L3); driving L1 alone leaves the slow "
+                         "arm silent.")
     ap.add_argument("--rate", type=float, default=150.0,
                     help="peak photoreceptor drive (Hz)")
     ap.add_argument("--bias", type=float, default=7.5,
@@ -175,6 +226,17 @@ def main() -> int:
                          "The early visual system is inhibition-dominated "
                          "(L2 E:I=0.11) and computes by DISINHIBITION, which "
                          "needs a baseline to disinhibit from. 0 = off.")
+    ap.add_argument("--slow-delay", type=float, default=config.T_DLY_SLOW * 1e3,
+                    help="conduction delay on the SLOW medulla lines (Mi9, Mi4, "
+                         "CT1, Tm9) in ms. Equal to T_dly disables the "
+                         "correlator. This is a documented DEVIATION from "
+                         "Shiu et al., who use one global delay.")
+    ap.add_argument("--graded", action="store_true",
+                    help="model the optic lobe as GRADED non-spiking units. "
+                         "Photoreceptors and lamina/medulla neurons do not "
+                         "spike in a real fly; see config.GRADED_SUPER_CLASSES.")
+    ap.add_argument("--slow-sweep", action="store_true",
+                    help="sweep the slow-line delay and report DSI for each")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
@@ -183,15 +245,25 @@ def main() -> int:
 
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
-    retina = Retina.build(g, ann, site=args.site)
-    net = LIFNetwork.from_graph(g, device=args.device, seed=0)
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
+    graded = g.graded_mask(ann) if args.graded else None
+    net = LIFNetwork.from_graph(g, device=args.device, seed=0,
+                                edge_delay=edge_delay, graded=graded)
+    if graded is not None:
+        print(f"graded     {int(graded.sum()):,} non-spiking optic-lobe "
+              f"neurons; LC/LPLC and central cells still spike")
     rig = GratingRig(net, retina, args.device, args.period, args.rate)
 
     print(retina.summary())
     print(f"grating    period {args.period:.0f} deg, {args.tf:.1f} Hz, "
           f"drive {args.rate:.0f} Hz peak")
-    print(f"W_SYN      {net.p.w_syn * 1e3:.5f} mV   T_dly "
-          f"{net.p.t_dly_effective * 1e3:.1f} ms")
+    print(f"W_SYN      {net.p.w_syn * 1e3:.5f} mV")
+    print(f"delays     {net.delay_summary}")
+    if args.slow_delay * 1e-3 != net.p.t_dly:
+        print(paint(f"           SLOW LINES {config.SLOW_LINES} at "
+                    f"{args.slow_delay:.0f} ms -- a deviation from the paper",
+                    "33"))
 
     # T4/T5 are monitored PER SUBTYPE. a/b/c/d are tuned to four different
     # directions, so averaging them cancels direction selectivity by
@@ -211,19 +283,6 @@ def main() -> int:
              for k, v in mons.items()}
     print("populations " + "  ".join(f"{k}={len(v)}" for k, v in mons.items()))
 
-    gext = None
-    if args.bias:
-        import polars as pl
-        cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
-                          infer_schema_length=50_000)
-        optic = cls.filter(pl.col("super_class") == "optic")["root_id"].to_list()
-        oidx = torch.as_tensor(g.index_of(optic).astype(np.int64),
-                               device=args.device)
-        gext = torch.zeros(net.n, dtype=torch.float32, device=args.device)
-        gext[oidx] = args.bias * 1e-3
-        print(f"tonic bias  {args.bias:.1f} mV to {len(oidx):,} optic lobe "
-              f"neurons (rheobase {net.p.threshold_distance * 1e3:.1f} mV)")
-
     dash = None
     if args.live:
         from flydoom.viz import LiveDashboard, have_display
@@ -232,6 +291,49 @@ def main() -> int:
         else:
             dash = LiveDashboard(retina, list(mons), dt=net.p.dt,
                                  title="flydoom M3 — optomotor")
+
+    gext = None
+    if args.bias:
+        import polars as pl
+        cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
+                          infer_schema_length=50_000)
+        optic = cls.filter(
+            pl.col("super_class").is_in(list(config.BIASED_SUPER_CLASSES))
+        )["root_id"].to_list()
+        oidx = torch.as_tensor(g.index_of(optic).astype(np.int64),
+                               device=args.device)
+        gext = torch.zeros(net.n, dtype=torch.float32, device=args.device)
+        gext[oidx] = args.bias * 1e-3
+        print(f"tonic bias  {args.bias:.1f} mV to {len(oidx):,} optic lobe "
+              f"neurons (rheobase {net.p.threshold_distance * 1e3:.1f} mV)")
+
+    if args.slow_sweep:
+        print(f"\n{paint('SLOW-LINE DELAY SWEEP', '1;36')}")
+        print(paint("  Does a temporal offset on Mi9/Mi4/CT1/Tm9 produce "
+                    "direction\n  selectivity from the existing wiring?", "90"))
+        print(f"\n  {'slow(ms)':>9} {'T4a R':>8} {'T4a L':>8} {'DSI(T4a)':>9}"
+              f" {'DSI(T4b)':>9} {'DSI(T5a)':>9} {'best':>7}")
+        for slow_ms in (1.8, 20, 40, 60, 80, 120, 160, 240):
+            ed = g.edge_delay_steps(ann, config.DT, t_slow=slow_ms * 1e-3)
+            n2 = LIFNetwork.from_graph(g, device=args.device, seed=0,
+                                       edge_delay=ed)
+            rig2 = GratingRig(n2, retina, args.device, args.period, args.rate)
+            r = {}
+            for direction in (+1, -1):
+                cts = run_grating(n2, rig2, args.duration, args.tf, direction,
+                                  mon_t, None, retina, gext=gext)
+                r[direction] = {k: rate(cts, v, args.duration)
+                                for k, v in mon_t.items()}
+            def dsi(t):
+                a, b = r[1][t], r[-1][t]
+                return (a - b) / (a + b) if (a + b) > 1e-9 else 0.0
+            ds = {t: dsi(t) for t in ("T4a", "T4b", "T5a", "T5b")}
+            best = max(abs(v) for v in ds.values())
+            flag = paint("  <-- SELECTIVE", "32") if best > 0.1 else ""
+            print(f"  {slow_ms:9.1f} {r[1]['T4a']:8.2f} {r[-1]['T4a']:8.2f}"
+                  f" {ds['T4a']:+9.3f} {ds['T4b']:+9.3f} {ds['T5a']:+9.3f}"
+                  f" {best:7.3f}{flag}")
+        return 0
 
     c = Checks()
     results = {}
@@ -273,6 +375,19 @@ def main() -> int:
             print(f"  {t:>8} {a:10.2f} {b:10.2f} {dsi:+8.3f}")
     best_dsi = max((abs(v) for v in dsis.values()), default=0.0)
 
+    # The MIRROR-PAIR test. T4a/T4b and T4c/T4d have mirrored input geometry,
+    # so genuine selectivity gives each pair OPPOSITE signs. Magnitude alone is
+    # not evidence -- a global response difference moves both members the same
+    # way, and that is what every earlier configuration produced.
+    pairs = [("T4a", "T4b"), ("T5a", "T5b")]
+    opposed = []
+    for x, y in pairs:
+        if x in dsis and y in dsis:
+            opposed.append(dsis[x] * dsis[y] < 0)
+            print(f"  mirror pair {x}/{y}: {dsis[x]:+.5f} vs {dsis[y]:+.5f}"
+                  f"  -> {'OPPOSITE' if dsis[x] * dsis[y] < 0 else 'same sign'}")
+    any_opposed = any(opposed)
+
     r_any = any(v[0]["L1"] > 1 for v in results.values())
     c.check(r_any, "visual input reaches the lamina",
             f"L1 {max(v[0]['L1'] for v in results.values()):.1f} Hz")
@@ -281,8 +396,10 @@ def main() -> int:
     t5 = max(v[0]["T5a"] for v in results.values())
     c.check(t4 > 0.5 or t5 > 0.5, "motion detectors respond",
             f"T4a {t4:.2f} Hz, T5a {t5:.2f} Hz")
-    c.check(best_dsi > 0.1, "T4/T5 are DIRECTION SELECTIVE",
-            f"best |DSI| {best_dsi:.3f} (need >0.1)")
+    c.check(any_opposed, "mirror pairs have OPPOSITE-signed DSI",
+            "the qualitative signature of a correlator")
+    c.check(best_dsi > 0.1, "direction selectivity is BIOLOGICALLY STRONG",
+            f"best |DSI| {best_dsi:.4f}, need >0.1 (real fly ~0.5-0.9)")
 
     dn = max(max(v[0]["DNa02_L"], v[0]["DNa02_R"]) for v in results.values())
     c.check(dn > 0.5, "signal reaches DNa02", f"peak {dn:.2f} Hz")
@@ -307,34 +424,47 @@ def main() -> int:
     print(paint("VERDICT: M3 FAIL", "1;31"))
     if r_any and best_dsi <= 0.1:
         print(paint("""
-DIAGNOSIS: the pipeline works; direction selectivity does not exist.
+DIAGNOSIS: the pipeline works; direction selectivity does not.
 
-Signal reaches the lamina, the motion detectors fire, and activity arrives at
-the descending neurons. What is absent is any PREFERENCE for one direction --
-DSI is ~0.000 in every T4/T5 subtype, which is not noise, it is structural.
+Signal reaches the lamina, the motion detectors fire, activity arrives at the
+descending neurons. What is absent is any PREFERENCE for one direction. The
+decisive check is the SIGN, not the magnitude: T4a and T4b have mirrored input
+geometry, so genuine selectivity gives them OPPOSITE-signed DSI. They never do
+-- they move together, with T4a simply larger.
 
-T4/T5 build direction selectivity by comparing inputs that arrive with
-DIFFERENT temporal filters: Mi9 slow and sign-inverting, Mi1/Tm3 fast, Mi4
-slow. Delay one line, compare against an undelayed neighbour, and you get a
-correlator.
+What IS in the connectome, verified:
+  * the correlator geometry. T4a takes fast excitation centred (Mi1 +30.6,
+    Tm3 +7.0) and slow inhibition on OPPOSITE flanks (Mi9 -7.4 at (-0.76,
+    +0.26), Mi4 -3.4 at (+0.39,-0.60)). All four subtypes, four mirrored axes.
+  * the two arms are fed by DIFFERENT lamina lines: Mi1 <- L1, Mi9/Tm9 <- L3.
 
-This model has no temporal heterogeneity to build that from. Every neuron
-shares one tau_mem (20 ms) and every synapse one conduction delay (2.0 ms),
-because those are global constants in Shiu et al.'s parameterisation. With
-uniform delays a Hassenstein-Reichardt correlator cannot be expressed, so no
-amount of gain or bias tuning will produce direction selectivity here.
+What was tried and did NOT produce selectivity:
+  * per-edge conduction delays on the slow lines, 1.8 to 240 ms
+  * per-neuron membrane time constants, fast 5-20 ms against slow 60-200 ms
+  * grating periods 8 to 30 deg, tonic bias 6.5 to 7.5 mV
+  * both spike-rate and membrane-potential readouts
 
-Note WHERE that parameterisation was validated: taste. The SEZ pathway is
-feedforward-excitatory and works fine with uniform constants at zero baseline.
-The optic lobe is neither -- it is inhibition-dominated (measured on this
-graph: L2 E:I = 0.11, Mi1 0.36) and computes by disinhibition, which is why
---bias is needed before anything propagates at all.
+Two things learned on the way, both worth keeping:
+  * mean membrane potential CANNOT show direction selectivity in this model.
+    Inputs sum linearly into g, and the mean of a linear sum does not depend on
+    the relative phase of its terms. Only the spike threshold is nonlinear, so
+    spike rate is the only valid readout.
+  * driving L1 alone starves the slow arm. Mi9 modulation was 0.009 mV against
+    Mi1's 4.58 mV. Driving L1+L2+L3 raised it 139x, to 1.19 mV. Necessary, but
+    not sufficient.
 
-To actually pass M3 the model needs per-cell-type time constants, at minimum
-distinguishing the fast (Mi1, Tm3) from the slow (Mi9, Mi4, Tm9) medulla
-lines. That is a change to the MODEL, not to this experiment, and it is a
-defensible one -- but it is a departure from the paper we are replicating and
-should be recorded as such.""", "33"))
+The remaining obstacle looks like signal-to-operating-point, not timing. Under
+the tonic bias needed to make an inhibition-dominated circuit conduct at all,
+T4 sits ~7 mV above rest and the visual modulation reaching it is ~0.15 mV --
+about 2%. A correlator's directional term is a fraction of that, and it is
+buried.
+
+The deeper reason is that photoreceptors and lamina monopolars are GRADED,
+NON-SPIKING neurons. They signal by continuous transmitter release, not by
+spikes. A spiking LIF cannot represent that, and the tonic-bias surrogate we
+substitute destroys the signal-to-background the circuit relies on. That is a
+limitation of the MODEL CLASS, not of the connectome or of these parameters.
+""", "33"))
     return 1
 
 

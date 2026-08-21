@@ -97,7 +97,7 @@ def respond(
 
 def calibrate_w_syn(
     net, sugar, mn9, duration, trials, target=0.80,
-    stim_hz=100.0, sat_hz=200.0, lo=1e-6, hi=3e-2, iters=13,
+    stim_hz=100.0, sat_hz=200.0, lo=None, hi=None, iters=14,
 ) -> tuple[float, float]:
     """Replicate the paper's fit: find W_SYN putting sugar@stim_hz at
     `target` of the saturating MN9 response.
@@ -106,18 +106,29 @@ def calibrate_w_syn(
     registers while 200 Hz does, at high gain both saturate -- so bisection is
     well posed.
     """
+    if lo is None:
+        lo, hi = (1e-5, 1.0) if net.p.conductance else (1e-6, 3e-2)
+
+    def set_gain(w: float) -> None:
+        if net.p.conductance:
+            net.p.g_syn = w
+        else:
+            net.p.w_syn = w
+
     def ratio(w: float) -> tuple[float, float, float]:
-        net.p.w_syn = w
+        set_gain(w)
         r_stim, _ = respond(net, mn9, {"s": (sugar, stim_hz)}, duration, trials)
         r_sat, _ = respond(net, mn9, {"s": (sugar, sat_hz)}, duration, trials)
         return (r_stim / r_sat if r_sat > 1e-9 else 0.0), r_stim, r_sat
 
-    print(f"  {'W_SYN (mV)':>11}  {'MN9@100Hz':>10}  {'MN9@200Hz':>10}  {'ratio':>7}")
+    unit = "G_SYN" if net.p.conductance else "W_SYN (mV)"
+    scale = 1.0 if net.p.conductance else 1e3
+    print(f"  {unit:>11}  {'MN9@100Hz':>10}  {'MN9@200Hz':>10}  {'ratio':>7}")
     best = None
     for i in range(iters):
         mid = (lo * hi) ** 0.5           # geometric bisection: gain is scale-free
         r, a, b = ratio(mid)
-        print(f"  {mid * 1e3:11.5f}  {a:10.2f}  {b:10.2f}  {r:7.3f}")
+        print(f"  {mid * scale:11.5f}  {a:10.2f}  {b:10.2f}  {r:7.3f}")
         if best is None or abs(r - target) < abs(best[1] - target):
             best = (mid, r)
         if r < target:
@@ -150,6 +161,7 @@ def main() -> int:
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
     net = LIFNetwork.from_graph(g, device=args.device, seed=0)
+    print(f"synapses   {net.conductance_summary}")
 
     def idx(handle):
         res = ann.resolve(by_name(handle))
@@ -176,7 +188,12 @@ def main() -> int:
         print(f"\n  {'W_SYN(mV)':>10} {'MN9@sugar':>10} {'MN9@bitter':>11}"
               f" {'brain active':>13} {'peak Hz':>8}")
         for mult in (0.3, 0.5, 0.7, 0.85, 0.95, 1.0, 1.05, 1.2, 1.5, 2.0, 3.0, 6.0):
-            net.p.w_syn = w0 = config.W_SYN_FITTED * mult
+            base = config.G_SYN if net.p.conductance else config.W_SYN_FITTED
+            w0 = base * mult
+            if net.p.conductance:
+                net.p.g_syn = w0
+            else:
+                net.p.w_syn = w0
             su, _ = respond(net, mn9, {"s": (sugar, 100.0)}, args.duration, 3)
             bi, _ = respond(net, mn9, {"b": (bitter, 100.0)}, args.duration, 3)
             net.reset(); net.gen.manual_seed(0)
@@ -206,17 +223,24 @@ def main() -> int:
             target=config.W_SYN_CALIBRATION["target_fraction_of_max"],
             stim_hz=config.W_SYN_CALIBRATION["stim_rate_hz"],
         )
-        print(f"\n  fitted W_SYN = {paint(f'{w * 1e3:.5f} mV', '1')} per synapse"
+        gain_name = "G_SYN" if net.p.conductance else "W_SYN"
+        label = (f"{w:.6f}" if net.p.conductance else f"{w * 1e3:.5f} mV")
+        print(f"\n  fitted {gain_name} = {paint(label, '1')} per synapse"
               f"   (ratio {ratio:.3f})")
-        print(f"  the paper's published value is {config.W_SYN_PAPER * 1e3:.5f} mV"
-              f" (their v630 fit) -> ours is {w / config.W_SYN_PAPER:.2f}x that")
-        peak = w * net.p.peak_psp_fraction()
-        print(f"  one synapse moves the membrane {peak * 1e6:.1f} uV;"
-              f" ~{net.p.threshold_distance / peak:.0f} coincident to fire")
+        if not net.p.conductance:
+            print(f"  the paper's published value is "
+                  f"{config.W_SYN_PAPER * 1e3:.5f} mV (their v630 fit)"
+                  f" -> ours is {w / config.W_SYN_PAPER:.2f}x that")
+            peak = w * net.p.peak_psp_fraction()
+            print(f"  one synapse moves the membrane {peak * 1e6:.1f} uV;"
+                  f" ~{net.p.threshold_distance / peak:.0f} coincident to fire")
         c.check(0.70 <= ratio <= 0.90, "calibration converged on the 80% target",
                 f"ratio {ratio:.3f}")
 
-    net.p.w_syn = w
+    if net.p.conductance:
+        net.p.g_syn = w
+    else:
+        net.p.w_syn = w
 
     # ---------------- the conditions ----------------
     print(f"\n{paint('CONDITIONS', '1;36')}")
@@ -277,7 +301,11 @@ def main() -> int:
     print(f"\n{paint('=' * 76, '90')}")
     if ok:
         print(paint("VERDICT: M2 PASS", "1;32"))
-        print(f"Fitted W_SYN = {w * 1e3:.5f} mV per synapse. Put this in config.py")
+        if net.p.conductance:
+            print(f"Fitted G_SYN = {w:.6f} per synapse (conductance mode).")
+        else:
+            print(f"Fitted W_SYN = {w * 1e3:.5f} mV per synapse.")
+        print("Put it in config.py")
         print("as [FITTED] with today's date and the graph it was fitted against.")
         print(paint("Remember what this does and does not show — see the module "
                     "docstring.", "90"))
