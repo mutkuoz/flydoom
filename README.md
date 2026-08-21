@@ -1,8 +1,6 @@
 ![flydoom](flydoom.jpeg)
 
-# flydoom
-
-A fruit fly's brain plays Doom.
+# flydoom - A fruit fly's brain plays Doom.
 
 Not a metaphor. Scientists sliced a real fly's brain into seven thousand layers,
 photographed every layer with an electron microscope, and traced all 139,255 neurons
