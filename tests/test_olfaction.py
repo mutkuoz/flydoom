@@ -157,11 +157,44 @@ def test_non_sources_are_ignored():
     assert float(settle(o).max()) == 0.0
 
 
-def test_unknown_actor_counts_as_a_threat_not_a_crash():
-    """Doom has many actor names; an unrecognised one must degrade, not
-    explode, mid-run."""
+def test_unknown_actor_emits_nothing_and_does_not_crash():
+    """An unrecognised actor must degrade silently, not become a rival fly.
+
+    This used to fall back to THREAT, and the fallback was the bug: cVA means
+    "another fly is here", so classifying every unlisted object that way made
+    ammo crates smell like rivals (~3,900 sightings in deathmatch) and, because
+    `health_gathering_supreme` names its pickups `CustomMedikit`, turned the
+    one health-collection map's 802 medkits into pheromone with zero food.
+    Both channels are explicit allowlists now.
+    """
     o = make(intermittency_hz=1e-6, duty=1.0)
     o.on_tic([{"name": "SomeModdedMonster", "distance": 100.0, "azimuth_deg": 0}])
+    assert float(settle(o).max()) == 0.0
+
+
+def test_health_pickups_of_every_scenario_smell_like_food():
+    """The names really used by the shipped scenarios, not a guess at them."""
+    from flydoom.olfaction import FOOD_NAMES, THREAT_NAMES
+    for name in ("Medikit", "CustomMedikit", "Stimpack", "GreenArmor"):
+        assert name in FOOD_NAMES, name
+        assert name not in THREAT_NAMES, name
+
+
+def test_inanimate_objects_are_not_rivals():
+    """cVA is a fly pheromone; a crate cannot emit it."""
+    from flydoom.olfaction import FOOD_NAMES, THREAT_NAMES
+    for name in ("ClipBox", "ShellBox", "RocketBox", "Chainsaw",
+                 "RocketLauncher"):
+        assert name not in THREAT_NAMES, name
+        assert name not in FOOD_NAMES, name
+    o = make(intermittency_hz=1e-6, duty=1.0)
+    o.on_tic([{"name": "ClipBox", "distance": 100.0, "azimuth_deg": 0}])
+    assert float(settle(o).max()) == 0.0
+
+
+def test_monsters_are_rivals():
+    o = make(intermittency_hz=1e-6, duty=1.0)
+    o.on_tic([{"name": "DoomImp", "distance": 100.0, "azimuth_deg": 0}])
     assert float(settle(o)[THREAT[0]]) > 0
 
 

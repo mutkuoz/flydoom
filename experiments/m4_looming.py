@@ -407,18 +407,24 @@ not the linearity of their combination, which is why neither rescued it.
 
 A correlator needs a MULTIPLICATIVE interaction. In the real circuit that comes
 from SHUNTING inhibition: GABA and GluCl open chloride channels, which changes
-the membrane CONDUCTANCE and therefore divides the effect of excitation. This
-model implements inhibition as a subtractive offset instead -- a negative g --
-and subtraction cannot implement a correlator no matter how it is timed.
+the membrane CONDUCTANCE and therefore divides the effect of excitation.
 
-The fix is a conductance-based synapse:
+This text used to end by recommending conductance-based synapses as the fix.
+They are now the default (config.SYNAPSE_MODEL = "conductance"):
 
     tau*dv/dt = (V_rest - v) + g_exc*(E_exc - v) + g_inh*(E_inh - v)
 
-where inhibition multiplies rather than subtracts. That is a real change to the
-model class and a much larger departure from Shiu et al. than anything tried so
-far -- but it is the thing actually standing between this connectome and
-motion vision.""", "33"))
+and the failure above was measured WITH them. Shunting was necessary and is not
+sufficient. What remains is not the form of the synapse but the balance between
+the two arms: T4a's fast excitatory arm is starved 37:1 by its own inhibition,
+and LPLC2 sits BELOW its resting potential because PVLP011 fires at 72-82% of
+the refractory ceiling. Those are ratios, and every input-side scale we can
+reach -- drive, contrast, palette, field of view, engine rendering -- multiplies
+both arms and cancels out of a ratio.
+
+What would change it is a per-cell-type gain, which the connectome does not
+specify. That is the measurement this project exists to report, not a bug to
+fix here.""", "33"))
     return 1
 
 

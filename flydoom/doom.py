@@ -29,7 +29,32 @@ from .retina import DOOM_FOV_DEG, EYE_SPLAY_DEG, ACCEPTANCE_RATIO
 # Rec. 601 luma. Doom's palette is overwhelmingly brown and grey, so the
 # chromatic channels carry almost nothing -- spec 6.1 predicts R7/R8 are dead
 # weight in v1, and this is why we collapse to luminance immediately.
-LUMA = np.array([0.299, 0.587, 0.114], dtype=np.float32)
+LUMA_HUMAN = np.array([0.299, 0.587, 0.114], dtype=np.float32)
+"""Rec.601 photopic luma -- the HUMAN spectral response, weighted to red."""
+
+LUMA_FLY = np.array([0.03, 0.35, 0.62], dtype=np.float32)
+"""Approximate R1-6 spectral weighting for Doom's RGB primaries. [OURS]
+
+R1-6 are the photoreceptors this model drives, and they carry Rh1, which is
+blue-green sensitive with a second, UV peak via a sensitizing pigment. Doom
+renders no UV, so the UV lobe is simply unavailable and what is left is the
+blue-green preference; these weights approximate Rh1's relative sensitivity at
+Doom's R, G and B primaries and are normalised to sum to one.
+
+The contrast with LUMA_HUMAN is the point: Rec.601 puts 30% of its weight on
+red, where R1-6 is nearly blind, and 11% on blue, where it is most sensitive.
+Under human luma a red wall and a blue wall of equal fly-brightness look very
+different to this retina, and vice versa. Approximate, and flagged as such --
+three broad primaries cannot reconstruct a spectrum -- but directionally right
+where Rec.601 is directionally wrong.
+"""
+
+LUMA = LUMA_FLY
+
+FLYBAND_MIX = np.array([0.0, 0.45, 0.55], dtype=np.float32)
+"""Where repainted light is emitted: blue-green, nothing in the red primary.
+Split across G and B rather than piled into one so the result survives a
+display gamut and stays a plausible surface colour."""
 
 
 @dataclass
@@ -44,6 +69,65 @@ class DoomConfig:
     """Doom tics advanced per agent decision. 1 = decide every tic."""
     seed: int | None = 0
     living_reward: float | None = None
+    repaint: str = "flyband"
+    """Repaint the rendered world into the band R1-6 can actually see.
+
+    Doom is painted in browns and reds, which is close to the worst possible
+    palette for this animal: Rh1 is blue-green sensitive and nearly blind at
+    Doom's red primary. MEASURED, weighting Doom's RGB by R1-6 sensitivity
+    LOWERS retinal contrast from 0.528 to 0.457, because most of the scene's
+    energy sits in a channel the receptor cannot use. The environment, not the
+    brain, is what is wrong.
+
+    Changing the environment is not a change to the model, and it is what a
+    fly-vision lab does as a matter of course -- arenas are built from green
+    and UV emitters precisely because that is the animal's band.
+
+    The transform is licensed by the fact that R1-6 are a SINGLE spectral
+    class, so the motion pathway is monochromatic: chromatic detail is not
+    something it can use, and preserving hue buys the model nothing while
+    costing it most of its contrast. So we take the scene's achromatic
+    structure and re-emit it in blue-green, which is equivalent to repainting
+    every surface in the arena and much cheaper than shipping a texture pack.
+
+        "none"     leave the frame as rendered
+        "flyband"  preserve luminance structure, move it in-band
+    """
+
+    fly_spectrum: bool = True
+    """Weight Doom's RGB by R1-6 spectral sensitivity instead of human luma.
+    See LUMA_FLY. Set False for Rec.601."""
+
+    linearise_gamma: bool = True
+    """Undo Doom's sRGB gamma before sampling.
+
+    Photoreceptors respond to photon flux, which is linear in intensity, but
+    Doom writes gamma-encoded sRGB. The acceptance function is a spatial
+    INTEGRAL over that flux, so the Gaussian pre-blur has to run in linear
+    light: blurring gamma-encoded values averages the wrong quantity and
+    systematically biases every column towards its darker neighbours, worst at
+    exactly the high-contrast edges the motion pathway feeds on.
+    """
+
+    interpolate: bool = True
+    """Ramp luminance across the substeps between one frame and the next.
+
+    Doom draws at 35 Hz and the simulator runs 57 substeps per frame, so
+    holding the frame gives the retina a step change followed by 56 substeps of
+    exactly zero temporal derivative. Every computation this model is asked to
+    perform on the visual stream -- direction selectivity, looming, wall
+    avoidance -- is a computation over temporal ORDER, and the delayed arm of
+    the correlator is 80 ms, i.e. three frames. Held frames therefore ask a
+    correlator to work on an impulse train aliased against its own delay line.
+
+    A fly in a real room receives continuous motion; the 35 Hz strobe is an
+    artifact of the game engine, not of the biology, and it is a confound that
+    guarantees failure independently of how the brain is wired. Linear
+    interpolation between consecutive frames is the cheapest way to remove it.
+
+    Set False to recover the held-frame behaviour.
+    """
+
     labels: bool = False
     """Enable the object label buffer. Used for MEASUREMENT ONLY -- M6 needs
     ground-truth enemy positions to ask whether the fly responded to them.
@@ -71,8 +155,23 @@ class DoomVision:
         self.device = device
 
         # --- where each column looks, in Doom's viewport ---
+        # Doom draws a PLANAR PERSPECTIVE projection, so a ray at azimuth
+        # `az` lands at screen x proportional to tan(az), not to az. Mapping
+        # angle linearly onto the viewport -- which this did until measured --
+        # puts every column in the wrong place, and worst near the centre of
+        # gaze: a column at 10 deg was sampled 87% too far out, one at 30 deg
+        # 71% too far out, converging only at the very edge.
+        #
+        # That is not a cosmetic error. Retinotopy is the substrate every
+        # motion computation here runs on, and a warp of this size means the
+        # angular spacing between neighbouring columns varies about twofold
+        # across the field. Rigid motion of the world then sweeps the retina at
+        # a speed that depends on where you look, which is exactly the input a
+        # delay-and-correlate detector tuned to a FIXED spacing cannot use.
         idx, gx, gy, inside = [], [], [], []
         half_h, half_v = cfg.fov_deg / 2.0, cfg.vfov_deg / 2.0
+        tan_h = math.tan(math.radians(half_h))
+        tan_v = math.tan(math.radians(half_v))
         for side, eye in retina.eyes.items():
             if not eye.neuron_idx.size:
                 continue
@@ -80,8 +179,8 @@ class DoomVision:
             az = eye.azimuth_deg[eye.neuron_column] + gaze
             el = eye.elevation_deg[eye.neuron_column]
             idx.append(eye.neuron_idx)
-            gx.append(az / half_h)
-            gy.append(-el / half_v)        # screen y grows downward
+            gx.append(np.tan(np.radians(az)) / tan_h)
+            gy.append(-np.tan(np.radians(el)) / tan_v)  # screen y grows down
             inside.append((np.abs(az) <= half_h) & (np.abs(el) <= half_v))
         self.idx = torch.as_tensor(np.concatenate(idx).astype(np.int64),
                                    device=device)
@@ -95,7 +194,14 @@ class DoomVision:
         ).clamp(-1.0, 1.0)
 
         # --- Gaussian acceptance, expressed in pixels ---
-        deg_per_px = cfg.fov_deg / cfg.width
+        # Under a perspective projection the angular size of a pixel is not
+        # uniform: it is finest at the centre and coarsest at the edge. The
+        # flat fov/width figure used before understates the centre by about
+        # 1.9x, so the acceptance kernel was roughly twice as wide as intended
+        # and blurred away the fine spatial structure the correlator needs.
+        # One separable pre-blur cannot vary across the image, so we scale it
+        # to the centre, where the resolution actually matters.
+        deg_per_px = math.degrees(2.0 * tan_h) / cfg.width
         # interommatidial spacing in degrees, measured off the real lattice
         spacing = self._column_spacing_deg()
         accept_deg = ACCEPTANCE_RATIO * spacing
@@ -113,8 +219,17 @@ class DoomVision:
         from .retina import TAU_ADAPT, CONTRAST_GAIN
         self.adapt_mean = torch.full((self.idx.numel(),), 0.5,
                                      dtype=torch.float32, device=device)
+        # MEASURED BUG, fixed here: this decay is per SUBSTEP (dt = 0.5 ms),
+        # but drive() used to be called once per Doom tic (28.6 ms), so the
+        # Weber adaptation advanced one 0.5 ms step per 28.6 ms of game time
+        # and its effective time constant was 57x too long -- 14 s instead of
+        # 0.25 s. Stepping it inside the substep loop (see substep_drive) is
+        # what makes this constant mean what it says.
         self.adapt_decay = math.exp(-dt / TAU_ADAPT)
+        self.dt = dt
+        self.lum_prev = None
         self.adapt_gain = CONTRAST_GAIN
+        self.luma = LUMA_FLY if cfg.fly_spectrum else LUMA_HUMAN
         self.inverts = retina.inverts
         self.out_buf = None
         # L1/L2 report CHANGE, L3 reports LEVEL. Without the sustained channel
@@ -138,10 +253,12 @@ class DoomVision:
         k = torch.exp(-0.5 * (t / sigma) ** 2)
         return (k / k.sum()).view(1, 1, -1)
 
-    def reset(self) -> None:
-        self.adapt_mean.fill_(0.5)
-
     # -- the hot path ----------------------------------------------------
+
+    def _weight(self, img):
+        """Linear RGB -> scalar absorbed flux, under the active spectrum."""
+        return (img * self.torch.as_tensor(self.luma,
+                                           device=self.device)).sum(-1)
 
     def sample(self, frame: np.ndarray):
         """RGB frame -> per-column luminance in [0, 1], mean-filled outside."""
@@ -151,7 +268,21 @@ class DoomVision:
         img = torch.as_tensor(frame, device=self.device, dtype=torch.float32)
         if img.ndim == 3 and img.shape[0] == 3:      # CHW
             img = img.permute(1, 2, 0)
-        lum = (img * torch.as_tensor(LUMA, device=self.device)).sum(-1) / 255.0
+        img = img / 255.0
+        if self.cfg.linearise_gamma or self.cfg.repaint == "flyband":
+            # sRGB EOTF. Cheap, and it has to precede the weighting, the
+            # repaint and the blur alike -- see DoomConfig.linearise_gamma.
+            img = torch.where(img <= 0.04045, img / 12.92,
+                              ((img + 0.055) / 1.055) ** 2.4)
+        if self.cfg.repaint == "flyband":
+            # Achromatic structure of the scene...
+            y = (img * torch.as_tensor(LUMA_HUMAN,
+                                       device=self.device)).sum(-1, keepdim=True)
+            # ...re-emitted in blue-green, normalised so total absorbed flux is
+            # preserved rather than quietly rescaled.
+            w = torch.as_tensor(FLYBAND_MIX, device=self.device)
+            img = (y * w / float((FLYBAND_MIX * LUMA_FLY).sum())).clamp(0.0, 1.0)
+        lum = self._weight(img)
         lum = lum[None, None]                          # [1,1,H,W]
 
         # separable Gaussian = the acceptance function
@@ -172,12 +303,27 @@ class DoomVision:
         mean = float(sampled[self.inside].mean()) if self.n_inside else 0.5
         return torch.where(self.inside, sampled, torch.full_like(sampled, mean))
 
-    def drive(self, frame: np.ndarray, n_neurons: int, graded_max_rate: float,
-              dt: float):
-        """Frame -> out_set vector for a graded input population."""
-        torch = self.torch
+    def reset(self) -> None:
+        self.adapt_mean.fill_(0.5)
+        self.lum_prev = None
+
+    def begin_tic(self, frame: np.ndarray):
+        """Sample a new frame and return (previous, current) column luminance.
+
+        The pair is what substep_drive interpolates between. On the first tic
+        of an episode there is no previous frame, so the ramp starts flat.
+        """
         lum = self.sample(frame)
-        self.adapt_mean.mul_(self.adapt_decay).add_(lum * (1 - self.adapt_decay))
+        prev = self.lum_prev if self.lum_prev is not None else lum
+        self.lum_prev = lum
+        return prev, lum
+
+    def _out_set(self, lum, n_neurons: int, graded_max_rate: float,
+                 dt: float, adapt: bool = True):
+        torch = self.torch
+        if adapt:
+            self.adapt_mean.mul_(self.adapt_decay).add_(
+                lum * (1 - self.adapt_decay))
         c = ((lum - self.adapt_mean) / self.adapt_mean.clamp(min=1e-3)
              * self.adapt_gain).clamp(-1.0, 1.0)
         if self.inverts:
@@ -191,7 +337,30 @@ class DoomVision:
                                       device=self.device)
         self.out_buf.fill_(-1.0)
         self.out_buf[self.idx] = act * (graded_max_rate * dt)
-        return self.out_buf, lum
+        return self.out_buf
+
+    def substep_drive(self, prev, cur, alpha: float, n_neurons: int,
+                      graded_max_rate: float, dt: float):
+        """out_set for one substep, `alpha` of the way from prev to cur.
+
+        Adaptation is stepped here rather than once per tic, so TAU_ADAPT is
+        finally expressed in the units it is written in.
+        """
+        lum = prev if alpha <= 0.0 else (
+            cur if alpha >= 1.0 else self.torch.lerp(prev, cur, alpha))
+        return self._out_set(lum, n_neurons, graded_max_rate, dt), lum
+
+    def drive(self, frame: np.ndarray, n_neurons: int, graded_max_rate: float,
+              dt: float):
+        """Frame -> out_set, held for the whole tic. The pre-interpolation path.
+
+        Kept because the open-loop experiments hold a frame deliberately: M8
+        freezes the agent so both arms see an identical scene, and interpolating
+        between two identical frames would only add a redundant adaptation step.
+        """
+        lum = self.sample(frame)
+        self.lum_prev = lum
+        return self._out_set(lum, n_neurons, graded_max_rate, dt), lum
 
     def summary(self) -> str:
         return (
@@ -255,13 +424,20 @@ class DoomSession:
         # A wide FOV is not cosmetic: at Doom's default 90 deg the fly sees a
         # sliver of its own visual field, and every angular claim downstream
         # inherits this number.
-        g.add_game_args(f"+fov {cfg.fov_deg:.0f}")
+        #
+        # MEASURED, and this silently invalidated every angular claim until
+        # caught: `add_game_args("+fov N")` DOES NOTHING here. Renders at
+        # +fov 90, +fov 130 and +fov 160 are bit-identical, so the game was
+        # running at Doom's default 90 deg while every module assumed 130. The
+        # console command does take effect, and has to be re-sent per episode
+        # because a new episode resets the CVar -- see new_episode().
         if cfg.seed is not None:
             g.set_seed(cfg.seed)
         if cfg.living_reward is not None:
             g.set_living_reward(cfg.living_reward)
         g.init()
         self.game = g
+        self._apply_fov()
         self._last_health = 100.0
         self._last_damage = 0.0
 
@@ -276,8 +452,13 @@ class DoomSession:
 
     # -- episode ---------------------------------------------------------
 
+    def _apply_fov(self) -> None:
+        """Set the horizontal FOV. Must follow every new_episode()."""
+        self.game.send_game_command(f"fov {self.cfg.fov_deg:.0f}")
+
     def new_episode(self) -> None:
         self.game.new_episode()
+        self._apply_fov()
         self._last_health = self.health
         self._last_damage = 0.0
 

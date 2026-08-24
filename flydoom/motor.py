@@ -65,20 +65,65 @@ class MotorConfig:
     tau_rate: float = 0.08
     """Seconds. Spec 6.2 says 50-100 ms; 80 ms spans ~3 Doom tics."""
 
-    yaw_gain: float = 0.35
-    """Degrees of turn per tic per Hz of DNa02 differential. A free scalar --
-    fly saccades reach hundreds of deg/s and Doom's turn rate does not, so this
-    must be tuned or the agent oscillates. Spec 6.2 flags it explicitly."""
+    # ---- the three graded gains -------------------------------------
+    #
+    # These map Hz of descending-neuron differential onto Doom command units,
+    # and there is no biological number to copy: a fly saccades at hundreds of
+    # deg/s and Doom's turn rate does not. Spec 6.2 flags the scalar and leaves
+    # it to be tuned, which invites tuning each channel until the agent "looks
+    # right" -- three unfalsifiable knobs.
+    #
+    # What each channel needs turns out to follow from WHAT IT IS, and the two
+    # cases are not the same:
+    #
+    # BILATERAL PAIRS -- yaw (DNa02_L/_R) and lateral (DNp01_L/_R). These read
+    # a difference between the same cell type on the two sides, so a standing
+    # difference is a reconstruction artifact rather than a command: FAFB is
+    # one real brain and its halves are not mirror images. Measured, DNa02 sits
+    # at 150/257 Hz and DNp01 at 110/206. Both get the DC removed
+    # (see tau_baseline) and then a gain set so three standard deviations of
+    # what is left reach the clamp.
+    #
+    # NOT A PAIR -- forward (BPN - MDN). Two different cell types that oppose
+    # each other, so a positive standing difference is a real tonic walk
+    # command, and centring it would be deleting locomotion rather than
+    # deleting an artifact. It keeps its DC; the gain instead places that DC at
+    # a cruise speed the clamp does not cut off.
+    #
+    # MEASURED over 400 tics x 3 scenarios (deathmatch,
+    # health_gathering_supreme, defend_the_center), skipping 40 settling tics:
+    #
+    #     channel   centred s.d.   across scenarios   clamp   rule       gain
+    #     yaw           9.16 Hz     8.69 - 9.74        12     3 sigma    0.44
+    #     lateral       6.12 Hz     5.95 - 6.36        20     3 sigma    1.09
+    #     forward       1.27 Hz     1.22 - 1.31        22     DC at 50%  0.40
+    #
+    # The spreads are tight across three very different maps, so neither rule
+    # is fitted to one scenario. As a check on the 3-sigma rule itself: yaw was
+    # hand-tuned to 0.35 long before this, and the rule independently lands on
+    # 0.44 -- within 25% of a value already known to be stable.
+    #
+    # Worth stating plainly, because it bounds what the forward channel can
+    # mean: BPN - MDN is +27.6 +- 1.3 Hz, so its modulation is 4.6% of its own
+    # mean. Whatever gain it gets, this agent walks at a near-constant speed.
+    # The forward channel carries a tonic command and almost no scene.
+
+    yaw_gain: float = 0.44
+    """Degrees of turn per tic per Hz of DNa02 differential."""
 
     yaw_max_deg: float = 12.0
     """Clamp per tic. Doom turns feel unusable past roughly this."""
 
-    forward_gain: float = 0.9
+    forward_gain: float = 0.40
     forward_max: float = 22.0
     """Doom map units per tic. ~22 is a normal run speed."""
 
-    lateral_gain: float = 2.5
+    lateral_gain: float = 1.1
     lateral_max: float = 20.0
+
+    centre_channels: tuple[str, ...] = ("yaw", "lateral")
+    """Which graded channels get their DC removed. See the block above: the
+    bilateral pairs do, the walk command does not."""
 
     attack_on: float = 25.0
     attack_off: float = 15.0
@@ -86,13 +131,26 @@ class MotorConfig:
     use_off: float = 12.0
 
     tau_baseline: float = 3.0
-    """Seconds. Time constant for adapting out a CONSTANT steering offset.
+    """Seconds. Time constant for adapting out a CONSTANT command offset.
 
     MEASURED, and this is why it exists. DNa02_R sits about 2x above DNa02_L
     permanently (255 vs 130 Hz), because the two cells' input wiring is not
     symmetric -- FAFB is one real brain and its two halves are not mirror
     images. A fixed differential means a fixed turn command, and the agent
     spins forever.
+
+    The SAME asymmetry sits on the other two graded channels, and leaving it
+    there is worse than the spin because it is silent. Measured over 300 tics
+    of deathmatch:
+
+        BPN - MDN     = +26.8 +- 2.8 Hz  -> x0.9 = 24.2 against a clamp of 22
+        DNp01_L - _R  = -99.0 +- 21  Hz  -> x2.5 = -247 against a clamp of 20
+
+    Both sit past their clamps, so forward ran at full speed and lateral
+    strafed hard left on 89% of tics, and the +-2.8 Hz of actual modulation
+    was clipped off the top. The channels looked alive and carried nothing.
+    Removing the DC is what makes the modulation visible; it is the same
+    keep-the-transients-discard-the-DC move as the retina's Weber adaptation.
 
     A real fly does not have this problem because the optomotor reflex closes
     the loop: it turns, sees the world slip the other way, and corrects. Our
@@ -145,8 +203,8 @@ class MotorDecoder:
         self.attack = SchmittTrigger(self.cfg.attack_on, self.cfg.attack_off)
         self.use = SchmittTrigger(self.cfg.use_on, self.cfg.use_off)
         self._filt: torch.Tensor | None = None
-        # slow baseline of the yaw differential, updated once per tic
-        self.yaw_baseline = 0.0
+        # slow baseline per graded channel, updated once per tic
+        self.baseline = {"yaw": 0.0, "forward": 0.0, "lateral": 0.0}
         self._baseline_decay = (
             float(np.exp(-1.0 / 35.0 / self.cfg.tau_baseline))
             if self.cfg.tau_baseline > 0 else 0.0
@@ -155,7 +213,7 @@ class MotorDecoder:
 
     def reset(self) -> None:
         self.rates = {k: 0.0 for k in self.pop}
-        self.yaw_baseline = 0.0
+        self.baseline = {k: 0.0 for k in self.baseline}
         self._seen_tics = 0
         self.attack.reset()
         self.use.reset()
@@ -193,6 +251,23 @@ class MotorDecoder:
             return 0.0
         return x - dz if x > 0 else x + dz
 
+    def _centre(self, name: str, raw: float, warming: bool) -> float:
+        """Subtract this channel's slow baseline, tracking it while warming.
+
+        Channels outside `centre_channels` keep their DC and are only gated
+        during warmup, while the rate filter converges.
+        """
+        if self.cfg.tau_baseline <= 0 or name not in self.cfg.centre_channels:
+            return 0.0 if warming else raw
+        if warming:
+            # track the raw value while the rate filter converges, so the
+            # baseline we finish with reflects a settled estimate
+            self.baseline[name] = raw
+            return 0.0
+        d = self._baseline_decay
+        self.baseline[name] = d * self.baseline[name] + (1 - d) * raw
+        return raw - self.baseline[name]
+
     def decode(self) -> dict[str, float]:
         """Named action values for the current filtered rates."""
         c = self.cfg
@@ -202,36 +277,35 @@ class MotorDecoder:
         # Sign convention: ViZDoom's TURN_LEFT_RIGHT_DELTA is positive for a
         # LEFT turn. A fly turns toward the side whose DNa02 is more active,
         # so left-minus-right maps straight through.
-        raw = r.get("DNa02_L", 0.0) - r.get("DNa02_R", 0.0)
         self._seen_tics += 1
         warming = self._seen_tics <= c.warmup_tics
-        if c.tau_baseline > 0:
-            if warming:
-                # track the raw value while the rate filter converges, so the
-                # baseline we finish with reflects a settled estimate
-                self.yaw_baseline = raw
-            else:
-                self.yaw_baseline = (self._baseline_decay * self.yaw_baseline
-                                     + (1 - self._baseline_decay) * raw)
-            raw = raw - self.yaw_baseline
-        if warming:
-            raw = 0.0
+
+        raw = self._centre("yaw",
+                           r.get("DNa02_L", 0.0) - r.get("DNa02_R", 0.0),
+                           warming)
         diff = self._deadzone(raw)
         yaw = float(np.clip(diff * c.yaw_gain, -c.yaw_max_deg, c.yaw_max_deg))
 
         # --- forward / backward. BPN drives walking, MDN drives moonwalking;
         # they oppose, so the net is their difference rather than two buttons
-        # that can both be held at once.
-        fwd = r.get("BPN", 0.0) - r.get("MDN", 0.0)
+        # that can both be held at once. NOT centred -- see the gain block in
+        # MotorConfig for why this DC is a command and not an artifact.
+        fwd = self._centre("forward",
+                           r.get("BPN", 0.0) - r.get("MDN", 0.0), warming)
+        # no deadzone here: it is applied to centred channels to reject
+        # two-cell counting noise around zero, and this channel's operating
+        # point is +27.6 Hz, not zero.
         forward = float(np.clip(fwd * c.forward_gain,
                                 -c.forward_max, c.forward_max))
 
         # --- lateral escape. The giant fiber is an all-or-nothing escape, and
-        # its direction is set by which side fired.
+        # its direction is set by which side fired. Same standing asymmetry as
+        # DNa02, and twice as large.
         gf = r.get("DNp01_L", 0.0) - r.get("DNp01_R", 0.0)
         if "DNp01_L" not in r and "DNp01" in r:
             gf = 0.0
-        lateral = float(np.clip(gf * c.lateral_gain,
+        gf = self._centre("lateral", gf, warming)
+        lateral = float(np.clip(self._deadzone(gf) * c.lateral_gain,
                                 -c.lateral_max, c.lateral_max))
 
         return {

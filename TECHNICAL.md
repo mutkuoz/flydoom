@@ -30,7 +30,7 @@ edges, unthresholded              16,847,997
 synapses, unthresholded           54,492,922   ← matches the published figure
 edges at syn_count >= 5            2,710,038   ← what we simulate
 synapses at that threshold        31,578,726
-neurons with at least one edge       138,533
+neurons with at least one edge       134,013   ← at the >=5 threshold
 ```
 
 The spec's `54_000_000 < n_edges` assertion is wrong by ~20×: 54.5M is the
@@ -38,20 +38,31 @@ The spec's `54_000_000 < n_edges` assertion is wrong by ~20×: 54.5M is the
 
 ### Transmitter signs
 
-| Label | Sign | Share of edges |
+Measured on Buhmann, the pipeline we actually simulate. Shares are of the
+edges at `syn_count >= 5`, with the unthresholded share in brackets.
+
+| Label | Sign | Share of simulated edges |
 |---|---|---|
-| `ACH` | excitatory | 58.5% |
-| `GABA` | inhibitory | 19.8% |
-| `GLUT` | **inhibitory** | 18.1% |
-| `DA` / `SER` / `OCT` | excitatory (flattened) | 3.1% |
+| `ACH` | excitatory | 58.2% (53.9%) |
+| `GABA` | inhibitory | 23.6% (21.2%) |
+| `GLUT` | **inhibitory** | 16.6% (19.5%) |
+| `DA` / `SER` / `OCT` | excitatory (flattened) | 1.7% (5.4%) |
 
 `GLUT` is inhibitory in flies via GluCl channels — the classic error when
-porting vertebrate intuitions, and 18% of edges rather than the ~10% usually
-assumed. Asserted in the tests.
+porting vertebrate intuitions, and a sixth of edges rather than the ~10%
+usually assumed. Asserted in the tests.
 
-Dale's law already holds in this download: **0 of 139,003** presynaptic neurons
-carry more than one `nt_type`, so per-edge and per-neuron signing are identical
-and the majority-vote step is a no-op.
+**Dale's law does not hold in the Buhmann file, and this is a trap.** Transmitter
+is predicted per synapse and reported per neuropil, so one neuron can carry
+different calls in different neuropils. In the simulated graph, **42,078 of
+128,972** presynaptic neurons (32.6%) carry more than one `nt_type` and 26,781
+(20.8%) carry both signs; a synapse-weighted majority vote per neuron would flip
+**3.1% of edges** and 2.6% of synapses. We sign per edge and say so.
+
+The Princeton release *has* had Dale's law applied upstream — 0 of its 139,003
+presynaptic neurons carry more than one `nt_type` — so per-neuron and per-edge
+signing coincide there. The two releases are not interchangeable on this point,
+and transmitter statistics quoted from one do not describe the other.
 
 ### The histamine override
 
@@ -59,12 +70,12 @@ Photoreceptors release **histamine**, which is not one of FlyWire's six
 predicted transmitters. Measured on `R1-6` output edges:
 
 ```
-predicted:  ACH 83%   GLUT 14%   GABA 3%
+predicted:  ACH 71.2%   GLUT 20.2%   GABA 5.8%   (Buhmann, >=5 syn)
 true sign:  inhibitory (HisCl1 chloride channels)
 ```
 
-Left uncorrected, 83% of photoreceptor output is signed backwards and the entire
-optic lobe reads a negative image. `graph.py` overrides all `R1-6`/`R7`/`R8`
+Left uncorrected, the excitatory ~72% of photoreceptor output is signed
+backwards and the entire optic lobe reads a negative image. `graph.py` overrides all `R1-6`/`R7`/`R8`
 output to inhibitory. 18,437 edges affected, 11,920 of them actually flipped.
 
 ---
@@ -305,10 +316,13 @@ What is verifiably present:
 * the retinotopic travelling wave — `L1` phase advances at −20.0 deg/deg against
   an expected 20.0, and survives to `T4a`
 
-Six candidate causes tested; only graded units produced sign-correct selectivity,
-at ~2% of biological strength. The remaining obstacle is that the fast arm is
+Six candidate causes tested; only graded units produced any measurable effect,
+and a 72-point sweep of the operating point shows it is not selectivity: best
+|DSI| = 0.0121 (~40× too weak) and the mirror pairs oppose at 3 of 45
+unsaturated points, below the ~25% two coin flips would give. The remaining obstacle is that the fast arm is
 starved: weighting `T4a`'s inputs by measured firing rate gives excitation 189
-against inhibition 558, a measured conductance ratio of 37×. `Mi1` sits at
+against inhibition 558, a 3.0× imbalance in drive, which shows up as measured
+conductances of `g_e` 0.0018 against `g_i` 0.0667 — a ratio of 37×. `Mi1` sits at
 2–9 Hz because `L1` (−77.3, glutamatergic) suppresses it. The ON pathway is
 disinhibitory and never rebalances; the OFF pathway, which does not depend on the
 trick, conducts fine (`T5a` 58 Hz against `T4a` 2 Hz).
@@ -316,16 +330,152 @@ trick, conducts fine (`T5a` 58 Hz against `T4a` 2 Hz).
 ### Fixation, and why the female brain matters
 
 `LC10a` is **silent** — 0.00 Hz, E:I 0.54, and only +44/−82 input per cell
-against `LC11`'s +471/−449 (46.9 Hz) and `LC4`'s +407/−227 (95.4 Hz). It is held
+against `LC11`'s +477/−456 (46.9 Hz) and `LC4`'s +439/−259 (95.4 Hz). It is held
 down by `AOTU042`/`TuTuAa`, which are central rather than retinotopic.
 
 `LC10a`'s state-dependent gain boost is a **male courtship** mechanism, gated by
-`P1`. In this female brain that circuit does not exist, and the only state signal
-available makes things worse: `pC1 → AOTU042` is **+215**, and `AOTU042 → LC10a`
-is **−18**. Opening the aggression gate suppresses the aim.
+`P1`. In this female brain that circuit does not exist, and there is no state
+signal to substitute: `AOTU042 → LC10a` is **−18** per cell, but **`pC1` and
+`AOTU042` are not connected at all** — zero edges either way at any threshold —
+so the aggression state cannot reach that suppression to lift it.
 
 Neither `LC11` nor `LC4` carries azimuth either (r = +0.034, +0.070). No aim
 signal exists anywhere, so an ATTACK gate would fire blind.
+
+---
+
+## 6b. Input-path bugs found by measurement
+
+Three of these were silently wrong for the whole project and all three corrupt
+the visual pathway specifically. None touches the connectome or the neuron
+model.
+
+**The field of view was never being set.** `add_game_args("+fov N")` is
+silently ignored by ViZDoom — renders at `+fov 90`, `+fov 130` and `+fov 160`
+are bit-identical. The game ran at Doom's default **90 deg** while every module
+here assumed 130, so every angular claim downstream inherited the wrong number.
+`send_game_command("fov N")` does work, and has to be re-sent after each
+`new_episode()` because the CVar resets.
+
+**Angle was mapped linearly onto the viewport.** Doom draws a planar
+perspective projection, so a ray at azimuth th lands at screen
+`tan(th)/tan(FOV/2)`, not at `th/(FOV/2)`. Measured misplacement:
+
+| gaze azimuth | linear | correct | error |
+|---|---|---|---|
+| 10 deg | 0.154 | 0.082 | **+87%** |
+| 30 deg | 0.462 | 0.269 | +71% |
+| 50 deg | 0.769 | 0.556 | +38% |
+| 65 deg | 1.000 | 1.000 | 0% |
+
+Worst near the centre of gaze, converging only at the edge. Retinotopy is the
+substrate every motion computation runs on, and a warp this size makes the
+angular spacing between neighbouring columns vary about twofold across the
+field — so rigid motion sweeps the retina at a speed that depends on where you
+look, which is exactly what a correlator tuned to a *fixed* spacing cannot use.
+The acceptance kernel inherited the same error: scaling by `fov/width` rather
+than the true centre resolution made it ~1.9x too wide.
+
+**Frames were held across all 57 substeps.** That gives the retina one step
+change and 56 substeps of exactly zero temporal derivative, while the delayed
+correlator arm is 80 ms — three frames. A correlator was being asked to work on
+an impulse train aliased against its own delay line. Luminance now ramps
+linearly between consecutive frames across the substeps. A fly in a real room
+receives continuous motion; the 35 Hz strobe is an artifact of the engine.
+
+This also fixed the adaptation timescale: `adapt_decay = exp(-dt/TAU_ADAPT)` is
+a **per-substep** decay, but `drive()` was called once per tic, so Weber
+adaptation advanced one 0.5 ms step per 28.6 ms of game time — an effective tau
+of **14 s** instead of 0.25 s.
+
+### What fixing them did not fix
+
+`LPLC2` still reads 0.00 Hz. It is not under-driven; it sits at -52.2 mV,
+*below* rest and 7.2 mV from threshold, because `PVLP011` (-45.6 syn/cell)
+fires at **371 Hz** — 82% of the model's 455 Hz refractory ceiling — and buries
+the excitatory arm (`Tm5f`, +44.7 syn/cell at 36 Hz). Inhibition exceeds
+excitation ~10x. This is the `T4a` 37x arm imbalance again, in a second circuit.
+
+Every input-side scale was swept — photoreceptor drive, graded rate ceiling,
+Weber contrast gain — and `LPLC2` never leaves 0.00 Hz:
+
+| contrast gain | graded cap | LPLC2 | LC4 | PVLP011 | cells >200 Hz | walk cmd |
+|---|---|---|---|---|---|---|
+| 2.5 | 200 | 0.0 | 52.7 | 305 | 198 | 22.6 |
+| 1.2 | 200 | 0.0 | 53.8 | 305 | 200 | 22.2 |
+| 0.6 | 200 | 0.0 | 54.4 | 307 | 205 | 21.7 |
+| 2.5 | 120 | 0.0 | 3.8 | 219 | 103 | 20.7 |
+| 2.5 | 60 | 0.0 | 0.0 | 113 | 20 | 5.9 |
+
+Expected on inspection, and worth stating as the lesson: **an input scale
+multiplies both arms of a ratio and cancels.** No common gain fixes a 10:1
+imbalance. Only a gain acting *differentially* on the two arms can — a per-type
+gain, which is the quantity the connectome does not specify.
+
+Tonic optic-lobe bias does release `LPLC2`, and shows the same trade rather
+than escaping it:
+
+| bias (mV) | LPLC2 | LC4 | LC10a | BPN-MDN (walk) | cells >200 Hz |
+|---|---|---|---|---|---|
+| 0.0 | 0.0 | 51.5 | 0.0 | +22.3 | 197 |
+| 1.0 | 0.2 | 97.6 | 0.0 | +25.5 | 295 |
+| 2.0 | 4.0 | 131.9 | 0.1 | **+0.3** | 492 |
+| 3.0 | 18.9 | 151.5 | 0.5 | -22.7 | 647 |
+| 6.0 | 64.7 | 179.2 | 4.5 | -22.8 | 991 |
+
+There is no setting where the looming pathway conducts and locomotion
+survives — past 2 mV the model walks backwards.
+
+### The blank-field control, and why bias readings need one
+
+Raising the tonic optic-lobe bias does make `LPLC2` fire. It does not make it
+see. Measured across 8 runs (2 injection sites x 4 bias levels):
+
+| site | bias | looming | receding | static | **blank** | stimulus adds |
+|---|---|---|---|---|---|---|
+| R1-6 | 0.0 | 0.00 | 0.00 | 0.00 | 0.00 | silent |
+| R1-6 | 4.0 | 18.37 | 18.41 | 18.80 | **18.30** | +0.4% |
+| R1-6 | 7.5 | 76.22 | 76.24 | 76.34 | **76.17** | +0.07% |
+| lamina | 4.0 | 30.62 | 30.54 | 34.89 | **30.52** | +0.3% |
+| lamina | 7.5 | 76.35 | 76.46 | 76.61 | **76.35** | **0.0%** |
+
+`LPLC2` fires 76 Hz at an **empty screen**. The bias that releases the cell is
+what sets its output, and the stimulus-attributable fraction *falls* as bias
+rises. Two regimes exist and neither is looming detection: silent, or firing at
+a rate the picture barely perturbs.
+
+Without the blank column, "LPLC2 fires 76 Hz to a looming disc" reads as
+success. Always run the blank.
+
+Looming and receding differ by less than the blank offset in every condition,
+and the *sign* of the difference flips between them. The only regime with real
+stimulus structure is zero-bias lamina, where `LC4` gives static 77.2 against
+blank 24.9 — a genuine 3x response, to dark **area**.
+
+### Photoreceptor injection: tested, changes nothing
+
+The default injects at the lamina monopolars, one synapse past the
+photoreceptors, which skips neural superposition (six photoreceptors sharing a
+visual direction converging on one cartridge) and the histaminergic first
+synapse. Injecting at `R1-6` restores both.
+
+It changes nothing. At matched bias the two sites agree to within the
+blank-field offset. At zero bias `R1-6` is silent throughout — the
+inhibition-dominated optic lobe has no baseline to disinhibit from.
+
+`R1-6` injection also carries its own bias: uneven FAFB proofreading recovers a
+column for **451 of 785 left** columns against **749 of 796 right**, so it is
+unusable for any left-right measurement. That is why the default is the lamina.
+
+### Doom's own render settings
+
+`vid_gamma`, `vid_contrast`, `vid_brightness`, `vid_saturation` are all **inert**
+— ViZDoom exposes the render buffer upstream of display post-processing, so
+renders are bit-identical at every value. `r_visibility` does take effect but
+shifts frame mean brightness (46.9 to 56.1) while changing the
+distance-to-brightness relation by only 3-6% over a 40-tic approach.
+
+Another common scale, another cancellation.
 
 ---
 

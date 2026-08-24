@@ -80,18 +80,9 @@ def run_arm(smell: bool, seed: int, tics: int, shuffled: bool, device: str):
     """One arm. Held still, so the visual scene is identical across arms."""
     cfg = AgentConfig(
         doom=DoomConfig(window=False, labels=True, seed=seed),
-        smell=smell, seed=0, device=device,
+        smell=smell, seed=0, device=device, shuffle_graph=shuffled,
     )
     ag = FlyDoomAgent(cfg)
-    if shuffled:
-        rng = np.random.default_rng(0)
-        ag.graph.post_idx = ag.graph.post_idx[rng.permutation(len(ag.graph.post_idx))]
-        ag.net = type(ag.net).from_graph(
-            ag.graph, device=device, seed=0,
-            edge_delay=ag.graph.edge_delay_steps(ag.ann, config.DT,
-                                                 t_slow=cfg.slow_delay_s),
-            graded=ag.graph.graded_mask(ag.ann),
-        )
     pops = {k: torch.as_tensor(ag._idx(k).astype(np.int64), device=device)
             for k in WATCH}
     ag.reset()
@@ -138,6 +129,8 @@ def main() -> int:
                     help="degree-preserving shuffle. VALID here, unlike in M6, "
                          "because the stimulus is open loop and identical.")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--json", type=Path, default=None,
+                    help="dump full-precision per-seed arms to JSON (for figures)")
     args = ap.parse_args()
 
     print(paint("flydoom M8 — olfactory valence", "1"))
@@ -147,9 +140,11 @@ def main() -> int:
     print(f"open loop: agent held still, {args.seeds} seeds x {args.tics} tics\n")
 
     deltas = {k: [] for k in WATCH}
+    arms = []
     for s in range(args.seeds):
         off = run_arm(False, 7 + s, args.tics, args.shuffled, args.device)
         on = run_arm(True, 7 + s, args.tics, args.shuffled, args.device)
+        arms.append({"seed": 7 + s, "off": off, "on": on})
         for k in WATCH:
             deltas[k].append(on[k] - off[k])
         print(f"  seed {7+s}:  LHN {off['LHN']:6.2f}->{on['LHN']:6.2f}   "
@@ -164,6 +159,15 @@ def main() -> int:
         stats[k] = (float(d.mean()), float(d.std()), same)
         print(f"  {k:>11} {d.mean():+13.2f} {d.std():8.2f}  "
               f"{'yes' if same else 'no'}")
+
+    if args.json:
+        import json
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(
+            {"shuffled": args.shuffled, "tics": args.tics,
+             "watch": list(WATCH), "arms": arms,
+             "deltas": deltas}, indent=2))
+        print(paint(f"  wrote {args.json}", "90"))
 
     print(f"\n{paint('ACCEPTANCE', '1')}")
     c = Checks()

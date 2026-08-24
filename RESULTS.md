@@ -20,6 +20,8 @@ ViZDoom. Nothing is trained. This document is the honest state of it.
 .venv/bin/python experiments/m7_fixation.py            # is there an aim signal?
 .venv/bin/python experiments/m8_olfactory_valence.py   # smell -> motor output
 .venv/bin/python experiments/m8_olfactory_valence.py --shuffled   # its control
+.venv/bin/python experiments/m9_behaviour.py           # does it DO anything?
+.venv/bin/python scripts/record_gameplay.py            # media/flydoom.mp4 + .gif
 ```
 
 `--live` opens a dashboard: both eyes as hexagonal ommatidial lattices, a bar
@@ -45,8 +47,10 @@ Runs at **1.01x realtime** on an RTX 5070 Ti: 139,255 neurons, 2.7M edges,
 | M6 | enemy | **FAIL** — LPLC2 r = +0.000 vs true angular size |
 | M7 | object fixation | **FAIL** — LC10a silent; no aim signal anywhere |
 | M8 | olfactory valence | **PASS** — and it beats the shuffled control |
+| M4b | looming, photoreceptor injection | **FAIL** — identical to lamina; bias releases LPLC2 but it then fires 76 Hz at a blank screen |
+| M9 | closed-loop behaviour | **FAIL** — indistinguishable from a command-matched random walker; does not fire, does not gather |
 
-124 unit tests.
+130 unit tests.
 
 ---
 
@@ -80,19 +84,30 @@ state (`g_tot` = 105, 100× past the linear regime), and population pooling
 (per-cell DSI vs per-cell input offset, r = +0.043 over 874 cells).
 
 The sixth — **graded, non-spiking lamina and medulla** — is the only change
-that produced sign-correct selectivity:
+that produced a measurable effect at all, and it does not survive a sweep.
+
+Graded units cap at 200 Hz, and a unit against its ceiling reports DSI ≈ 0
+whatever its inputs do, so one configuration proves nothing. Sweeping bias,
+spatial period and temporal frequency over 72 points and keeping the 45 below
+75% saturation:
 
 ```
-T4a +0.00368  vs  T4b −0.00756    OPPOSITE   (ON pathway)
-T5a +0.00121  vs  T5b −0.00327    OPPOSITE   (OFF pathway)
+best |DSI| = 0.0121   (bias 1.0, period 30°, 1 Hz)
+            vs a real fly's 0.5–0.9  —  ~40× too weak
+
+both mirror pairs OPPOSITE at 3 of 45 unsaturated points (7%)
+            two independent coin flips would give ~25%
 ```
 
-Both mirror pairs oppose, deterministically across RNG seeds. But best
-|DSI| = 0.017 against a real fly's 0.5–0.9 — **30–65× too weak**.
+A correlator's sign does not depend on its operating point. **An earlier
+version of this file claimed deterministic mirror-pair opposition from a single
+configuration; the sweep does not support it and it is withdrawn.** What is
+being measured is a quantity fluctuating about zero.
 
 Best remaining explanation: the fast arm is starved. Weighting T4a's inputs by
 measured firing rate rather than synapse count gives excitation 189 against
-inhibition 558, and the measured conductance ratio is 37×. Mi1 fires at 2–9 Hz
+inhibition 558 — a 3.0× imbalance in drive, which realises as conductances
+`g_e` 0.0018 against `g_i` 0.0667, a ratio of 37×. Mi1 fires at 2–9 Hz
 because L1 (−77.3, glutamatergic) suppresses it. The ON pathway is
 disinhibitory and never rebalances; the OFF pathway, which does not depend on
 it, conducts fine (T5a 58 Hz against T4a 2 Hz).
@@ -124,20 +139,23 @@ both arms, smell the only difference, three seeds:
 
 ```
 population    smell off   smell on     change    shuffled control
-LHN                0.31      17.63     +11.59       +0.01
-DNp01            160.02     138.23     -14.19       +0.41
-DNa02            200.00     216.41     +10.69       +0.01
-LC4               96.85      96.94      +0.06       +0.07   <- control
+LHN                0.32      14.38     +14.06       +0.01
+DNp01            159.5      141.8      -17.67       -0.00
+DNa02            199.9      211.6      +11.68       +0.11
+LC4               96.9       96.9      -0.00        +0.07   <- control
 ```
 
-The lateral horn — the innate-valence pathway, dormant at 0.31 Hz — wakes to
-17.6 Hz and propagates in **one hop** to the descending neurons. `DNp01`, the
+Ten seeds. `LHN` and the walking pair are consistent in 10/10 (p = 0.002);
+`DNp01` and `DNa02` in 9/10 (p = 0.021).
+
+The lateral horn — the innate-valence pathway, dormant at 0.32 Hz — wakes to
+14.4 Hz and propagates in **one hop** to the descending neurons. `DNp01`, the
 escape neuron, is **suppressed**, which is the sign the wiring predicts:
-`lateral horn -> DNp01` is −248 synapses, inhibitory. `LC4` moving 0.06 Hz is
+`lateral horn -> DNp01` is −248 synapses, inhibitory. `LC4` moving −0.00 ± 0.02 Hz is
 the control confirming both arms saw the same scene.
 
-And the degree-preserving shuffle produces **nothing** — 0.01 against 11.59, a
-thousandfold difference, with residuals that flip sign between seeds where the
+And the degree-preserving shuffle produces **nothing** — 0.01 against 14.06, a
+1563-fold difference, with residuals that flip sign between seeds where the
 intact effects are consistent. **This effect is attributable to the wiring.**
 
 A sensory channel changes motor output through the frozen connectome, via the
@@ -158,7 +176,7 @@ three hops touching 8 of its 10 cells, which looked convincing, but its
 contribution is a rounding error against pC1's ±523/548 of balanced input — and
 `pC1` is a bistable *latch* that must be pushed over, not nudged.
 
-The lateral horn receives **24% of the odour relay's entire output**, has no
+The lateral horn receives **21% of the odour relay's entire output**, has no
 latch, and sits one hop from the output. Check weight, not hop count.
 
 ---

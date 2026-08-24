@@ -25,6 +25,42 @@ change.
 
 ---
 
+## Watch it
+
+![the connectome playing Doom](media/flydoom.gif)
+
+Thirty seconds, real time, nothing sped up.
+
+**Left** is the frame Doom draws. **Top right** is what the fly actually
+receives — 796 hexagonal ommatidial columns per eye, sampled through the real
+retinotopy, which is why it looks nothing like the screen. The arena is
+repainted into blue-green because *Drosophila* R1-6 photoreceptors are nearly
+blind at Doom's red primary, and Doom is painted in browns.
+
+**Bottom right**, left to right: firing rates of the cells that would drive its
+legs; the left-minus-right steering signal off `DNa02`; the two odour channels
+(`ORN_DM1` vinegar = health pickups, `ORN_DA1` cVA = rivals); and a
+heading-up map — the fly sits at the origin facing up, green dots are food it
+can smell, red crosses are rivals.
+
+What you are watching it do is **walk and turn**, and that is the whole list.
+Read [the honest scorecard](#does-it-actually-do-anything) before reading
+anything else into it. It does not aim, it never fires, and it does not seek
+out health. It closes distance on enemies and on medkits at the same rate a
+*random walker* does — it walks forward in a bounded map and bumps into things.
+
+Full-quality clip: [`media/flydoom.mp4`](media/flydoom.mp4). Record your own:
+
+```bash
+.venv/bin/python scripts/record_gameplay.py --seconds 30
+```
+
+Runs headless and writes both files. `--scenario` picks the map; the default is
+`deathmatch` because it has rooms and corridors to walk through. Avoid
+`defend_the_center` — it is a bare circular room and the clip shows nothing.
+
+---
+
 ## It is going to be bad at Doom
 
 Saying so up front saves everyone time.

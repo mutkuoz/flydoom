@@ -1,0 +1,35 @@
+flydoom M8 — olfactory valence
+==========================================================================
+SHUFFLED CONNECTOME — control arm
+open loop: agent held still, 10 seeds x 320 tics
+
+  seed 7:  LHN  20.61-> 20.62   DNp01  212.6-> 213.2
+  seed 8:  LHN  20.79-> 20.80   DNp01  214.4-> 214.5
+  seed 9:  LHN  20.83-> 20.85   DNp01  214.3-> 214.8
+  seed 10:  LHN  20.81-> 20.83   DNp01  215.3-> 215.2
+  seed 11:  LHN  21.12-> 21.12   DNp01  217.1-> 217.5
+  seed 12:  LHN  20.74-> 20.75   DNp01  214.6-> 214.2
+  seed 13:  LHN  20.69-> 20.69   DNp01  213.8-> 213.8
+  seed 14:  LHN  20.90-> 20.93   DNp01  215.5-> 215.7
+  seed 15:  LHN  21.00-> 21.03   DNp01  216.3-> 216.5
+  seed 16:  LHN  20.96-> 20.96   DNp01  215.9-> 216.1
+
+EFFECT OF SMELL
+   population   mean change       sd  consistent?
+          LHN         +0.01     0.01  no
+        DNp01         +0.18     0.25  no
+        DNa02         +0.05     0.11  no
+          BPN         +0.06     0.05  no
+          MDN         +0.08     0.24  no
+          LC4         +0.07     0.03  yes
+  wrote paper/data/m8_shuffled.json
+
+ACCEPTANCE
+Traceback (most recent call last):
+  File "/home/mutkuoz/Documents/flydoom/experiments/m8_olfactory_valence.py", line 223, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/mutkuoz/Documents/flydoom/experiments/m8_olfactory_valence.py", line 200, in main
+    args.json.write_text(json.dumps(record, indent=1))
+                                    ^^^^^^
+NameError: name 'record' is not defined

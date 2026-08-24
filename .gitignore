@@ -20,8 +20,24 @@ __pycache__/
 logs/
 runs/
 *.mp4
+# ...but the demo clip is a deliverable, not an artifact
+!media/flydoom.mp4
 
-# downloaded papers
+# downloaded reference papers -- not our own output
 full.html
 *.pdf
 full_files/
+# ...the preprint and its figures ARE deliverables
+!paper/main.pdf
+!paper/figs/*.pdf
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/figs/*.png
+texput.log

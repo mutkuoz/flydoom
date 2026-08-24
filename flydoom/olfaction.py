@@ -52,13 +52,40 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-# Doom actor names. Anything not listed is ignored rather than guessed at.
+# Doom actor names. BOTH channels are explicit allowlists: an object that is
+# not listed emits no odour at all.
+#
+# MEASURED, and the reason this is an allowlist rather than "food, and
+# everything else is a threat", which is what it used to be:
+#
+#   * `health_gathering_supreme` names its pickups `CustomMedikit`, not
+#     `Medikit`. It was not in the food list, and since the fallback made
+#     everything unlisted a THREAT, the one map built entirely around finding
+#     health presented 802 medkit sightings as pheromone and zero as food.
+#   * `ClipBox`, `ShellBox`, `RocketBox`, `Chainsaw` and `RocketLauncher` are
+#     inanimate, and under the same fallback each one smelled like a rival fly.
+#     In deathmatch that is ~3,900 sightings of ammo crates driving the cVA
+#     channel.
+#
+# cVA means "another fly is here". Only things that are alive may emit it.
 FOOD_NAMES = frozenset({
-    "Medikit", "Stimpack", "HealthBonus", "ArmorBonus", "GreenArmor",
-    "BlueArmor", "Backpack", "Berserk", "Soulsphere", "Megasphere",
+    "Medikit", "CustomMedikit", "Stimpack", "HealthBonus", "ArmorBonus",
+    "GreenArmor", "BlueArmor", "Backpack", "Berserk", "Soulsphere",
+    "Megasphere",
 })
+
+THREAT_NAMES = frozenset({
+    "DoomImp", "Demon", "Spectre", "Cacodemon", "Zombieman", "ShotgunGuy",
+    "ChaingunGuy", "HellKnight", "BaronOfHell", "LostSoul", "Revenant",
+    "Arachnotron", "PainElemental", "Fatso", "Archvile",
+    "MarineChainsawVzd",   # the scripted opponent in the deathmatch scenario
+})
+
 NOT_A_SOURCE = frozenset({"DoomPlayer", "BulletPuff", "Blood", "Clip",
-                          "Shell", "RocketAmmo", "Cell"})
+                          "Shell", "RocketAmmo", "Cell", "DoomImpBall",
+                          "TeleportFog", "ClipBox", "ShellBox", "RocketBox",
+                          "Chainsaw", "RocketLauncher", "Shotgun",
+                          "Chaingun", "SuperShotgun", "PlasmaRifle", "BFG9000"})
 
 
 @dataclass
@@ -158,7 +185,11 @@ class Olfaction:
             name = o.get("name", "")
             if name in NOT_A_SOURCE:
                 continue
-            (foods if name in FOOD_NAMES else threats).append(o["distance"])
+            if name in FOOD_NAMES:
+                foods.append(o["distance"])
+            elif name in THREAT_NAMES:
+                threats.append(o["distance"])
+            # anything else emits nothing -- see the allowlist note above
         self.raw["threat"] = self._concentration(threats) * self.cfg.threat_gain
         self.raw["food"] = self._concentration(foods) * self.cfg.food_gain
 

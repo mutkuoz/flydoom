@@ -65,6 +65,20 @@ class AgentConfig:
     """Tonic optic-lobe drive. Graded units need far less of this than spiking
     ones did -- M3's best results are at zero -- but it is left exposed because
     it is the first knob to try if the optic lobe goes silent."""
+    shuffle_graph: bool = False
+    """Degree-preserving shuffle: permute postsynaptic targets, keep in-degree.
+
+    The standard control for attributing an effect to connectivity, and it is
+    valid OPEN loop only. In closed loop the arms behave differently, so they
+    stop sampling the same stimulus distribution and a cross-arm comparison
+    describes two worlds rather than two brains -- M9 uses it as a behavioural
+    reference, never as an attribution control. M8 is where it does real work."""
+
+    shuffle_seed: int = 0
+    """Fixed independently of `seed`, so every episode faces the SAME alternative
+    wiring. Re-shuffling per episode would average over graphs and turn a
+    statement about one rewiring into a statement about rewiring in general."""
+
     device: str = "cuda"
     seed: int = 0
 
@@ -76,6 +90,7 @@ class TicRecord:
     action: dict[str, float]
     health: float
     damage: float
+    healed: float
     sweet: float
     foul: float
 
@@ -92,6 +107,11 @@ class FlyDoomAgent:
         self.graph = ConnectomeGraph.load()
         self.ann = AnnotationTable.load(config.RAW_DIR)
         self.retina = Retina.build(self.graph, self.ann, site=c.site)
+
+        if c.shuffle_graph:
+            rng = np.random.default_rng(c.shuffle_seed)
+            self.graph.post_idx = self.graph.post_idx[
+                rng.permutation(len(self.graph.post_idx))]
 
         edge_delay = self.graph.edge_delay_steps(
             self.ann, config.DT, t_slow=c.slow_delay_s
@@ -191,9 +211,17 @@ class FlyDoomAgent:
         if frame is None:
             return None
 
-        out_set, column_lum = self.vision.drive(
-            frame, self.net.n, self.net.p.graded_max_rate, config.DT
-        )
+        interp = self.cfg.doom.interpolate
+        if interp:
+            # Sample once, then ramp across the substeps. See
+            # DoomConfig.interpolate: a held frame gives the correlator an
+            # impulse train aliased against its own 80 ms delay line.
+            lum_prev, lum_cur = self.vision.begin_tic(frame)
+            out_set, column_lum = None, lum_cur
+        else:
+            out_set, column_lum = self.vision.drive(
+                frame, self.net.n, self.net.p.graded_max_rate, config.DT
+            )
         self.last_luminance = column_lum
 
         if self.smell is not None:
@@ -201,8 +229,13 @@ class FlyDoomAgent:
             # olfaction.py for why that is the point
             self.smell.on_tic(self.doom.threats())
 
-        # ---- 57 substeps, frame HELD ----
-        for _ in range(self.substeps):
+        # ---- 57 substeps; the frame ramps across them unless held ----
+        for sub in range(self.substeps):
+            if interp:
+                out_set, _ = self.vision.substep_drive(
+                    lum_prev, lum_cur, (sub + 1) / self.substeps,
+                    self.net.n, self.net.p.graded_max_rate, config.DT,
+                )
             taste = self.intero.substep()
             drive = taste
             if self.smell is not None:
@@ -228,6 +261,7 @@ class FlyDoomAgent:
         rec = TicRecord(
             tic=tic_index, rates=rates, action=action,
             health=result["health"], damage=result["damage_taken"],
+            healed=result["healed"],
             sweet=self.intero.sweet, foul=self.intero.foul,
         )
         self.history.append(rec)

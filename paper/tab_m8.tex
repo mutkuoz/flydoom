@@ -1,0 +1,29 @@
+\begin{table}[t]\centering\small
+\caption{Effect of the olfactory channel, open loop, 10 seeds $\times$
+320 tics. $\Delta$ is the mean on-minus-off difference in Hz;
+``sign'' counts seeds agreeing with the mean direction, with $p$ from a
+two-sided sign test. In the intact connectome every motor and valence
+population moves consistently; under a degree-preserving shuffle of the same
+graph every effect falls to the $0.00$--$0.11$\,Hz scale of the
+\cell{LC4} control. Sign consistency alone does not separate the arms --- the shuffle
+retains some of it --- so the comparison to read is magnitude. \cell{LC4} is a
+visual cell whose activity should be unaffected by smell; it carries a small
+offset in both arms, at
+$10479\times$
+smaller magnitude than the lateral horn response it bounds.}
+\label{tab:m8}
+\begin{tabular}{l rrcc @{\hskip 1.6em} rrc l}
+\toprule
+& \multicolumn{4}{c}{\bf Intact} & \multicolumn{3}{c}{\bf Degree-preserving shuffle} & \\
+\cmidrule(r){2-5}\cmidrule(lr){6-8}
+Population & $\Delta$ (Hz) & s.d. & sign & $p$ & $\Delta$ (Hz) & s.d. & sign & Role\\
+\midrule
+\cell{LHN} & $+14.06$ & 5.46 & 10/10 & 0.002 & $+0.01$ & 0.01 & 8/10 & innate valence\\
+\cell{DNp01} & $-17.67$ & 7.42 & 9/10 & 0.021 & $-0.00$ & 0.27 & 6/10 & escape (giant fibre)\\
+\cell{DNa02} & $+11.68$ & 5.29 & 9/10 & 0.021 & $+0.11$ & 0.34 & 7/10 & steering\\
+\cell{BPN} & $+1.21$ & 0.46 & 10/10 & 0.002 & $+0.07$ & 0.04 & 10/10 & forward walking\\
+\cell{MDN} & $-0.96$ & 0.40 & 10/10 & 0.002 & $-0.02$ & 0.15 & 6/10 & backward walking\\
+\cell{LC4} & $-0.00$ & 0.02 & 8/10 & 0.109 & $+0.07$ & 0.03 & 10/10 & \emph{visual control}\\
+\bottomrule
+\end{tabular}
+\end{table}

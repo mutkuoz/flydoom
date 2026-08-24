@@ -238,6 +238,11 @@ def test_forward_and_backward_oppose():
         for _ in range(int(1.0 / DT)):
             d.observe(net)
         d.sample()
+        # Every graded channel is gated during warmup, not just yaw: the rate
+        # filter is not converged and acting on it produces the startup
+        # transient MotorConfig.warmup_tics exists to suppress.
+        for _ in range(cfg.warmup_tics):
+            d.decode()
         return d.decode()["MOVE_FORWARD_BACKWARD_DELTA"]
     assert run(80.0, 0.0) > 0
     assert run(0.0, 80.0) < 0
@@ -267,5 +272,91 @@ def test_reset_clears_baseline_and_triggers():
         d.observe(net)
     d.sample()
     d.reset()
-    assert d.yaw_baseline == 0.0
+    assert all(v == 0.0 for v in d.baseline.values())
     assert all(v == 0.0 for v in d.rates.values())
+
+
+def _hold(d, net, rates, tics, cfg):
+    """Drive `net` at fixed rates and pump `tics` decode() calls through."""
+    net.out.zero_()
+    for i, hz in enumerate(rates):
+        net.out[i] = hz * DT
+    out = []
+    for _ in range(tics):
+        for _ in range(int(1.0 / 35.0 / DT)):
+            d.observe(net)
+        d.sample()
+        out.append(d.decode())
+    return out
+
+
+def test_forward_keeps_its_dc_because_it_is_a_command():
+    """BPN - MDN is not a bilateral pair, so its standing offset is walking.
+
+    Centring it would delete locomotion rather than an artifact, so unlike yaw
+    and lateral this channel keeps its DC. See MotorConfig's gain block.
+    """
+    cfg = MotorConfig(tau_baseline=1.0)
+    net = FakeNet()
+    d = _decoder({"BPN": np.array([0]), "MDN": np.array([1])}, cfg)
+    acts = _hold(d, net, [30.0, 3.0], 300, cfg)
+    late = acts[-1]["MOVE_FORWARD_BACKWARD_DELTA"]
+    assert late > 5.0                       # still walking after 300 tics
+    assert "forward" not in cfg.centre_channels
+
+
+def test_forward_dc_lands_mid_range_not_on_the_clamp():
+    """The measured +27.6 Hz offset must cruise, not saturate.
+
+    At the old gain of 0.9 this pinned at the clamp on 89% of tics and clipped
+    every bit of modulation off the top.
+    """
+    cfg = MotorConfig()
+    net = FakeNet()
+    d = _decoder({"BPN": np.array([0]), "MDN": np.array([1])}, cfg)
+    acts = _hold(d, net, [32.5, 4.9], 60, cfg)   # the measured operating point
+    v = acts[-1]["MOVE_FORWARD_BACKWARD_DELTA"]
+    assert 0.25 * cfg.forward_max < v < 0.75 * cfg.forward_max
+
+
+def test_only_bilateral_pairs_are_centred():
+    cfg = MotorConfig()
+    assert set(cfg.centre_channels) == {"yaw", "lateral"}
+
+
+def test_lateral_baseline_removes_a_standing_strafe():
+    """DNp01_L/R differ by ~99 Hz standing; uncentred that is a pinned strafe."""
+    cfg = MotorConfig(tau_baseline=1.0)
+    net = FakeNet()
+    d = _decoder({"DNp01_L": np.array([0]), "DNp01_R": np.array([1])}, cfg)
+    acts = _hold(d, net, [100.0, 200.0], 300, cfg)
+    assert abs(acts[-1]["MOVE_LEFT_RIGHT_DELTA"]) < 1.0
+
+
+def test_centring_keeps_transients():
+    """Removing the DC must not remove the signal riding on it."""
+    cfg = MotorConfig(tau_baseline=3.0)
+    net = FakeNet()
+    d = _decoder({"BPN": np.array([0]), "MDN": np.array([1])}, cfg)
+    _hold(d, net, [30.0, 3.0], 200, cfg)          # settle the baseline
+    step = _hold(d, net, [60.0, 3.0], 3, cfg)     # then a fast step up
+    assert step[-1]["MOVE_FORWARD_BACKWARD_DELTA"] > 1.0
+
+
+def test_baseline_can_be_switched_off():
+    """tau_baseline = 0 restores the uncentred behaviour, as documented.
+
+    With no centring the standing DNa02 asymmetry survives into the yaw
+    command, which is the spin this whole mechanism exists to prevent.
+    """
+    cfg = MotorConfig(tau_baseline=0.0)
+    net = FakeNet()
+    d = _decoder({"DNa02_L": np.array([0]), "DNa02_R": np.array([1])}, cfg)
+    acts = _hold(d, net, [150.0, 257.0], 60, cfg)   # the measured asymmetry
+    yaw = [a["TURN_LEFT_RIGHT_DELTA"] for a in acts[cfg.warmup_tics + 1:]]
+    assert all(y == pytest.approx(-cfg.yaw_max_deg) for y in yaw)
+
+    centred = _decoder({"DNa02_L": np.array([0]), "DNa02_R": np.array([1])},
+                       MotorConfig(tau_baseline=1.0))
+    acts = _hold(centred, net, [150.0, 257.0], 300, cfg)
+    assert abs(acts[-1]["TURN_LEFT_RIGHT_DELTA"]) < 1.0

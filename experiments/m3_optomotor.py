@@ -204,6 +204,141 @@ def rate(counts, idx, duration):
 # --------------------------------------------------------------------------
 
 
+
+def _bias_vector(net, graph, ann, bias_mv, device=None):
+    """Tonic depolarising drive to the optic lobe, as a g_ext vector.
+
+    The early visual system is inhibition-dominated and computes by
+    disinhibition, which needs a baseline to disinhibit from. Returns None at
+    zero bias so the caller can skip the add entirely.
+    """
+    if not bias_mv:
+        return None
+    import polars as pl
+    device = device or net.out.device
+    cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
+                      infer_schema_length=50_000)
+    optic = cls.filter(
+        pl.col("super_class").is_in(list(config.BIASED_SUPER_CLASSES))
+    )["root_id"].to_list()
+    oidx = torch.as_tensor(graph.index_of(optic).astype(np.int64), device=device)
+    gext = torch.zeros(net.n, dtype=torch.float32, device=device)
+    gext[oidx] = bias_mv * 1e-3
+    return gext
+
+
+SUBTYPES = ("T4a", "T4b", "T5a", "T5b")
+MIRROR_PAIRS = (("T4a", "T4b"), ("T5a", "T5b"))
+
+
+def dsi_grid(args) -> int:
+    """Measure DSI across the operating range and write it out.
+
+    One hand-picked configuration cannot support a claim about direction
+    selectivity here, because the single largest effect on the number is not
+    the wiring but whether the graded units are against their rate ceiling. A
+    saturated T4 reports DSI ~ 1e-5 whatever its inputs do. So we sweep, record
+    the saturation level alongside every DSI, and let the table say which
+    points were interpretable.
+    """
+    import json
+
+    g = ConnectomeGraph.load()
+    ann = AnnotationTable.load(config.RAW_DIR)
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    graded = g.graded_mask(ann)
+    ceiling = config.GRADED_MAX_RATE
+
+    biases = (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.5, 7.5)
+    periods = (8.0, 15.0, 30.0)
+    tfs = (1.0, 2.0, 4.0)
+
+    print(paint("flydoom M3 — DSI over the operating range", "1"))
+    print(paint("=" * 76, "90"))
+    print(f"{len(biases)}x{len(periods)}x{len(tfs)} = "
+          f"{len(biases) * len(periods) * len(tfs)} points, graded ceiling "
+          f"{ceiling:.0f} Hz\n")
+    print(f"  {'bias':>5} {'per':>5} {'tf':>4} {'satur':>7}"
+          + "".join(f"{t:>10}" for t in SUBTYPES)
+          + f"{'|DSI|max':>10}  mirror")
+
+    points = []
+    for bias in biases:
+        edge_delay = g.edge_delay_steps(ann, config.DT,
+                                        t_slow=args.slow_delay * 1e-3)
+        net = LIFNetwork.from_graph(g, device=args.device, seed=0,
+                                    edge_delay=edge_delay, graded=graded)
+        gext = _bias_vector(net, g, ann, bias)
+        for period in periods:
+            rig = GratingRig(net, retina, args.device, period, args.rate)
+            mon = {t: population_indices(g, ann, t) for t in SUBTYPES}
+            for tf in tfs:
+                r = {}
+                for direction in (+1, -1):
+                    counts = run_grating(net, rig, args.duration, tf,
+                                         direction, mon, gext=gext)
+                    r[direction] = {t: rate(counts, mon[t], args.duration)
+                                    for t in SUBTYPES}
+                dsi = {}
+                for t in SUBTYPES:
+                    a, b = r[+1][t], r[-1][t]
+                    dsi[t] = (a - b) / (a + b) if (a + b) > 1e-9 else 0.0
+                peak = max(max(r[+1][t], r[-1][t]) for t in SUBTYPES)
+                sat = peak / ceiling
+                opposed = {f"{x}/{y}": (dsi[x] * dsi[y] < 0)
+                           for x, y in MIRROR_PAIRS}
+                points.append({
+                    "bias_mv": bias, "period_deg": period, "tf_hz": tf,
+                    "rates": {"rightward": r[+1], "leftward": r[-1]},
+                    "dsi": dsi, "peak_rate_hz": peak, "saturation": sat,
+                    "mirror_opposed": opposed,
+                })
+                best = max(abs(v) for v in dsi.values())
+                mark = "".join("O" if v else "." for v in opposed.values())
+                print(f"  {bias:5.1f} {period:5.0f} {tf:4.1f} {sat:6.0%}"
+                      + "".join(f"{dsi[t]:+10.5f}" for t in SUBTYPES)
+                      + f"{best:10.5f}  {mark}")
+
+    # A point is interpretable only if the readout is not against its ceiling.
+    UNSAT = 0.75
+    usable = [p for p in points if p["saturation"] < UNSAT]
+    record = {
+        "graded_max_rate_hz": ceiling,
+        "saturation_threshold": UNSAT,
+        "duration_s": args.duration,
+        "slow_delay_ms": args.slow_delay,
+        "site": args.site,
+        "n_points": len(points),
+        "n_unsaturated": len(usable),
+        "points": points,
+    }
+    if usable:
+        best = max(usable, key=lambda p: max(abs(v) for v in p["dsi"].values()))
+        record["best_unsaturated"] = best
+        both = [p for p in usable if all(p["mirror_opposed"].values())]
+        record["n_both_pairs_opposed"] = len(both)
+        print(f"\n{paint('SUMMARY', '1;36')}")
+        print(f"  {len(usable)}/{len(points)} points below "
+              f"{UNSAT:.0%} saturation")
+        print(f"  best |DSI| there: "
+              f"{max(abs(v) for v in best['dsi'].values()):.5f}"
+              f"  at bias {best['bias_mv']}, period {best['period_deg']:.0f}, "
+              f"tf {best['tf_hz']}")
+        print(f"  both mirror pairs opposed at "
+              f"{len(both)}/{len(usable)} unsaturated points"
+              f"  ({len(both) / len(usable):.0%})")
+        print("""
+  Read the last line before the one above it. Opposed mirror pairs are the
+  QUALITATIVE signature of a correlator, and if they appear at only some
+  operating points and flip at others, that is a sign fluctuating around zero
+  rather than a correlator whose output is small.""")
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(record, indent=1))
+        print(f"\n  wrote {args.json}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="flydoom M3 — optomotor")
     ap.add_argument("--live", action="store_true", help="live dashboard")
@@ -237,8 +372,22 @@ def main() -> int:
                          "spike in a real fly; see config.GRADED_SUPER_CLASSES.")
     ap.add_argument("--slow-sweep", action="store_true",
                     help="sweep the slow-line delay and report DSI for each")
+    ap.add_argument("--dsi-grid", action="store_true",
+                    help="sweep the operating point and report DSI at every "
+                         "point, instead of trusting one hand-picked config. "
+                         "Graded units saturate against GRADED_MAX_RATE, and a "
+                         "saturated unit reports DSI ~ 0 no matter what the "
+                         "wiring does, so the honest number is the best one "
+                         "found BELOW saturation.")
+    ap.add_argument("--json", type=Path,
+                    help="serialise the --dsi-grid measurement. The table and "
+                         "figure in the write-up are generated from this file, "
+                         "so they cannot drift from the run.")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
+
+    if args.dsi_grid:
+        return dsi_grid(args)
 
     print(paint("flydoom M3 — optomotor response", "1"))
     print(paint("=" * 76, "90"))
@@ -292,20 +441,10 @@ def main() -> int:
             dash = LiveDashboard(retina, list(mons), dt=net.p.dt,
                                  title="flydoom M3 — optomotor")
 
-    gext = None
-    if args.bias:
-        import polars as pl
-        cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
-                          infer_schema_length=50_000)
-        optic = cls.filter(
-            pl.col("super_class").is_in(list(config.BIASED_SUPER_CLASSES))
-        )["root_id"].to_list()
-        oidx = torch.as_tensor(g.index_of(optic).astype(np.int64),
-                               device=args.device)
-        gext = torch.zeros(net.n, dtype=torch.float32, device=args.device)
-        gext[oidx] = args.bias * 1e-3
-        print(f"tonic bias  {args.bias:.1f} mV to {len(oidx):,} optic lobe "
-              f"neurons (rheobase {net.p.threshold_distance * 1e3:.1f} mV)")
+    gext = _bias_vector(net, g, ann, args.bias, args.device)
+    if gext is not None:
+        print(f"tonic bias  {args.bias:.1f} mV to the optic lobe "
+              f"(rheobase {net.p.threshold_distance * 1e3:.1f} mV)")
 
     if args.slow_sweep:
         print(f"\n{paint('SLOW-LINE DELAY SWEEP', '1;36')}")
