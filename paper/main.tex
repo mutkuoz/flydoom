@@ -81,8 +81,8 @@ entire brain with essentially no free parameters, but such models are at
 present driven open loop: sensory neurons are stimulated and motor neurons are
 read. We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
 2{,}710{,}038 edges at a five-synapse threshold) in a \emph{closed}
-sensorimotor loop with a real-time video game, at $1.01\times$ realtime on one
-consumer GPU. Nothing is trained, and the only fitted quantity is a single
+sensorimotor loop with a video game, at $0.06\times$ realtime on one
+consumer GPU or CPU. Nothing is trained, and the only fitted quantity is a single
 global synaptic gain calibrated on a non-visual behaviour. We find a
 dissociation between modalities. Chemosensory transformations transfer: sugar
 stimulation drives the proboscis motor pool to 77\,Hz and co-stimulation with
@@ -180,9 +180,10 @@ running system.
 
 \paragraph{Contributions.}
 \begin{enumerate}\itemsep2pt
-\item A real-time closed-loop embodiment of a frozen whole-brain connectome
-($1.01\times$ realtime, 139{,}255 neurons, single consumer GPU), released as
-open code.
+\item A closed-loop embodiment of a frozen whole-brain connectome
+(139{,}255 neurons, single consumer GPU or CPU), released as open code. An
+earlier version of this manuscript described the loop as \emph{real time} at
+$1.01\times$; that figure is wrong by a factor of 17 and is corrected below.
 \item A modality dissociation: chemosensory transformations transfer, visual
 motion computations do not.
 \item A mechanistic account of the visual failure, with six candidate remedies
@@ -254,8 +255,9 @@ Neurons with $\geq1$ edge & 134{,}013\\
 Graded (non-spiking) units & 77{,}873\\
 \midrule
 Resident GPU memory & 31\,MB\\
-Wall-clock per 0.5\,ms step & ${\sim}300\,\mu$s\\
-Closed-loop rate & $1.01\times$ realtime\\
+GPU kernel time per 0.5\,ms step & ${\sim}310\,\mu$s\\
+Wall-clock per 0.5\,ms step & $8.8$\,ms (GPU), $6.5$\,ms (CPU, 16 threads)\\
+Closed-loop rate & $0.06\times$ realtime\\
 \bottomrule
 \end{tabular}
 \end{table}

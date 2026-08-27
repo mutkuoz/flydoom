@@ -261,7 +261,12 @@ Then watch it play:
 
 That opens Doom plus a live dashboard: both eyes drawn as hexagonal grids of lenses shaded
 by what each one currently sees, a bar for each cell type, and the steering signal over
-time. It runs at about one second of game per second of real time.
+time. It does **not** run in real time: one second of game costs about
+17 seconds of wall clock. Every Doom tic is 57 integration steps over 139,255
+neurons and 2.7 million synapses, and each step costs ~6.5 ms — of which only
+~0.3 ms is arithmetic. The rest is the overhead of issuing thousands of tiny
+tensor operations. (An earlier version of this README claimed roughly real
+time. That came from counting only the arithmetic and is wrong by 17×.)
 
 Needs Python 3.11–3.12, a CUDA GPU with 8 GB or more, and a connectome download (free, but
 requires signing in). Doom itself is covered — ViZDoom ships the free Freedoom, so no
