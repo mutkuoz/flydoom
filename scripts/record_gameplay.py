@@ -15,6 +15,7 @@ over SSH and in CI.
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -412,7 +413,9 @@ def main() -> int:
     ap.add_argument("--gif-colors", type=int, default=96,
                     help="GIF palette size. Every pixel changes as the view\n                         turns, so length and size drive the file more than\n                         dithering does; 640px/10fps/96 keeps 13 s under 5 MB.")
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     if shutil.which("ffmpeg") is None:
