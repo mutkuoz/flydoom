@@ -571,8 +571,66 @@ was fitted on a different reconstruction (fib25--fib19), so an unmatched gain
 is not evidence against the hypothesis, only against the simplest version of
 it.
 
+Two further explanations were tested after the analysis above and are
+reported here because they are the two that a reader would reach for next.
+
+\emph{The competing-input hypothesis.} If the correlator is present but
+swamped, removing everything else should reveal it. We tested this in the
+RUNNING network rather than by isolated replay, which the caution at the end of
+this section explains cannot be trusted. Silencing every input onto
+\cell{T4a}/\cell{T4b} except \cell{Mi1} and \cell{Mi9} --- 14{,}594 of
+24{,}944 edges --- does not raise selectivity: over the 45 operating points
+unsaturated in both conditions, $\max|\mathrm{DSI}|$ moves from $0.0057$ to
+$0.0020$. Adding back \cell{Tm3}, \cell{Mi4} or \cell{CT1} individually gives
+$0.0035$, $0.0021$ and $0.0034$. \cell{T5a}/\cell{T5b} are never ablated and
+serve as a within-run control: their mean $|\mathrm{DSI}|$ is
+$0.00442$--$0.00444$ in all five conditions, so nothing leaked. The
+manipulation is electrically real --- \cell{T4a}'s rate ranges 63 to 97\,Hz
+across conditions. The correlator fails even when it is the only thing
+connected.
+
+\emph{Dendritic compartmentalization.} A point neuron makes every synapse
+electrically identical, so a shunt divides the whole cell, whereas
+null-direction suppression is local to a branch. We split all 11{,}822
+\cell{T4}/\cell{T5} into a spiking soma and a passive dendrite coupled by an
+axial conductance, assigning each input by retinotopy alone --- same column to
+the soma, different column to the dendrite. The rule reproduces the anatomy
+without naming a cell type (\cell{Mi9} 97\% distal, \cell{Mi4} 98\%) and is
+electrically effective (rates fall $193\to151$\,Hz; unsaturated points rise
+$45\to63$). It does not rescue selectivity: $\max|\mathrm{DSI}|$
+$0.0121\to0.0128$, mirror-pair sign below chance throughout. Two compartments
+cannot represent the ordering of arms along a real \cell{T4} dendrite, which
+is the obvious next refinement.
+
+A related measurement bounds where the failure cannot be. At the tonic bias of
+7.5\,mV that makes an inhibition-dominated circuit conduct, the arms carry
+almost no time-varying signal at all: \cell{Tm3} and \cell{Mi4} sit at their
+ceiling 94.7\% and 75.6\% of the time with modulation amplitude $0.000$\,Hz,
+and \cell{Mi9} delivers $0.93$\,Hz out of a 200\,Hz range. A correlator has
+nothing to correlate there. The operating-point sweep already excludes that
+regime --- its filter removes every point above 3\,mV --- but the filter tests
+\cell{T4}'s own saturation, not its inputs', and those are different
+questions. Within the surviving range the two move together: as bias falls
+from 3.0 to 1.0\,mV, arm modulation rises and $\max|\mathrm{DSI}|$ rises with
+it, $0.0073\to0.0121$.
+
+That trend does not extrapolate, and the way it fails is worth recording
+because it is a trap in the measure itself. Extending the sweep below the
+range previously tested, down to zero tonic drive, $\max|\mathrm{DSI}|$ keeps
+rising, to $0.0164$. It is not signal. \cell{T4a} fires 2.0\,Hz there, and
+the quantity a correlator actually delivers --- the rate DIFFERENCE between
+preferred and null --- falls over the same interval, from $0.31$\,Hz at
+0.75\,mV to $0.060$\,Hz at zero. The ratio grows because its denominator
+collapses faster than its numerator. The mirror-pair sign agrees: across
+these points the pairs share a sign on 78\% of them, where a correlator
+requires opposition and chance would give 50\%. $\mathrm{DSI}$ is therefore
+interpretable only in a middle band --- bounded above by saturation, which the
+sweep already controls, and below by the vanishing denominator, which it did
+not. We report the bounded figure, $|\mathrm{DSI}|\leq0.0121$, rather than the
+larger and emptier one.
+
 What remains is a negative result without a mechanism, and we report it as
-such. Fifteen candidate explanations were measured and eliminated: pooling
+such. Seventeen candidate explanations were measured and eliminated: pooling
 artefact (per-cell $r=+0.043$ over 874 cells); arm imbalance, by depression and
 by gain transplant; input dilution (the correlator supplies 80--86\% of
 \cell{T4a}'s input); unmodulated arms (\cell{Mi1} modulates at 125\% and
@@ -583,8 +641,9 @@ sampling (\cell{Mi9}/\cell{Mi4} sample one column away, $1.5\%$ overlap);
 opposite-flank cancellation (flanks at $139^\circ$; ablating one does not
 help); graded versus spiking units; tonic bias 0--7.5\,mV; global optic-lobe
 gain $\times1$--$32$; gain targeted onto \cell{T4}/\cell{T5} $\times2$--$20$;
-and operating point, where the isolated correlator's monotonic
-DSI-versus-rate curve does not reproduce in the network. The geometry, the
+operating point, where the isolated correlator's monotonic
+DSI-versus-rate curve does not reproduce in the network; the competing-input
+hypothesis, by in-network ablation; and dendritic compartmentalization. The geometry, the
 delays, the phase offset and the modulation are all present and measured; the
 selectivity is not. We do not know why, and we prefer to say so.
 

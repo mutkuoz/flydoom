@@ -280,6 +280,40 @@ T4T5 = ("T4a", "T4b", "T4c", "T4d", "T5a", "T5b", "T5c", "T5d")
 MIRROR_PAIRS = (("T4a", "T4b"), ("T5a", "T5b"))
 
 
+def _ablate_inputs(g, ann, targets: tuple[str, ...], keep: tuple[str, ...]):
+    """Silence every input onto `targets` whose source is not in `keep`.
+
+    This is the in-network counterpart of isolated replay, and it exists
+    because replay is not a clean control: applied to a single input, where
+    direction selectivity is geometrically impossible, replay still returns
+    |DSI| 0.12 instead of 0. Here nothing is replayed. The whole brain runs;
+    only the edges landing on the target cells are zeroed, so the surviving
+    arms are still driven by the real upstream network with its real dynamics.
+
+    Weights are zeroed rather than removed so the edge list keeps its length
+    and order, which keeps edge_delay aligned.
+    """
+    import polars as _pl
+    d = ann.df
+    def _ids(names):
+        f = d.filter(_pl.col("primary_type").is_in(list(names))
+                     | _pl.col("visual_type").is_in(list(names)))
+        return set(f["root_id"].unique().to_list())
+    pos = {int(r): i for i, r in enumerate(g.root_ids)}
+    tgt = np.array(sorted(pos[i] for i in _ids(targets) if i in pos), dtype=np.int64)
+    kept = np.array(sorted(pos[i] for i in _ids(keep) if i in pos), dtype=np.int64)
+    is_tgt = np.isin(g.post_idx, tgt)
+    is_keep = np.isin(g.pre_idx, kept)
+    kill = is_tgt & ~is_keep
+    n_before = int((g.signed_syn[is_tgt] != 0).sum())
+    g.signed_syn = g.signed_syn.copy()
+    g.signed_syn[kill] = 0.0
+    print(paint(f"ABLATION  onto {targets}: kept {keep}; "
+                f"silenced {int(kill.sum()):,} of {n_before:,} input edges; "
+                f"{int((is_tgt & is_keep).sum()):,} survive", "1;33"))
+    return int(kill.sum())
+
+
 def _net_for(g, ann, args, edge_delay, graded):
     """LIFNetwork for `args`, compartmentalised if asked.
 
@@ -287,6 +321,10 @@ def _net_for(g, ann, args, edge_delay, graded):
     retina injection sites and readouts keep their meaning; the edge list keeps
     its order, so edge_delay stays aligned.
     """
+    if getattr(args, "keep_inputs", ""):
+        _ablate_inputs(g, ann,
+                       tuple(t for t in args.ablate_target.split(",") if t),
+                       tuple(k for k in args.keep_inputs.split(",") if k))
     if not getattr(args, "compartments", False):
         return LIFNetwork.from_graph(
             g, params=_lif_params(args), device=args.device, seed=0,
@@ -455,7 +493,9 @@ def dsi_grid(args) -> int:
     graded = g.graded_mask(ann)
     ceiling = config.GRADED_MAX_RATE
 
-    biases = (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.5, 7.5)
+    biases = tuple(float(b) for b in args.grid_biases.split(",")) \
+        if getattr(args, "grid_biases", "") else \
+        (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.5, 7.5)
     periods = (8.0, 15.0, 30.0)
     tfs = (1.0, 2.0, 4.0)
 
@@ -589,6 +629,18 @@ def main() -> int:
                          "REPLACES --bias rather than adding to it: see "
                          "config.OPTIC_GAIN for the measurement showing tonic "
                          "bias costs 70x in DSI while gain does not.")
+    ap.add_argument("--grid-biases", default="",
+                    help="override the grid's bias axis. The default starts at "
+                         "1.0 mV, which turned out to be its own floor: DSI "
+                         "rises monotonically as bias falls, so the lowest "
+                         "point tested was also the best one.")
+    ap.add_argument("--keep-inputs", default="",
+                    help="comma-separated presynaptic types to KEEP onto the "
+                         "ablation targets; every other input onto them is "
+                         "silenced. Run in the live network, unlike isolated "
+                         "replay, which manufactures DSI (see m3e).")
+    ap.add_argument("--ablate-target", default="T4a,T4b,T5a,T5b",
+                    help="cell types whose inputs --keep-inputs filters.")
     ap.add_argument("--compartments", action="store_true",
                     help="split T4/T5 into spiking soma + passive dendrite, "
                          "with off-column inputs re-routed distally. A shunt "
@@ -683,24 +735,7 @@ def main() -> int:
                 graded[g.index_of(_ids)] = False
         print(paint("T4/T5 made SPIKING (threshold nonlinearity restored)",
                     "1;33"))
-    if getattr(args, "compartments", False):
-        from flydoom import compartments as _C
-        _plan = _C.build(g, ann, g_axial=args.g_axial)
-        _pre, _post, _w = g.to_torch(args.device)
-        _post = torch.as_tensor(_plan["post_idx"], device=args.device)
-        net = LIFNetwork(_plan["n_total"], _pre, _post, _w,
-                         _lif_params(args), args.device, 0,
-                         edge_delay=edge_delay,
-                         graded=_C.extend_graded(graded, _plan),
-                         axial_partner=_plan["axial_partner"],
-                         g_axial=_plan["g_ax"])
-        print(paint(f"COMPARTMENTS  {_plan['n_cells']:,} T4/T5 split; "
-                    f"{_plan['n_moved']:,} of "
-                    f"{_plan['n_edges_onto_targets']:,} inputs moved distal; "
-                    f"g_ax={args.g_axial}", "1;36"))
-    else:
-        net = LIFNetwork.from_graph(g, params=_lif_params(args), device=args.device, seed=0,
-                                    edge_delay=edge_delay, graded=graded)
+    net = _net_for(g, ann, args, edge_delay, graded)
     if graded is not None:
         print(f"graded     {int(graded.sum()):,} non-spiking optic-lobe "
               f"neurons; LC/LPLC and central cells still spike")
