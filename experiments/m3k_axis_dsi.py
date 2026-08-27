@@ -47,8 +47,13 @@ from flydoom.lif import LIFNetwork  # noqa: E402
 from flydoom.retina import Retina  # noqa: E402
 from m3_optomotor import GratingRig, _bias_vector, paint  # noqa: E402
 
-ARMS = {"T4": {"exc": ("Mi1", "Tm3"), "inh": ("Mi9", "Mi4")},
-        "T5": {"exc": ("Tm1", "Tm2"), "inh": ("Tm9", "CT1")}}
+# Mi9 and Mi4 sit on OPPOSITE flanks; pooling them averages two opposite
+# vectors and manufactures incoherence (m3t: R rises 0.19-0.47 -> 0.67-0.93
+# when Mi9 is taken alone, and the mirror pairs go from an apparent 97-114 deg
+# defect to a correct 182-194 deg). The null-side inhibition alone defines the
+# correlator axis.
+ARMS = {"T4": {"exc": ("Mi1",), "inh": ("Mi9",)},
+        "T5": {"exc": ("Tm1",), "inh": ("Tm9",)}}
 SUBTYPES = ("T4a", "T4b", "T5a", "T5b")
 
 
@@ -77,6 +82,13 @@ def main() -> int:
     ap.add_argument("--period", type=float, default=15.0)
     ap.add_argument("--tf", type=float, default=2.0)
     ap.add_argument("--duration", type=float, default=3.0)
+    ap.add_argument("--spiking-t4", action="store_true",
+                    help="restore the threshold nonlinearity on T4/T5. A graded "
+                         "unit is a clamped LINEAR ramp and costs 10.6x (m3m).")
+    ap.add_argument("--optic-gain", type=float, default=1.0,
+                    help="T4's summed weight sits at the threshold for any "
+                         "output at all, so at gain 1 with bias 0 the cell "
+                         "fires on nothing.")
     ap.add_argument("--min-rate", type=float, default=20.0,
                     help="minimum R+L in Hz for a cell to enter the "
                          "correlation. Below this, DSI is a ratio of two "
@@ -89,6 +101,11 @@ def main() -> int:
 
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
+    if args.optic_gain != 1.0:
+        from flydoom.gains import optic_gain_multipliers
+        g.signed_syn = (g.signed_syn
+                        * optic_gain_multipliers(g, ann, args.optic_gain)
+                        ).astype(np.float32)
     retina = Retina.build(g, ann)
 
     # column -> visual direction, per eye
@@ -116,6 +133,15 @@ def main() -> int:
             inputs[int(b)].append((int(a), float(c)))
 
     graded = g.graded_mask(ann)
+    if args.spiking_t4:
+        import polars as _pl
+        d_ = ann.df
+        for t_ in ("T4a","T4b","T4c","T4d","T5a","T5b","T5c","T5d"):
+            f_ = d_.filter((_pl.col("primary_type")==t_)|(_pl.col("visual_type")==t_))
+            ids = f_["root_id"].unique().to_list()
+            if ids:
+                graded[g.index_of(ids)] = False
+        print("T4/T5 made SPIKING")
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=config.T_DLY_SLOW)
     net = LIFNetwork.from_graph(g, device=args.device, seed=0,
                                 edge_delay=edge_delay, graded=graded)
