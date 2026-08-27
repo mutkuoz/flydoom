@@ -358,6 +358,55 @@ GRADED_MAX_RATE = 200.0   # Hz  [OURS]
 # to the MODEL, not a tuning knob, and it must be reported as a deviation.
 # Set T_DLY_SLOW = T_DLY to switch it off and recover the paper's behaviour.
 
+# ==========================================================================
+# Optic-lobe gain  --  A REPLACEMENT FOR THE TONIC BIAS, NOT AN ADDITION
+# ==========================================================================
+#
+# RETRACTED FIGURE, KEPT VISIBLE ON PURPOSE. This block used to open with a
+# measurement: a T4a cell driven by its own real inputs in ISOLATED REPLAY
+# reaching mean |DSI| 0.37, against 0.002 for the same cells in the network.
+# That number is an artefact and must not be cited. Applying the identical
+# procedure to a SINGLE input -- a geometry in which direction selectivity is
+# physically impossible -- returns 0.12 rather than 0, because Mi1 is itself
+# weakly selective (|DSI| 0.040) and a threshold unit amplifies the residue.
+# Isolated replay is not a clean control for this question, and every claim
+# that rested on the 0.37 is withdrawn.
+#
+# What survives is the bias sweep below, which is a within-network comparison
+# and does not use replay:
+#
+#     route to ~20-50 Hz                 mean |DSI|
+#     input gain, no bias                    0.22
+#     real weights + bias 2 mV               0.030
+#     real weights + bias 4 mV               0.0055
+#     real weights + bias 7 mV               0.0031
+#
+# A 70x loss, monotonic in bias. The cause is arithmetic: a GAIN multiplies,
+# so k*(exc - inh) scales the stimulus-driven signal itself, while a BIAS adds
+# a constant, leaving the signal the same size on a raised pedestal. Tonic
+# drive gets cells firing without carrying any information about the stimulus,
+# which is also why LPLC2 reads 76 Hz to a BLANK screen under bias.
+#
+# So this is a one-for-one swap, not a new degree of freedom. The model already
+# had a free scalar for exactly this population (BIAS_MV over
+# BIASED_SUPER_CLASSES); this replaces it with a scalar over the same
+# population. The count of fitted parameters is unchanged.
+#
+# It is also the better-motivated of the two. Nothing injects constant current
+# into every visual neuron, whereas synaptic strength genuinely differs between
+# brain regions -- and W_SYN was fitted on the SEZ taste circuit, so applying
+# it unchanged to the optic lobe was always an assumption rather than a
+# measurement. Note what this is NOT: a per-cell-type gain. That is the
+# quantity this project exists to measure the absence of, and fitting it would
+# make this a worse copy of Lappalainen et al. rather than a complement.
+#
+# M2 (taste) is untouched by construction: the scaling applies only to
+# synapses onto the visual populations, so the SEZ circuit W_SYN was fitted on
+# runs at exactly the value it was fitted at. That is a hard check, not a hope.
+
+OPTIC_GAIN = 1.0
+"""Multiplier on synapses onto the optic lobe. 1.0 = off (reported model)."""
+
 BIASED_SUPER_CLASSES = ("optic", "visual_projection", "visual_centrifugal")
 # Which neurons receive the tonic depolarising drive that makes an
 # inhibition-dominated circuit conduct at all.
@@ -369,6 +418,53 @@ BIASED_SUPER_CLASSES = ("optic", "visual_projection", "visual_centrifugal")
 # through the medulla and lobula and then reads out exactly 0.00 Hz. That looked
 # like "looming detection does not work" when it was actually "the readout layer
 # was never switched on".
+
+# ==========================================================================
+# Short-term synaptic depression  --  A CANDIDATE FIX FOR THE ARM IMBALANCE
+# ==========================================================================
+#
+# Every failure measured in the visual pathway has one shape: something firing
+# tonically at a high rate crushing something that only speaks in brief bursts.
+#
+#     Mi1  (fast excitatory arm of the T4a correlator)     2-9 Hz
+#     Mi9  (slow inhibitory arm)                          78-130 Hz
+#     L1   (suppresses Mi1, glutamatergic, -77.3)            103 Hz
+#     PVLP011 (holds LPLC2 below rest)                       326 Hz
+#
+# Real synapses deplete when used hard and recover over hundreds of ms to
+# seconds. A synapse driven at 100+ Hz runs down several-fold; one driven at
+# 3 Hz stays fully recharged. Depression therefore attenuates exactly the
+# tonic, high-rate inhibition that is doing the crushing, while leaving the
+# sparse excitatory arm intact -- it is a high-pass filter on synaptic drive,
+# and motion detection is inherently about transients.
+#
+# This is a MODEL-CLASS change of the same kind as conductance-based synapses:
+# real biology the reference model omits, applied UNIFORMLY. It is not a fitted
+# per-type gain. There are two global constants and they are swept, not tuned.
+#
+# Tsodyks-Markram, depression only, presynaptic (one resource per neuron):
+#
+#     released = out * R
+#     R <- R + (1 - R) * dt/tau_rec  -  U * R * out
+#
+# NOTE the confound this creates and the control it needs: depression lowers
+# steady-state release overall, which on its own resembles turning W_SYN down.
+# To attribute any effect to REDISTRIBUTION rather than to global gain, compare
+# against an arm with W_SYN reduced by the same average factor and no
+# depression. m3's --stp-control does this.
+
+STP = False
+"""Off by default. The reported model is the frozen one."""
+
+STP_U = 0.3
+"""Fraction of available resource consumed per unit of release. [OURS]
+Depressing central synapses are typically reported in the 0.1-0.5 range;
+0.3 sits mid-range and is swept rather than trusted."""
+
+STP_TAU_REC = 0.5
+"""Seconds. Recovery of the resource. [PUBLISHED range] Paired-pulse recovery
+at central synapses runs from hundreds of ms to several seconds; fly
+photoreceptor adaptation has a fast phase near 100 ms. 0.5 s is mid-range."""
 
 FAST_LINES = ("Mi1", "Tm3", "Tm1", "Tm2", "Tm4")
 # [PUBLISHED] The fast, transient medulla lines feeding T4 (ON) and T5 (OFF).

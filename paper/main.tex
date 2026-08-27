@@ -1,24 +1,73 @@
-\documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
+\documentclass[10pt,twoside]{article}
+
+% ---------------------------------------------------------------- page
+\usepackage[a4paper,left=1.05in,right=1.05in,top=1.15in,bottom=1.15in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+
+% Palatino text with matching math -- a deliberate choice rather than the
+% Computer Modern default: it sets denser and reads better at 10pt.
+\usepackage{mathpazo}
+\linespread{1.06}
+
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{natbib}
 \usepackage{xcolor}
-\usepackage[colorlinks=true,allcolors=blue!60!black]{hyperref}
-\usepackage{caption}
-\captionsetup{font=small,labelfont=bf}
 \usepackage{microtype}
+
+% ---------------------------------------------------------------- headings
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{2.0ex plus .4ex minus .2ex}{1.0ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.6ex plus .3ex minus .2ex}{0.7ex plus .2ex}
+
+% ---------------------------------------------------------------- floats
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,labelsep=period,justification=justified}
+
+% ---------------------------------------------------------------- running head
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\itshape \"Ozt\"urk}
+\fancyhead[RO]{\small\itshape A frozen connectome in closed loop}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% ---------------------------------------------------------------- line numbers
+% Reviewers ask for these; comment out for a clean reading copy.
+\usepackage{lineno}
+\linenumbers
+\renewcommand\linenumberfont{\normalfont\tiny\color{gray}}
+
+\usepackage[colorlinks=true,allcolors=black,citecolor=black,
+            urlcolor=blue!45!black]{hyperref}
 
 \newcommand{\cell}[1]{\texttt{#1}}
 
-\title{\bf A frozen whole-brain \emph{Drosophila} connectome\\[2pt]
-in a closed sensorimotor loop with \emph{Doom}}
+% ---------------------------------------------------------------- title block
+\makeatletter
+\renewcommand{\maketitle}{%
+  \thispagestyle{plain}
+  \begin{center}
+    {\LARGE\bfseries \@title \par}\vspace{1.1em}
+    {\large \@author \par}\vspace{0.5em}
+    {\small \@date \par}
+  \end{center}
+  \vspace{0.6em}
+}
+\makeatother
 
-\author{Mehmet Utku \"Ozt\"urk\\[2pt]
-{\small Independent researcher}\\
+\title{A frozen whole-brain \emph{Drosophila} connectome\\[3pt]
+in a closed sensorimotor loop}
+
+\author{Mehmet Utku \"Ozt\"urk\\[3pt]
+{\normalsize Independent researcher}\\
 {\small\texttt{mutkuoz@proton.me}}}
 \date{\today}
 
@@ -27,49 +76,57 @@ in a closed sensorimotor loop with \emph{Doom}}
 
 \begin{abstract}
 \noindent
-The synapse-resolution \emph{Drosophila} connectome makes it possible to
-simulate an entire brain with essentially no free parameters. Whole-brain
-models of this kind are at present driven \emph{open loop}: sensory neurons are
-stimulated and motor neurons are read. We embed a frozen FlyWire FAFB v783
-connectome (139{,}255 neurons; 2{,}710{,}038 edges at a five-synapse threshold)
-in a \emph{closed} sensorimotor loop with \emph{Doom}, running at $1.01\times$
-realtime on one consumer GPU. Nothing is trained; the
-only fitted quantity is a single global synaptic gain, calibrated on a
-non-visual behaviour.
-
-We find a sharp dissociation between modalities. Chemosensory transformations
-transfer: sugar stimulation drives the proboscis motor pool to 77\,Hz, bitter
-silences it, and co-stimulation is 99\% suppressed --- none of which was fitted.
-Adding an olfactory channel raises lateral horn activity from 0.32 to
-$14.1\pm5.5$\,Hz in $10/10$ seeds ($p=0.002$, two-sided sign test) and changes
-descending-neuron output one synapse downstream, with the sign the wiring
-predicts (\cell{LH}$\rightarrow$\cell{DNp01}, $-248$ synapses, suppression;
-$-17.7\pm7.4$\,Hz, $9/10$ seeds, $p=0.021$), while a degree-preserving shuffle
-of the same graph produces no such effect.
-
-Visual motion computation does not transfer. Direction selectivity and looming
-discrimination both fail, and we show the failure is a property of the model
-class rather than of the connectome: under linear synaptic summation with a
-single output threshold, $\mathrm{thr}(A+B)$ is symmetric in $A$ and $B$, so
-temporal order is not recoverable. The correlator geometry is verifiably present
-in the graph and a retinotopic travelling wave reaches \cell{T4a}, yet six
-candidate remedies --- per-type conduction delays, heterogeneous membrane time
-constants, conductance-based shunting, a forced high-conductance state,
-population pooling, and graded non-spiking optic-lobe units --- yield at best
-$|\mathrm{DSI}|=0.0121$, some $40\times$ below the threshold conventionally
-used to \emph{select} direction-selective terminals experimentally, with a
-mirror-pair sign relation no better than chance across the operating range. The residual
-obstacle is measurable: \cell{T4a}'s fast excitatory arm is starved $37\!:\!1$ by
-glutamatergic \cell{L1} inhibition.
-
+The synapse-resolution \emph{Drosophila} connectome permits simulation of an
+entire brain with essentially no free parameters, but such models are at
+present driven open loop: sensory neurons are stimulated and motor neurons are
+read. We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
+2{,}710{,}038 edges at a five-synapse threshold) in a \emph{closed}
+sensorimotor loop with a real-time video game, at $1.01\times$ realtime on one
+consumer GPU. Nothing is trained, and the only fitted quantity is a single
+global synaptic gain calibrated on a non-visual behaviour. We find a
+dissociation between modalities. Chemosensory transformations transfer: sugar
+stimulation drives the proboscis motor pool to 77\,Hz and co-stimulation with
+bitter is 99\% suppressed, neither of which was fitted, and an added olfactory
+channel raises lateral horn activity from 0.32 to $14.1\pm5.5$\,Hz and
+suppresses a descending neuron one synapse downstream with the sign the wiring
+predicts ($-17.7\pm7.4$\,Hz), while a degree-preserving shuffle of the same
+graph does not. Visual motion computation does not transfer. Direction
+selectivity and looming discrimination both fail: across an operating-point
+sweep $|\mathrm{DSI}|\leq0.0121$, some $40\times$ below the value at which
+experimental studies merely \emph{select} a terminal as direction-tuned, and
+with a mirror-pair sign relation no better than chance. An earlier version of
+this manuscript attributed that failure to the model class, arguing that
+$\mathrm{thr}(A+B)$ is symmetric in $A$ and $B$ and that temporal order is
+therefore not recoverable. We withdraw the argument. It describes a
+\emph{memoryless} unit, whereas a two-input correlator built from the same
+neuron model in the same simulator, differing only in that one arm is delayed,
+reaches $\mathrm{DSI}=-0.79\pm0.017$; conduction delays and synaptic time
+constants supply exactly the memory the argument omits. The model class is not
+the obstacle. The correlator geometry is verifiably present in the graph, and
+the arms are measurably imbalanced --- \cell{T4a}'s fast excitatory arm is
+starved $37\!:\!1$, and the looming detector \cell{LPLC2} sits below its
+resting potential under roughly tenfold inhibition --- yet neither rebalancing
+the arms with short-term depression nor transplanting per-type gains from an
+optimized model raises selectivity; both lower it. Candidate mechanisms
+spanning pooling, sampling geometry, phase offset, saturation, operating point
+and arm imbalance were tested and eliminated one by one. We therefore report
+the motion failure as mechanistically \emph{unresolved} rather than explained.
 Read against connectome-constrained models whose unknown parameters are
-optimized, and which do recover motion selectivity, this localizes what that
-optimization contributes: the wiring is common to both, so what optimization
-supplies is the per-type gain and timing structure that balances the
-correlator's arms. We additionally report a methodological result --- a
-degree-preserving shuffle control is invalid in closed loop, because the two
-arms generate different stimulus distributions.
+optimized, the wiring is common to both, so what optimization supplies is some
+combination of per-type gain and timing that we can bound but cannot yet
+identify --- transplanting its gains alone does not suffice. We additionally report a
+methodological result --- a degree-preserving shuffle control is invalid in
+closed loop, because the two arms generate different stimulus distributions.
 \end{abstract}
+
+\vspace{0.4em}
+\noindent\textbf{Keywords:} connectomics; \emph{Drosophila}; whole-brain
+simulation; closed-loop embodiment; elementary motion detection; olfactory
+valence; negative results
+
+\vspace{0.8em}
+\hrule
+\vspace{1.2em}
 
 \section{Introduction}
 
@@ -130,7 +187,7 @@ wiring-predicted sign.
 
 \section{Results}
 
-\subsection{A frozen whole-brain connectome running in closed loop}
+\subsection{Model and closed-loop configuration}
 
 \begin{figure}[t]\centering
 \includegraphics[width=\textwidth]{figs/fig1_pipeline.pdf}
@@ -259,7 +316,7 @@ placing it at half the clamp instead. We note the consequence rather than
 manage it: that difference carries $\pm1.3$\,Hz of modulation on a $27.6$\,Hz
 mean, so walking speed here is 4.6\% modulated and effectively tonic.
 
-\subsection{Chemosensory transformation transfers}
+\subsection{Gustatory pathway}
 
 As a positive control we reproduce the gustatory result of \citet{shiu2024}.
 Stimulating sugar receptor neurons at 100\,Hz drives the proboscis motor pool
@@ -275,7 +332,7 @@ scalar gain reproduces the behaviour --- but it is not vacuous: the
 bitter--sugar suppression ratio was not fitted, and a sign-scrambled graph
 admits no such scalar.
 
-\subsection{Visual motion computation does not transfer}
+\subsection{Motion vision and looming}
 
 Direction selectivity fails. Presenting drifting gratings and measuring the
 direction selectivity index
@@ -312,7 +369,7 @@ Receding & 34.58 & 0.00 & 149.7 & 6.19 & 2.50 & 84.0\\
 \end{tabular}
 \end{table}
 
-\paragraph{The looming detector is not weakly driven; it is held shut.}
+\subsubsection*{State of the looming detector}
 In closed loop \cell{LPLC2} reads exactly $0.00$\,Hz, and the reason is
 measurable. It sits at $-52.2$\,mV --- \emph{below} its own resting potential
 and $7.2$\,mV from threshold --- because its heaviest input, \cell{PVLP011} at
@@ -391,14 +448,18 @@ not connected in this brain at all --- zero edges in either direction, at any
 synapse threshold --- so the aggression state cannot reach that suppression to
 lift it or to deepen it.
 
-\subsection{Why motion fails: temporal order, and a starved arm}
+\subsection{Diagnosing the motion failure}
+\label{sec:mech}
 
 \begin{figure}[t]\centering
 \includegraphics[width=\textwidth]{figs/fig2_mechanism.pdf}
-\caption{Why motion fails. \textbf{(a)} A unit that sums its inputs and applies
-one threshold to the sum cannot recover order: ``$A$ then $B$'' and ``$B$ then
-$A$'' produce identical sums (rust curve, with the second case overlaid dotted),
-so any threshold on that sum responds identically. \textbf{(b)} Measured firing
+\caption{The motion failure. \textbf{(a)} The order-blindness argument we
+withdraw: for a \emph{memoryless} unit, ``$A$ then $B$'' and ``$B$ then $A$''
+produce identical sums (rust curve, second case overlaid dotted), so a
+threshold on that sum responds identically. This panel does not describe the
+present model, whose conduction delays and synaptic time constants make the
+summation history-dependent; a correlator built from the same units reaches
+$\mathrm{DSI}=-0.79$ (Sec.~\ref{sec:mech}). \textbf{(b)} Measured firing
 rates of \cell{T4a}'s two correlator arms: the fast excitatory arm
 (\cell{Mi1}) is suppressed by glutamatergic \cell{L1} while the slow inhibitory
 arm (\cell{Mi9}) runs freely, a $37\times$ conductance imbalance.
@@ -415,15 +476,32 @@ Direction selectivity and looming selectivity are both computations over the
 Motion to the right makes column $A$ lead column $B$; motion to the left makes
 $B$ lead $A$. The two cases contain identical events and differ only in order.
 
-In the model, presynaptic inputs sum linearly into a conductance and the only
-nonlinearity is a threshold on that sum. But $\mathrm{thr}(A+B)$ is symmetric
-in its arguments, so a unit that sums its inputs and thresholds the sum cannot
-distinguish the two cases. This is not a tuning deficiency; it is a structural
-property of the model class. Biological elementary motion detectors escape it
-by delaying one arm and combining the arms
+An earlier version of this manuscript argued that the failure was structural.
+In the model presynaptic inputs sum into a conductance and the only
+nonlinearity is a threshold on that sum; since $\mathrm{thr}(A+B)$ is symmetric
+in its arguments, we concluded that no unit of this class can distinguish the
+two cases. \textbf{That argument is wrong, and we withdraw it.} It holds only
+for a unit with no memory. The model has memory in two places the argument
+ignores: per-connection conduction delays, and a synaptic conductance that
+decays with $\tau_{\mathrm{syn}}=5$\,ms rather than vanishing within the step.
+A delayed arm and a persistent conductance make the summand at any instant
+depend on stimulus history, and the symmetry does not hold.
+
+We settled this by construction rather than by argument. Using the same neuron
+model, the same integrator and the same time step, we built a two-input
+correlator --- two input units, one delayed, converging on a third --- and
+measured it under the identical grating protocol. It reaches
+$\mathrm{DSI}=-0.79\pm0.017$ (30\,s $\times$ 5 seeds), against
+$0.002$--$0.016$ for \cell{T4a} in the network. The model class can compute
+direction selectivity to a magnitude far above the experimental selection
+threshold. Whatever prevents the network from doing so, it is not the
+arithmetic of summation and threshold. Biological elementary motion detectors
+combine a delayed and an undelayed arm
 \emph{multiplicatively}~\citep{hassenstein1956,borst2010}, realized in
 \emph{Drosophila} as preferred-direction enhancement together with
-null-direction suppression~\citep{haag2016,gruntman2018}.
+null-direction suppression~\citep{haag2016,gruntman2018}; a delay plus a
+saturating threshold approximates that product well enough to yield the
+$0.79$ above.
 
 Both ingredients are present in the graph, and we verified them. \cell{T4a}
 receives fast centred excitation (\cell{Mi1} $+30.6$, \cell{Tm3} $+7.0$) and
@@ -462,7 +540,8 @@ withdraw it.
 
 \input{tab_dsi}
 
-The residual obstacle is measurable and specific: the fast arm is starved.
+One imbalance is measurable and specific, though the tests below show it is
+not sufficient to explain the failure: the fast arm is starved.
 Weighting \cell{T4a}'s inputs by measured firing rate rather than synapse count
 gives excitation 189 against inhibition 558, a $3.0\times$ imbalance in drive;
 the realised synaptic conductances are $g_e=0.0018$ against $g_i=0.0667$, a
@@ -477,7 +556,48 @@ disinhibition, conducts normally (\cell{T5a} 58\,Hz against \cell{T4a} 2\,Hz)
 --- an internal control indicating the deficit is pathway-specific rather than
 a global failure of the optic lobe.
 
-\subsection{Olfactory valence transfers, and beats a shuffled control}
+Correcting that imbalance does not rescue selectivity. We rebalanced the arms
+two ways: presynaptic short-term depression (Tsodyks--Markram, $U=0.3$,
+$\tau_{\mathrm{rec}}=0.5$\,s), which depresses the tonically active inhibitory
+arm more than the sparsely active excitatory one; and transplanting the
+per-type gains of the optimized model of \citet{lappalainen2024} onto the
+matching connections (571 of its 604 type-pairs align with our graph). Both
+\emph{lowered} $|\mathrm{DSI}|$. The $37\times$ ratio is therefore a real
+property of the wiring under a single global gain, but it is not the operative
+cause, and the hypothesis we previously drew from it --- that optimization
+supplies relative gain along the ON pathway's disinhibitory chain --- is not
+supported by the transplant. We note the transplant is approximate: that model
+was fitted on a different reconstruction (fib25--fib19), so an unmatched gain
+is not evidence against the hypothesis, only against the simplest version of
+it.
+
+What remains is a negative result without a mechanism, and we report it as
+such. Fifteen candidate explanations were measured and eliminated: pooling
+artefact (per-cell $r=+0.043$ over 874 cells); arm imbalance, by depression and
+by gain transplant; input dilution (the correlator supplies 80--86\% of
+\cell{T4a}'s input); unmodulated arms (\cell{Mi1} modulates at 125\% and
+\cell{Mi9} at 89\% of their means); \cell{CT1} saturation (12{,}601 edges
+ablated, no change); absent phase offset (measured mean $154^\circ$ between
+arms); smeared spatial sampling (inter-column coherence $1.000$); same-column
+sampling (\cell{Mi9}/\cell{Mi4} sample one column away, $1.5\%$ overlap);
+opposite-flank cancellation (flanks at $139^\circ$; ablating one does not
+help); graded versus spiking units; tonic bias 0--7.5\,mV; global optic-lobe
+gain $\times1$--$32$; gain targeted onto \cell{T4}/\cell{T5} $\times2$--$20$;
+and operating point, where the isolated correlator's monotonic
+DSI-versus-rate curve does not reproduce in the network. The geometry, the
+delays, the phase offset and the modulation are all present and measured; the
+selectivity is not. We do not know why, and we prefer to say so.
+
+One methodological caution follows from this work. An earlier draft reported
+mean $|\mathrm{DSI}|=0.37$ for \cell{T4a} cells driven by their own recorded
+inputs in isolation, and built a causal account on it. That measurement is an
+artefact and is withdrawn: the same procedure applied to a \emph{single} input,
+where the geometry makes direction selectivity impossible, returns $0.12$
+rather than $0$. The cause is that \cell{Mi1} is itself weakly selective
+($|\mathrm{DSI}|=0.040$) and a threshold unit amplifies that residue. Isolated
+replay is not a clean control for this question.
+
+\subsection{Olfactory valence}
 
 The environment renders light and nothing else, but a fly in a room with a
 large animal in it smells that animal; simulating vision alone makes the model
@@ -535,23 +655,23 @@ to three orders of magnitude --- \cell{LHN} from $+14.06$ to $+0.01$\,Hz
 --- landing at the $0.00$--$0.11$\,Hz scale of the \cell{LC4} control, that is,
 at the network's generic coupling floor.
 
-We want to be precise about what does and does not discriminate here. Sign
-consistency does \emph{not}: several shuffled populations remain fairly
+Sign consistency and effect magnitude discriminate differently here, and only
+the second separates the arms. Sign consistency does \emph{not}: several shuffled populations remain fairly
 sign-consistent across seeds, including \cell{LC4} at $10/10$ --- the one
 population that should not be responding at all. What discriminates is
 magnitude. A sign test on a $0.01$\,Hz effect is a statement
 about a systematic that is three orders of magnitude too small to matter, and
-we read it that way. We also note that the shuffled \cell{DNp01} residual
+and we interpret it accordingly. The shuffled \cell{DNp01} residual
 reversed sign between two independent executions of the protocol, where every
 intact effect held its direction --- the behaviour expected of noise rather
-than of a transformation. The honest summary is that the intact effects are
-large and reproducible while the shuffled ones sit at the control's floor.
+than of a transformation. In summary, the intact effects are large and
+reproducible while the shuffled ones sit at the control's floor.
 \emph{The effect requires the wiring.}
 
-The \cell{BPN} and \cell{MDN} walking effects deserve a weaker claim than the
+The \cell{BPN} and \cell{MDN} walking effects support a weaker claim than the
 rest. They are consistent in direction across all ten seeds, but at
 $\pm1$\,Hz they are only ${\sim}17\times$ above the shuffled floor rather than
-${\sim}100\times$, and we would not rest anything on them alone.
+${\sim}100\times$, and we draw no conclusion from them in isolation.
 
 The shuffle also changes the baseline in an informative way. Without smell the
 intact lateral horn sits at 0.32\,Hz; the shuffled one idles at
@@ -561,13 +681,13 @@ selectively silent and selectively driven, which is the behaviour a
 labelled-line valence pathway should show, and neither property survives
 rewiring.
 
-Two caveats attach permanently. Odour source distances are read from the
+Two caveats apply to this result throughout. Odour source distances are read from the
 engine's label buffer, so the model was \emph{told} that enemies exist; this is
 evidence about what the connectome does with a signal, not evidence that it can
 detect one. And 1{,}227 lateral horn neurons pooled together mixes many
 functional channels, so ``the lateral horn responds'' is coarser than it sounds.
 
-\paragraph{A path that exists is not a path that carries.}
+\subsubsection*{Synaptic weight against path length}
 We first routed the same odour at the \cell{pC1} aggression neurons, on the
 strength of a three-hop path touching 8 of 10 cells, and it failed flat ---
 0.00\,Hz across a tenfold sweep of drive. Measured afterwards, the reason is
@@ -579,16 +699,19 @@ and sits one hop from the output. Hop count is a poor proxy for influence in a
 connectome; synaptic weight against competing input is the quantity that
 matters.
 
-\subsection{Shuffle controls are invalid in closed loop}
+\subsection{Validity of shuffle controls in closed loop}
 \label{sec:shuffle}
 
 Degree-preserving shuffles are the standard control for attributing an effect
 to connectivity, and we use one above. But in a closed loop they silently stop
 being a control.
 
-We measured this directly. Over a matched episode the intact agent encountered
-an enemy on 186 of 500 tics and finished at full health; the shuffled agent
-encountered one on 489 of 492 tics and finished at 16 health. The two arms
+We measured this directly. Over one matched episode the intact agent
+encountered an enemy on 186 of 500 tics and finished at full health; the
+shuffled agent encountered one on 489 of 492 tics and finished at 16 health.
+The point this episode makes is qualitative --- that the arms visit different
+states --- and it does not require the difference to be of any particular
+size; but see the power note below before reading episode counts as effects. The two arms
 behaved differently, and because behaviour determines what the agent sees, they
 were no longer sampling the same stimulus distribution. Any cross-arm
 correlation then compares two different worlds rather than two different
@@ -609,25 +732,33 @@ odour drives a valence region that inhibits an escape neuron. Those transfer.
 Motion direction is a product of a delayed and an undelayed signal, and it does
 not.
 
-This is worth stating carefully, because it is easy to over-read as a claim
-about connectomics. The connectome contains the correlator: we found the
-geometry, the mirrored axes, and the travelling wave that drives them. What it
-does not contain, and cannot, is the per-type gain and timing structure that
-makes the two arms comparable in magnitude. In our hands the arms differ by
-$37\times$, and the ${\sim}40\times$ subthreshold, sign-unstable residue that
-survives is what a correlator produces when one of its inputs is whispering.
+This result is easily over-read as a claim about connectomics, and we state its
+scope precisely. The connectome contains the correlator: we found the geometry,
+the mirrored axes, the phase offset and the travelling wave that drives them.
+What the frozen model does not supply is whatever additional structure makes
+those ingredients function together, and we are careful not to name it. Our
+first candidate was the per-type gain that makes the two arms comparable in
+magnitude --- in our hands they differ by $37\times$ --- but correcting the
+imbalance, by depression and by transplanting an optimized model's gains,
+lowered selectivity rather than raising it. The honest summary is that a
+simulator demonstrably capable of $\mathrm{DSI}=0.79$ in a hand-built
+correlator yields $0.002$ from the same units wired by the connectome, and we
+cannot presently say what the difference consists of.
 
 Placed beside \citet{lappalainen2024}, this becomes informative rather than
 merely negative. That model shares our wiring and recovers motion selectivity,
 but obtains its unknown parameters by optimization. Ours fixes them to a single
 published set. The difference between the two outcomes is therefore a
-measurement of what the optimization supplies --- and our arm-imbalance analysis
-suggests a concrete hypothesis about what that is: relative gain along the ON
-pathway's disinhibitory chain. That hypothesis is testable by inspecting the
-learned parameters of the optimized model, which we have not done and which
-would be the natural next step.
+measurement of what the optimization supplies. We took the natural next step
+and inspected it: of that model's 604 per-type-pair gains, 571 align with
+connections in our graph, and transplanting them lowers our selectivity rather
+than raising it. Gain alone, at least as transferred between two different
+reconstructions, is not what is missing. What that leaves --- timing structure,
+dendritic compartmentalization absent from a point neuron, or an interaction
+between gains that does not survive transplantation --- we cannot separate with
+the present model.
 
-Two further readings we want to foreclose. First, none of this is a claim about
+Two further readings should be excluded. First, none of this is a claim about
 whether a fly brain can play a video game; the environment is outside the
 animal's evolutionary experience and the model has no ventral nerve cord, so
 behavioural competence was never the measurable. Second, the olfaction result
@@ -635,7 +766,7 @@ is not evidence of enemy detection --- the odour magnitude is supplied by the
 engine. What both results measure is transfer: whether a transformation
 implied by the wiring appears in a running system.
 
-\subsection*{Limitations}
+\subsection{Limitations}
 
 \begin{itemize}\itemsep2pt
 \item \textbf{No ventral nerve cord.} FAFB is brain-only, so the game's
@@ -660,7 +791,8 @@ different visual statistic changes the arm imbalance.
 
 \section{Methods}
 
-\paragraph{Data.} FlyWire FAFB v783~\citep{dorkenwald2024,schlegel2024},
+\subsection{Connectome data}
+ FlyWire FAFB v783~\citep{dorkenwald2024,schlegel2024},
 frozen October 2023. Connectivity from the Buhmann synapse
 pipeline~\citep{buhmann2021} with transmitter predictions
 from~\citet{eckstein2024}. Edges thresholded at five synapses. Cell types from
@@ -668,7 +800,8 @@ the consolidated typing table; \cell{BPN} and \cell{aIPg} exist only in the
 free-text community label file. The data are CC BY-NC 4.0 and are not
 redistributed with our code.
 
-\paragraph{Neuron model.} Leaky integrate-and-fire with parameters as listed in
+\subsection{Neuron model}
+ Leaky integrate-and-fire with parameters as listed in
 Section~2.1. The subthreshold system
 $\tau\,\dot v=(V_{\mathrm{rest}}-v)+g$, with $g$ decaying at
 $\tau_{\mathrm{syn}}$, is integrated exactly:
@@ -681,7 +814,8 @@ B=\tfrac{\tau_{\mathrm{syn}}}{\tau_{\mathrm{syn}}-\tau_{\mathrm{mem}}}
 matching the scheme used by Brian 2~\citep{stimberg2019}, against which we
 validate to 0.03\%.
 
-\paragraph{Departures from the reference model.} Each is switchable and each
+\subsection{Departures from the reference model}
+ Each is switchable and each
 carries a measured justification. (i) \emph{Histamine override} on
 photoreceptor output, as above. (ii) \emph{Conductance-based synapses}:
 $\tau\dot v=(V_{\mathrm{rest}}-v)+g_e(E_e-v)+g_i(E_i-v)+I$ with $E_e=0$,
@@ -695,7 +829,8 @@ while \cell{L1}/\cell{L2} adapt --- from a stationary agent the rendered scene
 changes by 0.0003 in mean luminance between frames, so a fully adapting retina
 washes out and the loop cannot start.
 
-\paragraph{The environment, and what we changed about it.} Modifying the
+\subsection{Visual input and the environment}
+ Modifying the
 game is not a modification of the model, and three properties of Doom are wrong
 for this animal in ways that suppress the signal under test. \emph{Gamma}: the
 engine writes gamma-encoded sRGB, but photoreceptors integrate linear flux and
@@ -713,22 +848,24 @@ lost signal and then some, raising retinal standard deviation from 0.020 to
 0.033, measured open loop on 100 identical frames.
 
 None of it releases \cell{LPLC2}. We note the engine's own display controls are
-not a route either: \texttt{vid\_gamma}, \texttt{vid\_contrast},
-\texttt{vid\_brightness} and \texttt{vid\_saturation} leave the rendered buffer
+not a route either: the engine's gamma, contrast, brightness and saturation
+controls all leave the rendered buffer
 bit-identical, because ViZDoom exposes it upstream of display post-processing,
 and \texttt{r\_visibility}, which does take effect, moves frame mean brightness
 without changing the distance-to-brightness relation by more than 3--6\% over a
 40-tic approach. Every one of these is a common scale on both arms of the
 imbalance, which is why the ratio argument predicts the outcome in each case.
 
-\paragraph{Rate readout.} An exponential filter over per-step output.
+\subsection{Rate readout and motor decoding}
+ An exponential filter over per-step output.
 Because that output is $\text{rate}\times dt$, recovering Hz requires division
 by $dt$; dividing by $\tau$ instead scales every reported rate by $160\times$
 and is a failure mode we hit and document. A 12-tic warmup precedes baseline
 estimation, and a $\tau=3$\,s baseline removes the standing left--right
 asymmetry.
 
-\paragraph{Statistics.} The olfaction comparison uses 10 independent
+\subsection{Statistical analysis}
+ The olfaction comparison uses 10 independent
 environment seeds. Each seed contributes one paired on/off difference, averaged
 over 320 tics after a 40-tic settling period that lets the rate filter
 converge. We report the mean and standard deviation across seeds together with
@@ -756,7 +893,20 @@ size but moved \cell{DNp01} and \cell{DNa02} from $10/10$ agreeing seeds to
 $9/10$. Sign counts near ceiling should therefore be read as $p$ values with
 one seed of slack, not as invariants.
 
-\subsection*{Tested, and deferred}
+\paragraph{Power of episode-level behavioural measures.} Behaviour in this
+environment is far noisier than the open-loop rate measurements, and we flag
+the consequence because it constrains what any closed-loop connectome study can
+claim. Health collected per episode has a standard deviation of roughly 13
+units across environment seeds, so at $n=5$ only differences of about 20 units
+are resolvable; two executions of one identical configuration returned means of
+3.2 and 11.2. Detecting a 5-unit difference at 80\% power would require
+$n\approx106$. We therefore report no behavioural effect from fewer than 30
+seeds, quote 95\% confidence intervals rather than standard deviations for
+these measures, and treat the interval rather than the point estimate as the
+result. Rate-level measurements, which are paired and open loop, are not
+subject to this and are reported as above.
+
+\subsection{Tested and deferred}
 
 Recording what was tried and failed is as much a part of the result as what
 worked, so we list both.
@@ -769,9 +919,11 @@ non-spiking optic-lobe units; tonic optic-lobe bias from 0 to 7.5\,mV;
 photoreceptor drive, graded rate ceiling and Weber contrast gain; injection at
 the photoreceptors rather than the lamina; field of view from $110^\circ$ to
 $170^\circ$; sRGB linearisation; R1-6 spectral weighting; repainting the
-environment into the fly's band; and the engine's own rendering controls. The
-common structure of these failures is that each is a scale applied to both arms
-of an imbalance, and a scale cancels from a ratio.
+environment into the fly's band; and the engine's own rendering controls. Most of
+these share a structure --- each is a scale applied to both arms of a ratio,
+and a scale cancels --- but that account is incomplete, because the
+\emph{asymmetric} interventions listed below, which do not cancel, failed as
+well.
 
 \emph{Corrected during this work, all on the input side:} the retina mapped
 azimuth linearly onto a perspective projection, misplacing a column at
@@ -785,9 +937,20 @@ place of 0.25\,s. Each of these corrupts precisely the cue under test. None of
 them changed the outcome, which is itself informative: the negative result does
 not rest on a badly delivered stimulus.
 
-\emph{Deferred.} Per-cell-type synaptic gains are the identified obstacle and
-we do not fit them, because fitting them is the independent variable of this
-study rather than a repair to it. We note the target is not a single set of
+\emph{Tested in this round, and also negative:} presynaptic short-term
+depression as an arm rebalancer; transplantation of 571 per-type gains from an
+optimized model; ablation of \cell{CT1} (12{,}601 edges); ablation of one
+inhibitory flank; global optic-lobe gain to $\times32$ and gain targeted onto
+\cell{T4}/\cell{T5} to $\times20$; and matching the network's firing-rate
+regime to that of the isolated correlator. \emph{Positive control added:} a
+hand-built two-input correlator in the same simulator reaches
+$\mathrm{DSI}=-0.79\pm0.017$, which is what licenses us to call the network
+result a failure of the wired model rather than of the method.
+
+\emph{Deferred.} Per-cell-type synaptic gains remain unfitted, because fitting
+them is the independent variable of this study rather than a repair to it --- a
+position unchanged by the transplant result above, which tests transfer rather
+than fitting. We note the target is not a single set of
 numbers: the optimized model of \citet{lappalainen2024} carries 734 free
 parameters, 604 of them one gain per type-to-type connection, and its authors
 report an ensemble of 50 solutions of comparable task performance, so
@@ -796,17 +959,41 @@ junctions, absent from the reconstruction and carrying the giant fibre's
 fastest output; neuromodulation, flattened here to fast transmission; and a
 ventral nerve cord, without which every behavioural timescale is the engine's.
 
-\section*{Data and code availability}
+\section*{Data availability}
+
+The connectome data are FlyWire FAFB v783~\citep{dorkenwald2024,schlegel2024},
+licensed CC BY-NC 4.0. They are not redistributed with this work and must be
+obtained from FlyWire directly; a fetch script is provided with the code. The
+per-cell-type gains used in the transplant ablation are derived from the
+published \texttt{flyvis} ensemble of \citet{lappalainen2024}. All serialized
+run data behind the tables and figures are included in the code repository, and
+every table and figure is generated from those files rather than transcribed,
+so the two cannot diverge.
+
+\section*{Code availability}
 
 Code is available at \url{https://github.com/mutkuoz/flydoom} under the MIT
-licence. The connectome data are CC BY-NC 4.0, are not redistributed, and must
-be obtained from FlyWire directly; a fetch script is provided. The environment
-uses ViZDoom~\citep{kempka2016} with the freely licensed Freedoom asset set, so
-no commercial game data are required.
+licence, including the simulator, all ten experiments, and the scripts that
+generate every table and figure. The environment uses
+ViZDoom~\citep{kempka2016} with the freely licensed Freedoom asset set, so no
+commercial game data are required.
 
 DOOM is a trademark of id Software LLC / ZeniMax Media Inc. This work is
 unaffiliated with and unendorsed by them, and the name is used here only to
 identify the software environment.
+
+\section*{Author contributions}
+
+M.U.\"O.\ conceived the study, wrote the simulation and analysis code, ran the
+experiments, and wrote the manuscript.
+
+\section*{Competing interests}
+
+The author declares no competing interests.
+
+\section*{Funding}
+
+This work received no external funding.
 
 \section*{Acknowledgements}
 

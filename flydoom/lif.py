@@ -49,6 +49,9 @@ class LIFParams:
     e_inh: float = config.E_INH
     g_syn: float = config.G_SYN
     graded_max_rate: float = config.GRADED_MAX_RATE
+    stp: bool = config.STP
+    stp_u: float = config.STP_U
+    stp_tau_rec: float = config.STP_TAU_REC
 
     @property
     def conductance(self) -> bool:
@@ -154,6 +157,8 @@ class LIFNetwork:
         edge_delay: "np.ndarray | None" = None,
         tau_mem: "np.ndarray | None" = None,
         graded: "np.ndarray | None" = None,
+        axial_partner: "np.ndarray | None" = None,
+        g_axial: "np.ndarray | float | None" = None,
     ) -> None:
         self.n = n_neurons
         self.p = params or LIFParams()
@@ -266,6 +271,31 @@ class LIFNetwork:
                 _np.asarray(graded, dtype=bool), device=device
             )
         self.any_graded = bool(self.graded.any())
+
+        # -- dendritic compartments ------------------------------------
+        # A point neuron makes every synapse electrically identical, so a
+        # shunt divides the WHOLE cell. Null-direction suppression in T4 is
+        # local: the inhibitory arm must divide only the branch carrying the
+        # excitatory arm. Two coupled compartments are the minimum model of
+        # that, and the coupling enters as one more conductance whose
+        # reversal potential is the partner's membrane voltage:
+        #     tau dv/dt = ... + g_ax (v_partner - v)
+        # With g_ax = 0 the neuron is exactly the point neuron as before.
+        self.axial_partner = None
+        self.g_ax = None
+        if axial_partner is not None:
+            self.axial_partner = torch.as_tensor(
+                np.asarray(axial_partner, dtype=np.int64), device=device)
+            gx = np.zeros(self.n, dtype=np.float32) if g_axial is None else (
+                np.full(self.n, float(g_axial), dtype=np.float32)
+                if np.isscalar(g_axial) else
+                np.asarray(g_axial, dtype=np.float32))
+            # an unpartnered neuron points at itself; zero its coupling so the
+            # term vanishes rather than relying on (v - v) cancelling
+            self_ref = (self.axial_partner
+                        == torch.arange(self.n, device=device)).cpu().numpy()
+            gx[self_ref] = 0.0
+            self.g_ax = torch.as_tensor(gx, device=device)
         self.reset()
 
     @classmethod
@@ -318,6 +348,9 @@ class LIFNetwork:
         self.delay_buf = torch.zeros((self.buf_len, n), dtype=torch.float32,
                                      device=d)
         self.out = torch.zeros(n, dtype=torch.float32, device=d)
+        # Available presynaptic resource, one per neuron. Starts full.
+        self.stp_R = torch.ones(n, dtype=torch.float32, device=d)
+
         self.delay_ptr = 0
         self.t = 0.0
 
@@ -385,6 +418,12 @@ class LIFNetwork:
             num = p.v_rest + self.g_exc * p.e_exc + self.g_inh * p.e_inh
             if g_ext is not None:
                 num = num + g_ext
+            if self.g_ax is not None:
+                # partner voltage is read BEFORE this step's update, so the
+                # two compartments advance from a consistent state
+                v_partner = self.v[self.axial_partner]
+                g_tot = g_tot + self.g_ax
+                num = num + self.g_ax * v_partner
             v_inf = num / g_tot
             # exponential Euler: exact for g held over the step, and g moves
             # only ~10% within dt at tau_syn=5 ms.
@@ -432,6 +471,17 @@ class LIFNetwork:
             )
         if out_set is not None:
             out = torch.where(out_set >= 0.0, out_set, out)
+
+        # 6b. short-term depression, presynaptic. Applied at EMISSION so the
+        # delay line carries release that is already depressed, which is where
+        # the biology puts it. See config.STP for why this is a candidate fix
+        # and what control it needs.
+        if p.stp:
+            released = out * self.stp_R
+            self.stp_R = (self.stp_R
+                          + (1.0 - self.stp_R) * (p.dt / p.stp_tau_rec)
+                          - p.stp_u * self.stp_R * out).clamp_(0.0, 1.0)
+            out = released
         self.out = out
 
         self.spiked = spiked

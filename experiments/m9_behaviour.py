@@ -42,8 +42,10 @@ attribution claim lives.
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
 import math
+import subprocess
 import sys
 from pathlib import Path
 
@@ -65,6 +67,23 @@ ARMS = ("connectome", "shuffled", "random", "still")
 # Grid cell size in Doom map units for the coverage metric. 64 is one standard
 # floor tile, so "cells visited" reads as "tiles stepped on".
 TILE = 64.0
+
+
+def _git_sha() -> str:
+    """Working-tree revision, with a dirty flag. Stamped into every result
+    file so a number can always be traced back to the code that made it."""
+    try:
+        sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                             capture_output=True, text=True,
+                             cwd=Path(__file__).parent.parent,
+                             timeout=10).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"],
+                               capture_output=True, text=True,
+                               cwd=Path(__file__).parent.parent,
+                               timeout=10).stdout.strip()
+        return sha + ("-dirty" if dirty else "")
+    except Exception:
+        return "unknown"
 
 
 def paint(t: str, c: str) -> str:
@@ -221,7 +240,8 @@ def _chatter(x) -> float:
 
 def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               device: str, bias_mv: float = 0.0,
-              smell: bool = False) -> tuple[dict, dict]:
+              smell: bool = False,
+              tau_baseline: float | None = None) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -229,7 +249,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
                         labels=smell),
-        motor=MotorConfig(),
+        motor=(MotorConfig() if tau_baseline is None
+               else MotorConfig(tau_baseline=tau_baseline)),
         smell=smell,
         shuffle_graph=shuffled,
         seed=seed,
@@ -335,7 +356,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="flydoom M9 — behaviour")
     ap.add_argument("--scenarios", nargs="+", default=list(SCENARIOS))
     ap.add_argument("--seeds", type=int, default=5)
+    ap.add_argument("--seed-start", type=int, default=0,
+                    help="First seed. Lets one sweep be sharded across "
+                         "processes; the sim is CPU-bound at ~1.3 cores, "
+                         "so shards scale near-linearly to nproc.")
     ap.add_argument("--tics", type=int, default=700)
+    ap.add_argument("--tau-baseline", type=float, default=None,
+                    help="steering baseline time constant, seconds. The "
+                         "default 3 s removes the standing L/R asymmetry, but "
+                         "an approach to food takes ~1.5 s, so it also eats "
+                         "~40%% of the odour distance signal. Raising it keeps "
+                         "slow approach signals at the cost of re-admitting "
+                         "the reconstruction artefact.")
     ap.add_argument("--smell", action="store_true",
                     help="enable the odour channel. Health pickups are real "
                          "odour sources (ORN_DM1, vinegar), so this is the "
@@ -359,18 +391,26 @@ def main() -> int:
           f"({args.tics / 35:.0f} s) x {len(args.scenarios)} scenarios, "
           f"4 arms")
 
-    record = {"tics": args.tics, "seeds": args.seeds, "bias_mv": args.bias,
-              "smell": args.smell, "runs": []}
+    record = {"tics": args.tics, "seeds": args.seeds,
+              "seed_start": args.seed_start, "bias_mv": args.bias,
+              "smell": args.smell,
+              "tau_baseline": args.tau_baseline,
+              "device": args.device,
+              "argv": sys.argv[1:],
+              "git_sha": _git_sha(),
+              "started": _dt.datetime.now().isoformat(timespec="seconds"),
+              "runs": []}
 
     for scen in args.scenarios:
         print(f"\n{paint(scen, '1;36')}")
         per_arm: dict[str, list[dict]] = {a: [] for a in ARMS}
-        for seed in range(args.seeds):
+        for seed in range(args.seed_start,
+                          args.seed_start + args.seeds):
             m_int, dist = run_agent(scen, seed, args.tics, False, args.device,
-                                    args.bias, args.smell)
+                                    args.bias, args.smell, args.tau_baseline)
             per_arm["connectome"].append(m_int)
             m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
-                                  args.bias, args.smell)
+                                  args.bias, args.smell, args.tau_baseline)
             per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             per_arm["random"].append(

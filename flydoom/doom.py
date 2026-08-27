@@ -69,6 +69,29 @@ class DoomConfig:
     """Doom tics advanced per agent decision. 1 = decide every tic."""
     seed: int | None = 0
     living_reward: float | None = None
+    render_weapon: bool = False
+    """Draw the player's own gun. OFF, and it is not cosmetic.
+
+    The weapon sprite is painted at a FIXED position in the viewport, so it
+    never moves when the world moves, and it BOBS while walking. MEASURED: it
+    covers 4.0% of the viewport and 137 of 4,541 ommatidial columns (3.0% of
+    the lattice), with a temporal s.d. of 20.6 inside its own region during
+    walking -- self-generated motion that is uncorrelated with the scene and
+    permanently locked to the same retinotopic position.
+
+    That is the failure the mean-luminance surround fix already guards against,
+    applied to a second object nobody removed. It is far too small to explain
+    the motion-vision result (3% of the retina cannot account for it), but it
+    is a real confound for the wide-field looming cells, which pool across the
+    whole visual field and which M4 shows are responding to dark AREA.
+
+    An audit of the other non-world elements found nothing else: HUD,
+    crosshair, decals, particles, messages and effect sprites are all already
+    disabled by the scenario configs. The gun was the only one.
+
+    A fly does not carry a shotgun.
+    """
+
     repaint: str = "flyband"
     """Repaint the rendered world into the band R1-6 can actually see.
 
@@ -405,6 +428,7 @@ class DoomSession:
             )
         g.load_config(path)
         g.set_window_visible(cfg.window)
+        g.set_render_weapon(cfg.render_weapon)
         g.set_screen_format(vzd.ScreenFormat.RGB24)
         g.set_screen_resolution(self._resolution(vzd, cfg.width, cfg.height))
         g.set_mode(vzd.Mode.PLAYER)

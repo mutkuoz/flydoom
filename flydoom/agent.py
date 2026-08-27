@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-from . import config
+from . import compartments, config
 from .cells import AnnotationTable
 from .doom import DoomConfig, DoomSession, DoomVision
 from .graph import ConnectomeGraph
@@ -60,6 +60,17 @@ class AgentConfig:
     enemies. M6 and M7 are only valid with this off."""
     site: tuple[str, ...] = ("L1", "L2", "L3")
     graded: bool = True
+
+    compartments: bool = False
+    """Split T4/T5 into a spiking soma and a passive dendrite, with off-column
+    inputs re-routed distally. Off by default: it changes the model class, so
+    every result must say which setting produced it. See flydoom/compartments.py
+    for why retinotopy assigns the compartments and what that approximates."""
+
+    g_axial: float = 1.0
+    """Axial conductance between the two compartments, in the same units as
+    the synaptic conductances. 0 makes them independent; large values collapse
+    them back to the point neuron, which is the g_ax -> inf limit."""
     slow_delay_s: float = config.T_DLY_SLOW
     bias_mv: float = 0.0
     """Tonic optic-lobe drive. Graded units need far less of this than spiking
@@ -117,10 +128,30 @@ class FlyDoomAgent:
             self.ann, config.DT, t_slow=c.slow_delay_s
         )
         graded = self.graph.graded_mask(self.ann) if c.graded else None
-        self.net = LIFNetwork.from_graph(
-            self.graph, params=LIFParams(), device=c.device, seed=c.seed,
-            edge_delay=edge_delay, graded=graded,
-        )
+        if c.compartments:
+            # dendrites are appended after every existing neuron, so readout,
+            # motor and retina indices keep their meaning; edge count and order
+            # are untouched, so edge_delay stays aligned
+            self.compartment_plan = compartments.build(
+                self.graph, self.ann, g_axial=c.g_axial)
+            pre_t, post_t, w_t = self.graph.to_torch(c.device)
+            post_t = torch.as_tensor(self.compartment_plan["post_idx"],
+                                     device=c.device)
+            self.net = LIFNetwork(
+                self.compartment_plan["n_total"], pre_t, post_t, w_t,
+                LIFParams(), c.device, c.seed,
+                edge_delay=edge_delay,
+                graded=compartments.extend_graded(graded,
+                                                  self.compartment_plan),
+                axial_partner=self.compartment_plan["axial_partner"],
+                g_axial=self.compartment_plan["g_ax"],
+            )
+        else:
+            self.compartment_plan = None
+            self.net = LIFNetwork.from_graph(
+                self.graph, params=LIFParams(), device=c.device, seed=c.seed,
+                edge_delay=edge_delay, graded=graded,
+            )
         self.graded = graded is not None
 
         self.doom = DoomSession(c.doom)

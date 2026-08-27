@@ -124,6 +124,8 @@ def run_arm(smell: bool, seed: int, tics: int, shuffled: bool, device: str):
 def main() -> int:
     ap = argparse.ArgumentParser(description="flydoom M8 — olfactory valence")
     ap.add_argument("--seeds", type=int, default=3)
+    ap.add_argument("--seed-start", type=int, default=0,
+                    help="offset into the seed sequence, so one run can be split across processes (the sim is CPU-bound at ~1.3 cores).")
     ap.add_argument("--tics", type=int, default=320)
     ap.add_argument("--shuffled", action="store_true",
                     help="degree-preserving shuffle. VALID here, unlike in M6, "
@@ -141,7 +143,7 @@ def main() -> int:
 
     deltas = {k: [] for k in WATCH}
     arms = []
-    for s in range(args.seeds):
+    for s in range(args.seed_start, args.seed_start + args.seeds):
         off = run_arm(False, 7 + s, args.tics, args.shuffled, args.device)
         on = run_arm(True, 7 + s, args.tics, args.shuffled, args.device)
         arms.append({"seed": 7 + s, "off": off, "on": on})

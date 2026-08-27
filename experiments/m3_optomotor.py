@@ -205,7 +205,44 @@ def rate(counts, idx, duration):
 
 
 
-def _bias_vector(net, graph, ann, bias_mv, device=None):
+def _lif_params(args):
+    """LIFParams carrying whatever mechanisms the CLI switched on."""
+    from flydoom.lif import LIFParams
+    return LIFParams(stp=bool(getattr(args, "stp", False)),
+                     stp_u=getattr(args, "stp_u", config.STP_U),
+                     stp_tau_rec=getattr(args, "stp_tau_rec", config.STP_TAU_REC))
+
+
+def _apply_optic_gain(graph, ann, args) -> None:
+    """Scale synapses onto the optic lobe, in place."""
+    gain = getattr(args, "optic_gain", 1.0)
+    if gain == 1.0:
+        return
+    from flydoom.gains import optic_gain_multipliers
+    m = optic_gain_multipliers(graph, ann, gain)
+    graph.signed_syn = (graph.signed_syn * m).astype(np.float32)
+    print(paint(f"optic-lobe gain x{gain:g} on {int((m != 1.0).sum()):,} edges "
+                f"(replaces tonic bias; W_SYN unchanged elsewhere)", "1;33"))
+
+
+def _apply_flyvis_gains(graph, ann, args) -> None:
+    """Scale edge weights by transplanted per-type gains, in place."""
+    path = getattr(args, "flyvis_gains", None)
+    if not path:
+        return
+    from flydoom.gains import edge_multipliers
+    mult, rep = edge_multipliers(graph, ann, path)
+    graph.signed_syn = (graph.signed_syn * mult).astype(np.float32)
+    print(paint("ABLATION: per-type gains transplanted", "1;33"))
+    print(f"  source     {rep['source']}")
+    print(f"  from       {rep['connectome']}")
+    print(f"  covers     {rep['edges_covered']:,}/{rep['edges_total']:,} edges, "
+          f"{100 * rep['synapses_covered_frac']:.1f}% of synapses")
+    print(f"  multiplier {rep['multiplier_min']:.3f} to "
+          f"{rep['multiplier_max']:.2f}, synapse-weighted mean 1.0")
+
+
+def _bias_vector(net, graph, ann, bias_mv, device=None, spare=()):
     """Tonic depolarising drive to the optic lobe, as a g_ext vector.
 
     The early visual system is inhibition-dominated and computes by
@@ -224,11 +261,170 @@ def _bias_vector(net, graph, ann, bias_mv, device=None):
     oidx = torch.as_tensor(graph.index_of(optic).astype(np.int64), device=device)
     gext = torch.zeros(net.n, dtype=torch.float32, device=device)
     gext[oidx] = bias_mv * 1e-3
+    if spare:
+        # Withhold the bias from named types. Tonic drive carries no stimulus
+        # information, so on the cell whose selectivity is being MEASURED it is
+        # pure dilution -- see config.OPTIC_GAIN for the 70x figure.
+        keep = d = ann.df
+        for t in spare:
+            ids = d.filter((pl.col("primary_type") == t)
+                           | (pl.col("visual_type") == t))["root_id"].to_list()
+            if ids:
+                gext[torch.as_tensor(graph.index_of(ids).astype(np.int64),
+                                     device=device)] = 0.0
     return gext
 
 
 SUBTYPES = ("T4a", "T4b", "T5a", "T5b")
+T4T5 = ("T4a", "T4b", "T4c", "T4d", "T5a", "T5b", "T5c", "T5d")
 MIRROR_PAIRS = (("T4a", "T4b"), ("T5a", "T5b"))
+
+
+def _net_for(g, ann, args, edge_delay, graded):
+    """LIFNetwork for `args`, compartmentalised if asked.
+
+    Dendrites are appended after every existing neuron, so population indices,
+    retina injection sites and readouts keep their meaning; the edge list keeps
+    its order, so edge_delay stays aligned.
+    """
+    if not getattr(args, "compartments", False):
+        return LIFNetwork.from_graph(
+            g, params=_lif_params(args), device=args.device, seed=0,
+            edge_delay=edge_delay, graded=graded)
+    from flydoom import compartments as _C
+    plan = _C.build(g, ann, g_axial=args.g_axial)
+    pre_t, post_t, w_t = g.to_torch(args.device)
+    post_t = torch.as_tensor(plan["post_idx"], device=args.device)
+    print(paint(f"COMPARTMENTS  {plan['n_cells']:,} T4/T5 split; "
+                f"{plan['n_moved']:,} of {plan['n_edges_onto_targets']:,} "
+                f"inputs moved distal; g_ax={args.g_axial}", "1;36"))
+    return LIFNetwork(plan["n_total"], pre_t, post_t, w_t,
+                      _lif_params(args), args.device, 0,
+                      edge_delay=edge_delay,
+                      graded=_C.extend_graded(graded, plan),
+                      axial_partner=plan["axial_partner"],
+                      g_axial=plan["g_ax"])
+
+
+def per_cell_dsi(args) -> int:
+    """DSI per individual cell, at the best unsaturated operating point.
+
+    The pooled mean answers "is the population direction selective". This
+    answers a different and more permissive question: "is ANY cell". A real
+    correlator population is heterogeneous, and experimental work reports the
+    cells that pass a selection criterion rather than the average over every
+    cell in the field of view.
+    """
+    import json
+
+    g = ConnectomeGraph.load()
+    ann = AnnotationTable.load(config.RAW_DIR)
+    _apply_flyvis_gains(g, ann, args)
+    _apply_optic_gain(g, ann, args)
+    if getattr(args, "gain_onto_t4", 1.0) != 1.0:
+        from flydoom.gains import gain_onto_types
+        gm = gain_onto_types(g, ann, ("T4a","T4b","T4c","T4d",
+                                      "T5a","T5b","T5c","T5d"),
+                             args.gain_onto_t4)
+        g.signed_syn = (g.signed_syn * gm).astype(np.float32)
+        print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
+                    f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    graded = g.graded_mask(ann)
+    edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
+    net = _net_for(g, ann, args, edge_delay, graded)
+    gext = _bias_vector(net, g, ann, args.bias, args.device,
+                        spare=T4T5 if getattr(args, 'spare_t4_bias', False) else ())
+    rig = GratingRig(net, retina, args.device, args.period, args.rate)
+    mon = {t: population_indices(g, ann, t) for t in SUBTYPES}
+
+    print(paint("flydoom M3 — per-cell direction selectivity", "1"))
+    print(paint("=" * 76, "90"))
+    print(f"bias {args.bias:.1f} mV, period {args.period:.0f} deg, "
+          f"tf {args.tf:.1f} Hz, {args.duration:.1f} s per direction\n")
+
+    counts = {}
+    for direction in (+1, -1):
+        c = run_grating(net, rig, args.duration, args.tf, direction, mon,
+                        gext=gext)
+        counts[direction] = c.detach().cpu().numpy() / args.duration
+
+    # CONTROLS. With 1,457 cells, some will pass any threshold by chance, and
+    # a cell firing 0.4 Hz against 1.2 Hz scores DSI 0.5 on almost no signal.
+    # Two checks decide whether a selective minority is real:
+    #
+    #   1. ACTIVITY. Recompute the fractions over only strongly driven cells.
+    #      If selectivity lives entirely in the weakly driven tail it is noise
+    #      on a small number, not a computation.
+    #   2. MIRROR SIGN. T4a and T4b have mirrored input geometry, so genuinely
+    #      selective cells of the two subtypes must prefer OPPOSITE directions.
+    #      Per-cell this is a powerful test: with hundreds of selective cells,
+    #      a real correlator gives a strong sign bias and noise gives 50/50.
+    SEL = 0.5      # the threshold at which experiments SELECT a terminal
+    record = {"bias_mv": args.bias, "period_deg": args.period,
+              "tf_hz": args.tf, "duration_s": args.duration,
+              "selection_threshold": SEL, "cells": {}}
+    print(f"  {'type':>6} {'n':>6} {'firing>1Hz':>11} {'|DSI|>0.1':>10} "
+          f"{'|DSI|>0.5':>10} {'max|DSI|':>9} {'p95':>8}")
+    for t in SUBTYPES:
+        idx = mon[t]
+        if not len(idx):
+            continue
+        a, b = counts[+1][idx], counts[-1][idx]
+        tot = a + b
+        live = tot > 1.0           # cells actually driven by the stimulus
+        dsi = np.where(tot > 1e-9, (a - b) / np.maximum(tot, 1e-9), 0.0)
+        d_live = np.abs(dsi[live]) if live.any() else np.zeros(1)
+        strong = tot > 20.0        # well-driven cells only
+        d_strong = np.abs(dsi[strong]) if strong.any() else np.zeros(1)
+        # sign bias among cells that are selective at all
+        sel = np.abs(dsi) > 0.1
+        pos = int((dsi[sel] > 0).sum()); neg = int((dsi[sel] < 0).sum())
+        record["cells"][t] = {
+            "n_strong": int(strong.sum()),
+            "strong_frac_gt_0.5": float((d_strong > SEL).mean()),
+            "strong_frac_gt_0.1": float((d_strong > 0.1).mean()),
+            "sel_pos": pos, "sel_neg": neg,
+            "sel_pos_frac": float(pos / max(pos + neg, 1)),
+            "median_rate_hz": float(np.median(tot) / 2.0),
+            "n": int(len(idx)), "n_live": int(live.sum()),
+            "frac_gt_0.1": float((d_live > 0.1).mean()),
+            "frac_gt_0.5": float((d_live > SEL).mean()),
+            "max_abs": float(d_live.max()), "p95": float(np.percentile(d_live, 95)),
+            "pooled": float((a.mean() - b.mean()) /
+                            max(a.mean() + b.mean(), 1e-9)),
+        }
+        r = record["cells"][t]
+        print(f"  {t:>6} {r['n']:6d} {r['n_live']:11d} {r['frac_gt_0.1']:9.1%} "
+              f"{r['frac_gt_0.5']:10.1%} {r['max_abs']:9.4f} {r['p95']:8.4f}")
+
+    print(f"\n  CONTROL 1 -- restrict to well-driven cells (>20 Hz total):")
+    print(f"  {'type':>6} {'n_strong':>9} {'|DSI|>0.1':>10} {'|DSI|>0.5':>10}")
+    for t, r in record["cells"].items():
+        print(f"  {t:>6} {r['n_strong']:9d} {r['strong_frac_gt_0.1']:9.1%} "
+              f"{r['strong_frac_gt_0.5']:10.1%}")
+
+    print(f"\n  CONTROL 2 -- mirror sign bias among selective cells (|DSI|>0.1):")
+    print(f"  {'type':>6} {'prefer +':>9} {'prefer -':>9} {'+ fraction':>11}"
+          f"   a real correlator: T4a and T4b OPPOSE")
+    for t, r in record["cells"].items():
+        print(f"  {t:>6} {r['sel_pos']:9d} {r['sel_neg']:9d} "
+              f"{r['sel_pos_frac']:10.1%}")
+
+    print(f"\n  pooled means (what the population number reports):")
+    for t, r in record["cells"].items():
+        print(f"    {t}: {r['pooled']:+.5f}")
+    print(paint("""
+  Read frac>0.5 first. If a real minority of cells is selective, the pooled
+  mean can sit near zero purely by averaging them against undriven cells, and
+  the negative result would be an artefact of the readout rather than of the
+  model. If frac>0.5 is ~0 AND max|DSI| is small, pooling is exonerated and the
+  failure is in the model.""", "90"))
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(record, indent=1))
+        print(f"\n  wrote {args.json}")
+    return 0
 
 
 def dsi_grid(args) -> int:
@@ -245,6 +441,16 @@ def dsi_grid(args) -> int:
 
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
+    _apply_flyvis_gains(g, ann, args)
+    _apply_optic_gain(g, ann, args)
+    if getattr(args, "gain_onto_t4", 1.0) != 1.0:
+        from flydoom.gains import gain_onto_types
+        gm = gain_onto_types(g, ann, ("T4a","T4b","T4c","T4d",
+                                      "T5a","T5b","T5c","T5d"),
+                             args.gain_onto_t4)
+        g.signed_syn = (g.signed_syn * gm).astype(np.float32)
+        print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
+                    f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
     retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
     graded = g.graded_mask(ann)
     ceiling = config.GRADED_MAX_RATE
@@ -266,8 +472,7 @@ def dsi_grid(args) -> int:
     for bias in biases:
         edge_delay = g.edge_delay_steps(ann, config.DT,
                                         t_slow=args.slow_delay * 1e-3)
-        net = LIFNetwork.from_graph(g, device=args.device, seed=0,
-                                    edge_delay=edge_delay, graded=graded)
+        net = _net_for(g, ann, args, edge_delay, graded)
         gext = _bias_vector(net, g, ann, bias)
         for period in periods:
             rig = GratingRig(net, retina, args.device, period, args.rate)
@@ -379,6 +584,61 @@ def main() -> int:
                          "saturated unit reports DSI ~ 0 no matter what the "
                          "wiring does, so the honest number is the best one "
                          "found BELOW saturation.")
+    ap.add_argument("--optic-gain", type=float, default=config.OPTIC_GAIN,
+                    help="scale synapses onto the visual populations. This "
+                         "REPLACES --bias rather than adding to it: see "
+                         "config.OPTIC_GAIN for the measurement showing tonic "
+                         "bias costs 70x in DSI while gain does not.")
+    ap.add_argument("--compartments", action="store_true",
+                    help="split T4/T5 into spiking soma + passive dendrite, "
+                         "with off-column inputs re-routed distally. A shunt "
+                         "then divides one branch instead of the whole cell, "
+                         "which is what null-direction suppression requires.")
+    ap.add_argument("--g-axial", type=float, default=1.0,
+                    help="axial conductance between the compartments. 0 = "
+                         "independent; large = back to the point neuron.")
+    ap.add_argument("--spiking-t4", action="store_true",
+                    help="make T4/T5 spiking rather than graded. A graded unit "
+                         "is rectified-LINEAR in its unsaturated range, and a "
+                         "linear unit's mean rate cannot depend on the "
+                         "relative phase of its inputs -- so the threshold "
+                         "nonlinearity direction selectivity needs is absent "
+                         "by construction.")
+    ap.add_argument("--spare-t4-bias", action="store_true",
+                    help="apply the tonic bias to the optic lobe EXCEPT the "
+                         "motion detectors. Tests whether bias is needed "
+                         "upstream (to make an inhibition-dominated lamina "
+                         "conduct) while being fatal at the output stage, "
+                         "where it adds direction-blind drive to the very cell "
+                         "whose selectivity is being measured.")
+    ap.add_argument("--gain-onto-t4", type=float, default=1.0,
+                    help="ABLATION: scale synapses onto T4/T5 only, leaving "
+                         "the rest of the optic lobe at its normal operating "
+                         "point. Diagnostic for whether a GLOBAL scalar can "
+                         "restore selectivity or whether a targeted one is "
+                         "required -- the latter would be evidence that "
+                         "per-stage gain, not a single number, is what is "
+                         "missing.")
+    ap.add_argument("--stp", action="store_true",
+                    help="short-term synaptic depression, applied uniformly. "
+                         "See config.STP: it attenuates tonic high-rate drive "
+                         "far more than sparse bursts, which is the shape of "
+                         "the measured arm imbalance.")
+    ap.add_argument("--stp-u", type=float, default=config.STP_U)
+    ap.add_argument("--stp-tau-rec", type=float, default=config.STP_TAU_REC)
+    ap.add_argument("--per-cell", action="store_true",
+                    help="report the DISTRIBUTION of DSI over individual "
+                         "cells, not the population mean. Experimental studies "
+                         "SELECT terminals at DSI>0.5 and report those; pooling "
+                         "every cell -- including ones barely driven -- dilutes "
+                         "any real signal toward zero, so a population mean of "
+                         "~0 is consistent with a selective minority.")
+    ap.add_argument("--flyvis-gains", type=Path,
+                    help="ABLATION: scale each edge by the per-cell-type gain "
+                         "fitted by Lappalainen et al. (2024), normalised to "
+                         "leave global gain unchanged. Tests whether relative "
+                         "per-type gain is the missing quantity. See "
+                         "flydoom/gains.py for what this can and cannot show.")
     ap.add_argument("--json", type=Path,
                     help="serialise the --dsi-grid measurement. The table and "
                          "figure in the write-up are generated from this file, "
@@ -386,6 +646,8 @@ def main() -> int:
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 
+    if args.per_cell:
+        return per_cell_dsi(args)
     if args.dsi_grid:
         return dsi_grid(args)
 
@@ -394,11 +656,51 @@ def main() -> int:
 
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
+    _apply_flyvis_gains(g, ann, args)
+    _apply_optic_gain(g, ann, args)
+    if getattr(args, "gain_onto_t4", 1.0) != 1.0:
+        from flydoom.gains import gain_onto_types
+        gm = gain_onto_types(g, ann, ("T4a","T4b","T4c","T4d",
+                                      "T5a","T5b","T5c","T5d"),
+                             args.gain_onto_t4)
+        g.signed_syn = (g.signed_syn * gm).astype(np.float32)
+        print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
+                    f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
     retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
     graded = g.graded_mask(ann) if args.graded else None
-    net = LIFNetwork.from_graph(g, device=args.device, seed=0,
-                                edge_delay=edge_delay, graded=graded)
+    if graded is not None and getattr(args, "spiking_t4", False):
+        graded = graded.copy()
+        for _t in T4T5:
+            _i = population_indices(g, ann, _t) if False else None
+        import polars as _pl
+        _d = ann.df
+        for _t in T4T5:
+            _f = _d.filter((_pl.col("primary_type") == _t)
+                           | (_pl.col("visual_type") == _t))
+            _ids = _f["root_id"].unique().to_list()
+            if _ids:
+                graded[g.index_of(_ids)] = False
+        print(paint("T4/T5 made SPIKING (threshold nonlinearity restored)",
+                    "1;33"))
+    if getattr(args, "compartments", False):
+        from flydoom import compartments as _C
+        _plan = _C.build(g, ann, g_axial=args.g_axial)
+        _pre, _post, _w = g.to_torch(args.device)
+        _post = torch.as_tensor(_plan["post_idx"], device=args.device)
+        net = LIFNetwork(_plan["n_total"], _pre, _post, _w,
+                         _lif_params(args), args.device, 0,
+                         edge_delay=edge_delay,
+                         graded=_C.extend_graded(graded, _plan),
+                         axial_partner=_plan["axial_partner"],
+                         g_axial=_plan["g_ax"])
+        print(paint(f"COMPARTMENTS  {_plan['n_cells']:,} T4/T5 split; "
+                    f"{_plan['n_moved']:,} of "
+                    f"{_plan['n_edges_onto_targets']:,} inputs moved distal; "
+                    f"g_ax={args.g_axial}", "1;36"))
+    else:
+        net = LIFNetwork.from_graph(g, params=_lif_params(args), device=args.device, seed=0,
+                                    edge_delay=edge_delay, graded=graded)
     if graded is not None:
         print(f"graded     {int(graded.sum()):,} non-spiking optic-lobe "
               f"neurons; LC/LPLC and central cells still spike")
@@ -441,7 +743,8 @@ def main() -> int:
             dash = LiveDashboard(retina, list(mons), dt=net.p.dt,
                                  title="flydoom M3 — optomotor")
 
-    gext = _bias_vector(net, g, ann, args.bias, args.device)
+    gext = _bias_vector(net, g, ann, args.bias, args.device,
+                        spare=T4T5 if getattr(args, 'spare_t4_bias', False) else ())
     if gext is not None:
         print(f"tonic bias  {args.bias:.1f} mV to the optic lobe "
               f"(rheobase {net.p.threshold_distance * 1e3:.1f} mV)")
@@ -454,7 +757,7 @@ def main() -> int:
               f" {'DSI(T4b)':>9} {'DSI(T5a)':>9} {'best':>7}")
         for slow_ms in (1.8, 20, 40, 60, 80, 120, 160, 240):
             ed = g.edge_delay_steps(ann, config.DT, t_slow=slow_ms * 1e-3)
-            n2 = LIFNetwork.from_graph(g, device=args.device, seed=0,
+            n2 = LIFNetwork.from_graph(g, params=_lif_params(args), device=args.device, seed=0,
                                        edge_delay=ed)
             rig2 = GratingRig(n2, retina, args.device, args.period, args.rate)
             r = {}

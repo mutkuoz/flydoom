@@ -119,6 +119,34 @@ class OlfactionConfig:
     food_gain: float = 1.0
     threat_gain: float = 1.0
 
+    adapt: bool = True
+    """Receptor adaptation. Real ORNs do not report concentration; they report
+    concentration scaled by recent concentration, which is Weber-Fechner gain
+    control and is measured directly in *Drosophila* ORNs
+    (Gorur-Shandilya et al. 2017; Nagel & Wilson 2011; Martelli et al. 2013).
+
+    This matters here for a specific reason. The two antennae are ~0.3 mm
+    apart and this model gives them IDENTICAL drive (see the module header),
+    so odour carries proximity but never bearing. An animal with no bearing
+    can still find a source, by comparing concentration against its own recent
+    past and turning when it falls -- klinotaxis. That comparison requires a
+    temporal derivative, and a receptor that reports absolute concentration
+    does not supply one. Adaptation is what makes dC/dt visible to the brain.
+
+    Note this is a property of the RECEPTOR, not of the connectome: it changes
+    what the sensor delivers, not how the wiring transforms it."""
+
+    tau_adapt: float = 1.0
+    """Seconds. Front-end adaptation timescale. Reported values span a few
+    hundred ms to several seconds depending on odour and intensity; 1 s sits
+    inside that range and is not fitted to any outcome here."""
+
+    weber_k: float = 1.0
+    """Strength of the divisive gain control. At steady concentration s the
+    delivered drive is s/(1+k*s): compressive, but crucially NOT zero, so a
+    sustained odour still produces sustained drive. k=1 is the plain
+    Weber form."""
+
 
 class Olfaction:
     """Doom object positions to bilateral ORN drive."""
@@ -147,20 +175,26 @@ class Olfaction:
 
         self.decay_transport = math.exp(-dt / self.cfg.tau_transport)
         self.decay_plume = math.exp(-dt / self.cfg.tau_plume)
+        self.decay_adapt = math.exp(-dt / self.cfg.tau_adapt)
 
         # raw concentration at the source (updated per tic), the lingering
         # plume, and the filtered value the receptors actually see
         self.raw = {"threat": 0.0, "food": 0.0}
         self.plume = {"threat": 0.0, "food": 0.0}
         self.sensed = {"threat": 0.0, "food": 0.0}
+        self.seen = {"threat": False, "food": False}
+        self.adapt = {"threat": 0.0, "food": 0.0}
+        self.drive = {"threat": 0.0, "food": 0.0}
         self._burst = {"threat": 1.0, "food": 1.0}
         self._burst_steps = max(1, int(round(1.0 / self.cfg.intermittency_hz / dt)))
         self._since_burst = 0
 
     def reset(self) -> None:
-        for d in (self.raw, self.plume, self.sensed):
+        for d in (self.raw, self.plume, self.sensed, self.adapt, self.drive):
             for k in d:
                 d[k] = 0.0
+        for k in self.seen:
+            self.seen[k] = False
         self.rate.zero_()
 
     # -- per Doom tic ----------------------------------------------------
@@ -192,6 +226,10 @@ class Olfaction:
             # anything else emits nothing -- see the allowlist note above
         self.raw["threat"] = self._concentration(threats) * self.cfg.threat_gain
         self.raw["food"] = self._concentration(foods) * self.cfg.food_gain
+        # WHETHER a source is present is a different fact from HOW STRONG it
+        # is, and the plume memory below applies only to the first.
+        self.seen["threat"] = bool(threats)
+        self.seen["food"] = bool(foods)
 
     # -- per simulation substep ------------------------------------------
 
@@ -206,20 +244,41 @@ class Olfaction:
                 self._burst[k] = 1.0 if self.rng.random() < c.duty else 0.0
 
         for k in ("threat", "food"):
-            # the plume decays slowly toward whatever the source currently
-            # emits, so it lingers when the source drops out of sight
-            target = self.raw[k]
-            self.plume[k] = (self.decay_plume * self.plume[k]
-                             + (1 - self.decay_plume) * target)
-            arriving = max(self.plume[k], target) * self._burst[k]
+            # Lingering is for OCCLUSION only. The previous version low-passed
+            # the concentration itself and took max(plume, target), which meant
+            # the signal could never fall faster than tau_plume however fast the
+            # agent moved away -- so receding from a source smelled STRONGER
+            # than approaching it at the same distance (-16 Hz at 200 units),
+            # inverting the only gradient a bearing-free sensor can navigate on.
+            # While a source is visible, concentration now tracks distance
+            # immediately; the memory decays only once the source is gone.
+            if self.seen[k]:
+                self.plume[k] = self.raw[k]
+                target = self.raw[k]
+            else:
+                self.plume[k] *= self.decay_plume
+                target = self.plume[k]
+            arriving = target * self._burst[k]
             self.sensed[k] = (self.decay_transport * self.sensed[k]
                               + (1 - self.decay_transport) * arriving)
 
+            # receptor adaptation: divide by a slow running estimate of the
+            # same signal. Constant odour fades toward a compressed steady
+            # value; a RISING odour transiently exceeds it. That excess is the
+            # only dC/dt the brain ever sees.
+            if c.adapt:
+                self.adapt[k] = (self.decay_adapt * self.adapt[k]
+                                 + (1 - self.decay_adapt) * self.sensed[k])
+                self.drive[k] = self.sensed[k] / (1.0 + c.weber_k
+                                                  * self.adapt[k])
+            else:
+                self.drive[k] = self.sensed[k]
+
         self.rate.zero_()
-        if self.threat.numel() and self.sensed["threat"] > 1e-4:
-            self.rate[self.threat] = c.max_rate_hz * self.sensed["threat"]
-        if self.food.numel() and self.sensed["food"] > 1e-4:
-            self.rate[self.food] = c.max_rate_hz * self.sensed["food"]
+        if self.threat.numel() and self.drive["threat"] > 1e-4:
+            self.rate[self.threat] = c.max_rate_hz * self.drive["threat"]
+        if self.food.numel() and self.drive["food"] > 1e-4:
+            self.rate[self.food] = c.max_rate_hz * self.drive["food"]
         return self.rate
 
     @property
