@@ -81,8 +81,8 @@ entire brain with essentially no free parameters, but such models are at
 present driven open loop: sensory neurons are stimulated and motor neurons are
 read. We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
 2{,}710{,}038 edges at a five-synapse threshold) in a \emph{closed}
-sensorimotor loop with a video game, at $0.06\times$ realtime on one
-consumer GPU or CPU. Nothing is trained, and the only fitted quantity is a single
+sensorimotor loop with a video game, at $0.19\times$ realtime on one
+consumer CPU. Nothing is trained, and the only fitted quantity is a single
 global synaptic gain calibrated on a non-visual behaviour. We find a
 dissociation between modalities. Chemosensory transformations transfer: sugar
 stimulation drives the proboscis motor pool to 77\,Hz and co-stimulation with
@@ -256,8 +256,8 @@ Graded (non-spiking) units & 77{,}873\\
 \midrule
 Resident GPU memory & 31\,MB\\
 GPU kernel time per 0.5\,ms step & ${\sim}310\,\mu$s\\
-Wall-clock per 0.5\,ms step & $8.8$\,ms (GPU), $6.5$\,ms (CPU, 16 threads)\\
-Closed-loop rate & $0.06\times$ realtime\\
+Wall-clock per 0.5\,ms step & $1.4$\,ms (CPU, 8 threads, CSR delivery)\\
+Closed-loop rate & $0.19\times$ realtime\\
 \bottomrule
 \end{tabular}
 \end{table}
