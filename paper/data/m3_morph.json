@@ -1,0 +1,90 @@
+{
+ "tf": 2.0,
+ "phase_step_deg": 120.0,
+ "rungs": [
+  {
+   "rung": "0 ideal",
+   "dsi": -0.2631578947368421,
+   "r_pref": 14.0,
+   "r_null": 24.0,
+   "abs_diff": 10.0,
+   "n_exc": 1,
+   "n_inh": 1,
+   "w_exc": 120.0,
+   "w_inh": 120.0,
+   "spread": 0,
+   "graded": false,
+   "pedestal": 0.0
+  },
+  {
+   "rung": "1 realweight",
+   "dsi": 0.0,
+   "r_pref": 0.0,
+   "r_null": 0.0,
+   "abs_diff": 0.0,
+   "n_exc": 1,
+   "n_inh": 1,
+   "w_exc": 46.8,
+   "w_inh": 41.5,
+   "spread": 0,
+   "graded": false,
+   "pedestal": 0.0
+  },
+  {
+   "rung": "2 gain x2",
+   "dsi": -0.3333333333333333,
+   "r_pref": 8.0,
+   "r_null": 16.0,
+   "abs_diff": 8.0,
+   "n_exc": 1,
+   "n_inh": 1,
+   "w_exc": 93.6,
+   "w_inh": 83.0,
+   "spread": 0,
+   "graded": false,
+   "pedestal": 0.0
+  },
+  {
+   "rung": "3 fanin",
+   "dsi": -0.3333333333333333,
+   "r_pref": 8.0,
+   "r_null": 16.0,
+   "abs_diff": 8.0,
+   "n_exc": 14,
+   "n_inh": 12,
+   "w_exc": 6.685714285714285,
+   "w_inh": 6.916666666666667,
+   "spread": 0,
+   "graded": false,
+   "pedestal": 0.0
+  },
+  {
+   "rung": "4 spread",
+   "dsi": -1.0,
+   "r_pref": 0.0,
+   "r_null": 8.0,
+   "abs_diff": 8.0,
+   "n_exc": 14,
+   "n_inh": 12,
+   "w_exc": 6.685714285714285,
+   "w_inh": 6.916666666666667,
+   "spread": 1,
+   "graded": false,
+   "pedestal": 0.0
+  },
+  {
+   "rung": "5 graded",
+   "dsi": -1.0,
+   "r_pref": 0.0,
+   "r_null": 8.0,
+   "abs_diff": 8.0,
+   "n_exc": 14,
+   "n_inh": 12,
+   "w_exc": 6.685714285714285,
+   "w_inh": 6.916666666666667,
+   "spread": 1,
+   "graded": true,
+   "pedestal": 0.0
+  }
+ ]
+}

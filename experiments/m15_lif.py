@@ -22,6 +22,7 @@ Four checks:
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -56,7 +57,9 @@ class Checks:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="flydoom M1.5 — LIF integrator")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
     dev = args.device
     p = LIFParams()

@@ -109,8 +109,17 @@ resting potential under roughly tenfold inhibition --- yet neither rebalancing
 the arms with short-term depression nor transplanting per-type gains from an
 optimized model raises selectivity; both lower it. Candidate mechanisms
 spanning pooling, sampling geometry, phase offset, saturation, operating point
-and arm imbalance were tested and eliminated one by one. We therefore report
-the motion failure as mechanistically \emph{unresolved} rather than explained.
+and arm imbalance were tested and eliminated one by one. Two model choices do
+account for part of the deficit, and both are ours rather than the connectome's:
+\cell{T4}'s summed synaptic weight sits at the threshold for producing any
+output, so the cell fires only on tonic bias that carries no stimulus
+information; and modelling it as a graded unit replaces the expansive
+nonlinearity a correlator needs with a linear ramp, costing $10.6\times$ against
+an otherwise identical spiking cell. Correcting both raises the fraction of
+selective cells from $2.8\%$ to $12.3\%$ and still does not yield direction
+selectivity: the preferred direction continues to follow the stimulus rather
+than the wiring. We therefore report the motion failure as mechanistically
+\emph{unresolved} rather than explained.
 Read against connectome-constrained models whose unknown parameters are
 optimized, the wiring is common to both, so what optimization supplies is some
 combination of per-type gain and timing that we can bound but cannot yet
@@ -630,7 +639,7 @@ not. We report the bounded figure, $|\mathrm{DSI}|\leq0.0121$, rather than the
 larger and emptier one.
 
 What remains is a negative result without a mechanism, and we report it as
-such. Seventeen candidate explanations were measured and eliminated: pooling
+such. Nineteen candidate explanations were measured and eliminated: pooling
 artefact (per-cell $r=+0.043$ over 874 cells); arm imbalance, by depression and
 by gain transplant; input dilution (the correlator supplies 80--86\% of
 \cell{T4a}'s input); unmodulated arms (\cell{Mi1} modulates at 125\% and
@@ -646,6 +655,47 @@ DSI-versus-rate curve does not reproduce in the network; the competing-input
 hypothesis, by in-network ablation; and dendritic compartmentalization. The geometry, the
 delays, the phase offset and the modulation are all present and measured; the
 selectivity is not. We do not know why, and we prefer to say so.
+
+Two properties of the model, rather than of the connectome, account for a
+large part of the deficit, and both were found by building a correlator that
+works and then adding \cell{T4}'s properties to it one at a time.
+
+\emph{The cell is below threshold on its own inputs.} Summed over the graph,
+\cell{T4a} receives $46.8$ units of excitation and $41.5$ of inhibition per
+cell. Calibrating the same units in isolation, a target driven at the graded
+ceiling emits nothing at a weight of $30$ and $24$\,Hz at $60$: the threshold
+for any output at all falls at roughly $40$--$50$. Supplying the hand-built
+correlator with \cell{T4a}'s measured weights therefore leaves it \emph{silent},
+$R_{\mathrm{pref}}=R_{\mathrm{null}}=0$. Under a single global $W_{\mathrm{syn}}$
+calibrated on the SEZ taste circuit, the cell can only be made to fire by the
+tonic bias, which carries no stimulus information --- so the selectivity we have
+been measuring is a ripple on an uninformative pedestal. \cell{T5a}, at $58.9$
+against $31.3$, clears the same bar, and reads $3.7\times$ the selectivity.
+
+\emph{The graded transfer function removes the required nonlinearity.} A
+correlator converts a phase difference between its arms into a rate difference,
+which requires an expansive nonlinearity. A graded unit emits
+$\mathrm{clamp}((v-V_{\mathrm{rest}})/\Delta,0,1)$, a \emph{linear} ramp between
+its clamps. Holding the recorded \cell{Mi1}/\cell{Mi9} traces, the weights and
+the delays fixed and changing only the target's transfer function gives
+$\mathrm{DSI}=-0.1781$ spiking against $-0.0168$ graded, a $10.6\times$ loss;
+the latter is the value the intact network reports. Modelling the optic lobe as
+graded is correct for photoreceptors and lamina monopolars and was adopted for
+that reason, but applied to \cell{T4} it removes the operation the cell exists
+to perform.
+
+Correcting both --- spiking \cell{T4}/\cell{T5}, and optic-lobe gain in place of
+the tonic bias --- raises the fraction of cells above the experimental selection
+threshold from $2.8\%$ to $12.3\%$. It does not produce direction selectivity.
+The preferred direction remains set by the stimulus rather than by the wiring:
+across six spatial period and temporal frequency combinations, the fraction of
+\cell{T5a} cells preferring one direction swings from $34\%$ to $70\%$, crossing
+and reversing, and the residual response shows no delay tuning at all --- varying
+the slow arm from $20$ to $160$\,ms moves the directional signal only between
+$1.04$ and $1.29$\,Hz. A correlator's preference is a property of its geometry
+and cannot depend on the stimulus that probes it. We therefore do not describe
+the residual as weak direction selectivity; it is a stimulus-timing artefact,
+which also explains the below-chance mirror opposition reported above.
 
 One methodological caution follows from this work. An earlier draft reported
 mean $|\mathrm{DSI}|=0.37$ for \cell{T4a} cells driven by their own recorded
@@ -1004,7 +1054,25 @@ inhibitory flank; global optic-lobe gain to $\times32$ and gain targeted onto
 regime to that of the isolated correlator. \emph{Positive control added:} a
 hand-built two-input correlator in the same simulator reaches
 $\mathrm{DSI}=-0.79\pm0.017$, which is what licenses us to call the network
-result a failure of the wired model rather than of the method.
+result a failure of the wired model rather than of the method. Rebuilt from
+scratch for this revision, the same construction reaches $-0.26$ at one
+configuration and $-1.00$ once the real fan-in and spatial spread are added; we
+quote the original figure but note that the magnitude depends on the operating
+point chosen, and that the qualitative claim --- this model class computes
+direction --- is the part the argument rests on.
+
+\emph{A defect in our own instrumentation, disclosed because it invalidates
+earlier statements.} The \texttt{-{}-spiking-t4} option was applied in only one
+of three code paths; the per-cell and operating-grid paths build their own
+graded mask and silently ignored it. Any conclusion about spiking \cell{T4}
+drawn from those paths measured the graded model twice, and is withdrawn. The
+option is now applied in one place used by all three. Separately, an earlier
+per-subtype geometry analysis pooled \cell{Mi9} with \cell{Mi4}, which sit on
+\emph{opposite} flanks; averaging them produced a vector that flips with their
+relative weight and manufactured both a spurious bimodality and an apparent
+$97$--$114^\circ$ mirror-pair defect. Taking \cell{Mi9} alone, the axes are
+coherent ($R=0.67$--$0.93$) and the mirror pairs are $182$--$194^\circ$ apart,
+as they should be. \cell{T4}'s input geometry is not defective.
 
 \emph{Deferred.} Per-cell-type synaptic gains remain unfitted, because fitting
 them is the independent variable of this study rather than a repair to it --- a

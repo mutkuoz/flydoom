@@ -26,6 +26,7 @@ has not.
 from __future__ import annotations
 
 import argparse
+import os
 import collections
 import sys
 from pathlib import Path
@@ -88,7 +89,9 @@ def main() -> int:
                          "nothing. The RATIO between the arms is preserved "
                          "exactly, which is what the question is about.")
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()

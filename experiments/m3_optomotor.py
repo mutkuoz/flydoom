@@ -16,6 +16,7 @@ asymmetry must REVERSE when the grating reverses. Sign, not magnitude.
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -314,6 +315,36 @@ def _ablate_inputs(g, ann, targets: tuple[str, ...], keep: tuple[str, ...]):
     return int(kill.sum())
 
 
+def _apply_spiking_t4(graded, g, ann, args):
+    """Make T4/T5 spiking instead of graded, if asked.
+
+    This used to live inline in one code path only, so --spiking-t4 was
+    SILENTLY IGNORED by --dsi-grid and --per-cell: they build their own graded
+    mask. Any earlier conclusion about spiking T4 drawn from those paths was
+    measuring the graded model twice. It matters because the transfer function
+    is not a detail here -- a graded unit's output is a clamped LINEAR ramp in
+    voltage, so a phase difference between two arms lands as a small difference
+    on a large pedestal, while a threshold turns the same voltage difference
+    into a large relative rate difference.
+    """
+    import polars as _pl
+    if graded is None or not getattr(args, "spiking_t4", False):
+        return graded
+    graded = graded.copy()
+    d = ann.df
+    n = 0
+    for t in T4T5:
+        f = d.filter((_pl.col("primary_type") == t) | (_pl.col("visual_type") == t))
+        ids = f["root_id"].unique().to_list()
+        if ids:
+            idx = g.index_of(ids)
+            graded[idx] = False
+            n += len(idx)
+    print(paint(f"T4/T5 made SPIKING ({n:,} cells; threshold nonlinearity "
+                f"restored)", "1;33"))
+    return graded
+
+
 def _net_for(g, ann, args, edge_delay, graded):
     """LIFNetwork for `args`, compartmentalised if asked.
 
@@ -368,7 +399,7 @@ def per_cell_dsi(args) -> int:
         print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
                     f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
     retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
-    graded = g.graded_mask(ann)
+    graded = _apply_spiking_t4(g.graded_mask(ann), g, ann, args)
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
     net = _net_for(g, ann, args, edge_delay, graded)
     gext = _bias_vector(net, g, ann, args.bias, args.device,
@@ -490,7 +521,7 @@ def dsi_grid(args) -> int:
         print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
                     f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
     retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
-    graded = g.graded_mask(ann)
+    graded = _apply_spiking_t4(g.graded_mask(ann), g, ann, args)
     ceiling = config.GRADED_MAX_RATE
 
     biases = tuple(float(b) for b in args.grid_biases.split(",")) \
@@ -695,7 +726,9 @@ def main() -> int:
                     help="serialise the --dsi-grid measurement. The table and "
                          "figure in the write-up are generated from this file, "
                          "so they cannot drift from the run.")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     if args.per_cell:
@@ -721,20 +754,7 @@ def main() -> int:
     retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
     graded = g.graded_mask(ann) if args.graded else None
-    if graded is not None and getattr(args, "spiking_t4", False):
-        graded = graded.copy()
-        for _t in T4T5:
-            _i = population_indices(g, ann, _t) if False else None
-        import polars as _pl
-        _d = ann.df
-        for _t in T4T5:
-            _f = _d.filter((_pl.col("primary_type") == _t)
-                           | (_pl.col("visual_type") == _t))
-            _ids = _f["root_id"].unique().to_list()
-            if _ids:
-                graded[g.index_of(_ids)] = False
-        print(paint("T4/T5 made SPIKING (threshold nonlinearity restored)",
-                    "1;33"))
+    graded = _apply_spiking_t4(graded, g, ann, args)
     net = _net_for(g, ann, args, edge_delay, graded)
     if graded is not None:
         print(f"graded     {int(graded.sum()):,} non-spiking optic-lobe "

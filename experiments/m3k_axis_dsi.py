@@ -27,6 +27,7 @@ moves in.
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from collections import defaultdict
@@ -81,7 +82,9 @@ def main() -> int:
                          "correlation. Below this, DSI is a ratio of two "
                          "near-zero numbers and carries no information.")
     ap.add_argument("--json", type=Path, default=None)
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()

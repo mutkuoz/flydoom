@@ -27,6 +27,7 @@ the descending neurons. Watch it with that in mind.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -88,7 +89,9 @@ def main() -> int:
     ap.add_argument("--yaw-gain", type=float, default=MotorConfig.yaw_gain)
     ap.add_argument("--spiking", action="store_true",
                     help="all-spiking optic lobe (the paper's model)")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     print(paint("flydoom M5 — closed loop", "1"))

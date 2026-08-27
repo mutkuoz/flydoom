@@ -41,6 +41,7 @@ not hop count.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -130,7 +131,9 @@ def main() -> int:
     ap.add_argument("--shuffled", action="store_true",
                     help="degree-preserving shuffle. VALID here, unlike in M6, "
                          "because the stimulus is open loop and identical.")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     ap.add_argument("--json", type=Path, default=None,
                     help="dump full-precision per-seed arms to JSON (for figures)")
     args = ap.parse_args()

@@ -21,6 +21,7 @@ inputs, the same for its Mi9 inputs, and the difference.
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -59,7 +60,9 @@ def main() -> int:
     ap.add_argument("--fast", default="Mi1")
     ap.add_argument("--slow", default="Mi9")
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()

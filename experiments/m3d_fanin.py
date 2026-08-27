@@ -24,6 +24,7 @@ Measured per T4a cell, for each arm:
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -59,7 +60,9 @@ def main() -> int:
     ap.add_argument("--bias", type=float, default=1.0)
     ap.add_argument("--duration", type=float, default=1.5)
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()

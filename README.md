@@ -124,26 +124,53 @@ moving left:    B fires, then A fires
 
 Both cases: A fired and B fired. Same events. The only difference is which came first.
 
-Here's the problem. A neuron adds up everything arriving from all its inputs into one
-total, then fires if the total is big enough. **Addition doesn't care about order** — `A+B`
-is the same number as `B+A`. A cell that sums its inputs and applies one threshold to the
-sum literally cannot tell the two cases apart. Not a tuning problem. Arithmetic.
+Real brains solve this by making one input line slower than the other, then combining them
+so that "what was there a moment ago" lines up with "what's here now" for one direction and
+not the other. The connectome has all of it: the two input lines, the delay, the spacing,
+four detector subtypes pointing four different ways, mirror pairs 180° apart. We measured
+every piece. They're all there.
 
-Real brains solve this by making one input line slower than the other, then *multiplying*
-rather than adding. Multiplying "what was there a moment ago" against "what's here now" is
-large for one direction of motion and small for the other.
+The detector still reads about **2% of a real fly's** direction selectivity.
 
-We built both ingredients. We also tried four other fixes. Direction selectivity went from
-exactly zero to about **2% of a real fly's** — present, correctly signed, and useless.
+**An earlier version of this README said that was arithmetic — that `A+B` equals `B+A`, so
+a cell that sums and thresholds literally cannot recover order. That was wrong and we
+withdrew it.** It describes a unit with no memory. Build the same correlator out of the
+same simulated neurons, with one arm delayed, and it reaches a direction selectivity index
+of **0.79** — and up to **1.0** once you add the real fan-in and spatial spread. The
+machinery works fine. Something about how it's embedded doesn't.
+
+**Two causes we did find**, each isolated by changing one thing and nothing else:
+
+1. **The cell can't fire from its own inputs.** All of T4's excitation adds up to 46.8
+   weight units; the threshold for producing *any* output is about 40–50, and it's opposed
+   by 41.5 units of inhibition. Hand the toy correlator T4's real weights and it goes
+   **silent**. So every measurement this project ever made came from a cell firing on
+   *injected current* — a constant that carries no information about what the eye is
+   seeing. The signal was a ripple on a meaningless pedestal.
+
+2. **We modelled the detector as non-spiking.** Photoreceptors genuinely are, so it seemed
+   safe to model the whole optic lobe that way. But a non-spiking cell's output is a
+   straight line in its voltage, and a straight line can't do the comparison — feed the
+   *identical* recorded signals into one that spikes and selectivity is **10.6× higher**
+   (0.178 vs 0.017; the network reads 0.016–0.020).
+
+Fix both — restore the threshold, drive the cell from its synapses instead of from injected
+current — and cells above the experimental cutoff go from **2.8% to 12.3%**.
+
+**It still doesn't see motion.** A real detector's preferred direction comes from its
+wiring, so it can't change when you change the stimulus. Ours swings from 34% to 70%
+preferring one direction depending on stripe width and speed — it *reverses*. The residual
+response has no delay tuning either: change the delay twelve-fold and it barely moves.
+Whatever that 2% is, it isn't a motion detector, and we stopped calling it a weak one.
+
+Nineteen explanations tested and eliminated, including the two above, which are real and
+fixed and still not sufficient. The honest state is: every part is correct, the parts work
+in isolation, and the assembled thing doesn't. We don't know why yet.
 
 And the check that stops you fooling yourself: we took the same brain, **randomly rewired
 it** while keeping every neuron's connection count identical, and showed it the same thing.
 The scrambled brain performed the same as the real one. Whatever visual response survives
 isn't coming from the wiring.
-
-Why the fix didn't take, in one line: the "what's here now" signal is held down by an
-inhibitory input, so it whispers at 2 Hz while the "a moment ago" signal shouts at 78. You
-can't compare two voices when one is 37 times louder.
 
 ---
 
@@ -256,8 +283,25 @@ Each one prints pass or fail.
 | M6 | It runs from an enemy, unprompted | ❌ |
 | M7 | It can tell which side a target is on | ❌ |
 | M8 | **Smell changes what it does** | ✅ beats the control |
+| M9 | Does it actually play better than random? | ❌ no, on any of 18 measures |
 
 124 automated tests.
+
+**M9 is the coldest result.** With 30 environment seeds per arm, the connectome beats a
+command-matched random agent on **none** of eighteen behavioural measures. Two things are
+worth saying about that. First, an earlier version of this table quoted much friendlier
+numbers from 5 seeds; the metric has a standard deviation of ~13, so 5 seeds could only
+resolve differences of ~20 and two runs of the *same* configuration returned 3.2 and 11.2.
+Those comparisons were noise and we withdrew them. Second, behaviour was never the
+measurable — the fly has no ventral nerve cord here and Doom is outside anything it
+evolved for. What M9 rules out is the flattering interpretation, not the project.
+
+Beyond the milestones there are diagnostics, mostly built to kill our own explanations:
+`m3b`–`m3f` (arm modulation, phase offset, fan-in, isolation, add-back), `m3i` (are the
+arms saturated?), `m3j`/`m3t` (per-subtype detector geometry), `m3k` (does geometry predict
+selectivity, per cell?), `m3l` (build a correlator that works, then add T4's properties one
+at a time until it breaks), `m3m` (feed the *real* recorded signals into that correlator).
+`run_sharded.py` runs any of them across cores with resumable per-seed checkpoints.
 
 **M2 is the one that matters most.** Stimulate the sugar-tasting neurons and the muscle
 that extends the fly's tongue fires at 77 Hz. Stimulate the bitter ones and it drops to

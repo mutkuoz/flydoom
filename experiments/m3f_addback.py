@@ -15,6 +15,7 @@ isolated-replay method as M3e, same gain, only the input set changes.
 from __future__ import annotations
 
 import argparse
+import os
 import collections
 import sys
 from pathlib import Path
@@ -46,7 +47,9 @@ def main() -> int:
     ap.add_argument("--n-cells", type=int, default=200)
     ap.add_argument("--gain", type=float, default=10.0)
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()

@@ -28,6 +28,7 @@ A detector that fires for all four is measuring luminance, not looming.
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -239,7 +240,9 @@ def main() -> int:
                          "the stimulus here is generated open-loop and is "
                          "identical for both arms, so any difference is "
                          "attributable to wiring rather than to behaviour.")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     print(paint("flydoom M4 — looming escape", "1"))

@@ -25,6 +25,7 @@ is a far stronger statement than "we did not try".
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -76,7 +77,9 @@ def main() -> int:
                     help="shuffled connectome. NOTE: this is NOT a valid "
                          "control here -- see the warning it prints. Use "
                          "m4_looming.py --shuffled instead.")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     print(paint("flydoom M6 — enemy present", "1"))

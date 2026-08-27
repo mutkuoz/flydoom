@@ -42,6 +42,7 @@ attribution claim lives.
 from __future__ import annotations
 
 import argparse
+import os
 import datetime as _dt
 import json
 import math
@@ -382,7 +383,9 @@ def main() -> int:
                          "the sweep in the write-up.")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     print(paint("flydoom M9 — closed-loop behaviour", "1"))

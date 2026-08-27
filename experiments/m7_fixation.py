@@ -28,6 +28,7 @@ and should not track azimuth as well.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -59,7 +60,9 @@ def main() -> int:
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--window", action="store_true")
     ap.add_argument("--scenario", default="defend_the_center")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     print(paint("flydoom M7 — object fixation", "1"))

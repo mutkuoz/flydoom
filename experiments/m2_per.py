@@ -30,6 +30,7 @@ anything, and only the controls catch it.
 from __future__ import annotations
 
 import argparse
+import os
 import statistics
 import sys
 from pathlib import Path
@@ -146,7 +147,9 @@ def main() -> int:
     ap.add_argument("--duration", type=float, default=1.0)
     ap.add_argument("--quick", action="store_true",
                     help="3 trials, skip the dose-response sweep")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     ap.add_argument("--w-syn", type=float, default=None,
                     help="skip calibration and use this value (volts)")
     ap.add_argument("--sweep", action="store_true",

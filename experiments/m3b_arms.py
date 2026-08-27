@@ -22,6 +22,7 @@ wiring delivers that input.
 from __future__ import annotations
 
 import argparse
+import os
 import math
 import sys
 from pathlib import Path
@@ -64,7 +65,9 @@ def main() -> int:
     ap.add_argument("--site", default="L1+L2+L3")
     ap.add_argument("--optic-gain", type=float, default=1.0)
     ap.add_argument("--device",
-                    default="cuda" if torch.cuda.is_available() else "cpu")
+                    default=(os.environ.get("FLYDOOM_DEVICE")
+                             or ("cuda" if torch.cuda.is_available()
+                                 else "cpu")))
     args = ap.parse_args()
 
     g = ConnectomeGraph.load()
