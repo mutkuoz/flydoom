@@ -89,10 +89,30 @@ def main() -> int:
                     help="T4's summed weight sits at the threshold for any "
                          "output at all, so at gain 1 with bias 0 the cell "
                          "fires on nothing.")
+    ap.add_argument("--inh-scale", type=float, default=1.0,
+                    help="ONE GLOBAL SCALAR over every inhibitory synapse in "
+                         "the brain. Not a per-cell-type gain: it multiplies "
+                         "g_inh everywhere and so moves the whole model along "
+                         "the linear -> shunting axis. g_tot = 1 + g_e + g_i "
+                         "is where any multiplicative interaction has to come "
+                         "from; at g_i << 1 the cell is additive.")
     ap.add_argument("--min-rate", type=float, default=20.0,
                     help="minimum R+L in Hz for a cell to enter the "
                          "correlation. Below this, DSI is a ratio of two "
                          "near-zero numbers and carries no information.")
+    ap.add_argument("--e-inh", type=float, default=None,
+                    help="inhibitory reversal potential in mV, one global "
+                         "constant. Default -70 sits 18 mV BELOW V_rest, so "
+                         "inhibition here both hyperpolarises and shunts. "
+                         "Setting it to V_rest (-52) makes it PURELY DIVISIVE "
+                         "and separates the two: if raising inhibition still "
+                         "helps at -52, the mechanism is the shunt; if it "
+                         "stops helping, it was the hyperpolarisation working "
+                         "against the spike threshold.")
+    ap.add_argument("--dump-cells", action="store_true",
+                    help="write per-cell (index, axis azimuth, right Hz, left "
+                         "Hz) into the JSON, so two runs can be compared on "
+                         "the SAME cells rather than on each run's survivors.")
     ap.add_argument("--json", type=Path, default=None)
     ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
                              or ("cuda" if torch.cuda.is_available()
@@ -106,6 +126,13 @@ def main() -> int:
         g.signed_syn = (g.signed_syn
                         * optic_gain_multipliers(g, ann, args.optic_gain)
                         ).astype(np.float32)
+    if args.inh_scale != 1.0:
+        neg = g.signed_syn < 0
+        sw = g.signed_syn.astype(np.float32).copy()
+        sw[neg] *= args.inh_scale
+        g.signed_syn = sw
+        print(f"inhibitory conductance scaled x{args.inh_scale:g} "
+              f"({int(neg.sum()):,} edges)")
     retina = Retina.build(g, ann)
 
     # column -> visual direction, per eye
@@ -143,7 +170,13 @@ def main() -> int:
                 graded[g.index_of(ids)] = False
         print("T4/T5 made SPIKING")
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=config.T_DLY_SLOW)
-    net = LIFNetwork.from_graph(g, device=args.device, seed=0,
+    params = None
+    if args.e_inh is not None:
+        from flydoom.lif import LIFParams
+        params = LIFParams(e_inh=args.e_inh * 1e-3)
+        print(f"E_inh set to {args.e_inh:g} mV "
+              f"(V_rest {config.V_REST * 1e3:.0f} mV)")
+    net = LIFNetwork.from_graph(g, params=params, device=args.device, seed=0,
                                 edge_delay=edge_delay, graded=graded)
     gext = _bias_vector(net, g, ann, args.bias, args.device)
     rig = GratingRig(net, retina, args.device, args.period, 150.0)
@@ -176,12 +209,17 @@ def main() -> int:
           f" {'r(len,|DSI|)':>14} {'mean|az| deg':>13}")
 
     record = {"bias_mv": args.bias, "period_deg": args.period, "tf_hz": args.tf,
+              "inh_scale": args.inh_scale, "optic_gain": args.optic_gain,
               "subtypes": {}}
+    pooled_proj, pooled_diff, pooled_tot = [], [], []
+    pooled_sgn, pooled_raw = [], []
     for s in SUBTYPES:
         group = ARMS["T4" if s.startswith("T4") else "T5"]
         exc = set().union(*[set(cells_of_type(g, ann, t).tolist()) for t in group["exc"]])
         inh = set().union(*[set(cells_of_type(g, ann, t).tolist()) for t in group["inh"]])
-        AZ, EL, LEN, DSI, TOT = [], [], [], [], []
+        AZ, EL, LEN, DSI, TOT, PROJ, DIFF, SGN, RAW = (
+            [], [], [], [], [], [], [], [], [])
+        CELL = []
         for c in cells[s]:
             c = int(c)
             if c not in cell_pt or c not in widx:
@@ -206,16 +244,32 @@ def main() -> int:
                 continue
             AZ.append(abs(dx)); EL.append(abs(dy)); TOT.append(r_ + l_)
             LEN.append(math.hypot(dx, dy)); DSI.append(abs((r_ - l_) / (r_ + l_)))
+            # AXIS-PROJECTED, and SIGNED. |DSI| is a magnitude, so noise scores
+            # positive on it; a correlator population has to agree on a
+            # DIRECTION. Each cell's own exc->inh azimuthal offset says which
+            # way it ought to prefer, so project its signed DSI onto that
+            # offset. Noise averages to zero here. A real detector does not.
+            sgn = 1.0 if dx >= 0 else -1.0
+            PROJ.append(sgn * (r_ - l_) / (r_ + l_))
+            DIFF.append(sgn * (r_ - l_))
+            SGN.append(sgn)
+            RAW.append((r_ - l_) / (r_ + l_))
+            CELL.append((c, dx, float(r_), float(l_)))
         if len(AZ) < 10:
             continue
         # DSI is a ratio and inflates without bound as its denominator vanishes;
         # a cell firing 0.01 Hz against 0.02 Hz scores 0.33 on no signal at all.
         # Correlating geometry against that measures noise. Restrict to cells
         # that are actually driven, as the per-cell control in M3 does.
-        AZ, EL, LEN, DSI, TOT = map(np.asarray, (AZ, EL, LEN, DSI, TOT))
+        AZ, EL, LEN, DSI, TOT, PROJ, DIFF, SGN, RAW = map(
+            np.asarray, (AZ, EL, LEN, DSI, TOT, PROJ, DIFF, SGN, RAW))
         keep = TOT > args.min_rate
         n_all = len(AZ)
         AZ, EL, LEN, DSI = AZ[keep], EL[keep], LEN[keep], DSI[keep]
+        PROJ, DIFF, TOTK = PROJ[keep], DIFF[keep], TOT[keep]
+        SGN, RAW = SGN[keep], RAW[keep]
+        pooled_proj.append(PROJ); pooled_diff.append(DIFF); pooled_tot.append(TOTK)
+        pooled_sgn.append(SGN); pooled_raw.append(RAW)
         if len(AZ) < 10:
             print(f"  {s:>8} {0:>5}   -- no cells above {args.min_rate} Hz total")
             continue
@@ -223,12 +277,70 @@ def main() -> int:
         print(f"  {s:>8} {len(AZ):>5} {r_az:>15.3f} {r_el:>15.3f} {r_len:>14.3f}"
               f" {np.mean(AZ):>13.2f}   ({len(AZ)}/{n_all} driven, "
               f"mean|DSI| {DSI.mean():.4f})")
+        # DSI is a ratio and inflates without bound as its denominator falls,
+        # so it is printed beside the two numbers that cannot be inflated: the
+        # firing rate, and the rate DIFFERENCE in Hz.
+        print(f"  {'':>8} {'':>5} projected DSI {np.mean(PROJ):>+8.4f}"
+              f"   rate {np.mean(TOTK) / 2:>7.2f} Hz"
+              f"   dRate {np.mean(DIFF):>+7.3f} Hz")
         record["subtypes"][s] = {"n": len(AZ), "r_azimuth": r_az,
                                  "r_elevation": r_el, "r_length": r_len,
                                  "mean_abs_az_deg": float(np.mean(AZ)),
                                  "mean_abs_el_deg": float(np.mean(EL)),
                                  "mean_dsi": float(np.mean(DSI)), "n_driven": int(len(DSI)),
+                                 "projected_dsi": float(np.mean(PROJ)),
+                                 "global_dsi": float(np.mean(RAW)),
+                                 "sign_balance": float(np.mean(SGN)),
+                                 "geometry_linked_dsi": float(
+                                     np.mean(PROJ) - np.mean(SGN) * np.mean(RAW)),
+                                 "rate_hz": float(np.mean(TOTK) / 2),
+                                 "rate_diff_hz": float(np.mean(DIFF)),
                                  "min_rate_hz": args.min_rate}
+        if args.dump_cells:
+            # PER CELL, so a later comparison can be made on the SAME cells.
+            # Raising inhibition silences part of the population, and a
+            # measurement taken on the survivors is a different measurement;
+            # this is what makes the matched comparison possible at all.
+            record["subtypes"][s]["cells"] = [
+                [int(a), float(b), float(cc), float(dd)] for a, b, cc, dd in CELL]
+    if pooled_proj:
+        P = np.concatenate(pooled_proj)
+        D = np.concatenate(pooled_diff)
+        T = np.concatenate(pooled_tot)
+        S = np.concatenate(pooled_sgn)
+        R = np.concatenate(pooled_raw)
+        se = float(P.std(ddof=1) / math.sqrt(len(P))) if len(P) > 1 else 0.0
+        # CONTROL. A projected mean can be manufactured without any geometry:
+        # if the whole population simply responds more to one direction (a
+        # stimulus or boundary asymmetry) and the sign labels happen to be
+        # unbalanced, sgn*DSI has a nonzero mean on no per-cell structure at
+        # all. Split it: the part explained by the global bias alone is
+        # mean(sgn)*mean(DSI); what is left is the covariance between a cell's
+        # OWN geometry and its OWN preference, which is the only part a
+        # correlator account predicts. That residual is exactly the mean of a
+        # sign-shuffled null subtracted off.
+        glob = float(S.mean() * R.mean())
+        geo = float(P.mean() - glob)
+        # sign-shuffle null: permute the geometry labels, keep the responses
+        rng = np.random.default_rng(0)
+        null = np.array([float((rng.permutation(S) * R).mean())
+                         for _ in range(200)])
+        print(f"\n  POOLED  n={len(P)}  projected DSI {P.mean():+.4f} "
+              f"+- {se:.4f} (s.e.)   rate {T.mean() / 2:.2f} Hz   "
+              f"dRate {D.mean():+.3f} Hz")
+        print(f"          global bias {R.mean():+.4f} x sign balance "
+              f"{S.mean():+.3f} = {glob:+.4f}   ->  GEOMETRY-LINKED "
+              f"{geo:+.4f}   (shuffle null {null.mean():+.4f} "
+              f"+- {null.std():.4f})")
+        record["pooled"] = {"n": int(len(P)), "projected_dsi": float(P.mean()),
+                            "projected_dsi_se": se,
+                            "rate_hz": float(T.mean() / 2),
+                            "rate_diff_hz": float(D.mean()),
+                            "global_dsi": float(R.mean()),
+                            "sign_balance": float(S.mean()),
+                            "geometry_linked_dsi": geo,
+                            "shuffle_null_mean": float(null.mean()),
+                            "shuffle_null_sd": float(null.std())}
     print(paint("""
   The grating moves horizontally. If the geometric account is right,
   r(|azimuth|, |DSI|) should be clearly positive AND larger than

@@ -24,6 +24,8 @@ are stable and every other module — cells.py above all — keys off the same m
 
 from __future__ import annotations
 
+import os
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -224,10 +226,27 @@ class ConnectomeGraph:
         out = Path(out_dir)
         ids = pl.read_parquet(out / "id_map.parquet")
         e = pl.read_parquet(out / "edges.parquet")
+
+        _inh = float(os.environ.get("FLYDOOM_INH_SCALE", "1") or 1)
+        if _inh != 1.0:
+            # One global scalar over every inhibitory synapse. Not a
+            # per-cell-type gain: those are the study's independent
+            # variable. Exists because shunting inhibition in this model
+            # cancels itself -- dividing by g_tot is offset almost
+            # exactly by the rise in driving force (E_e - v) as v_inf
+            # falls -- so the multiplicative interaction a correlator
+            # needs is <11% until g_i substantially exceeds g_e.
+            _sy = e["signed_syn"].to_numpy().astype(np.float32).copy()
+            _neg = _sy < 0
+            _sy[_neg] *= _inh
+            print(f"FLYDOOM_INH_SCALE={_inh:g} applied to "
+                  f"{int(_neg.sum()):,} inhibitory edges")
+        else:
+            _sy = e["signed_syn"].to_numpy().astype(np.float32)
         return cls(
             e["pre_idx"].to_numpy().astype(np.int32),
             e["post_idx"].to_numpy().astype(np.int32),
-            e["signed_syn"].to_numpy().astype(np.float32),
+            _sy,
             ids["root_id"].to_numpy().astype(np.int64),
         )
 

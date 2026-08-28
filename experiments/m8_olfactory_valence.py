@@ -131,6 +131,8 @@ def main() -> int:
     ap.add_argument("--shuffled", action="store_true",
                     help="degree-preserving shuffle. VALID here, unlike in M6, "
                          "because the stimulus is open loop and identical.")
+    ap.add_argument("--inh-scale", type=float, default=1.0,
+                    help="global scalar on every inhibitory synapse. Doubling it raises motion selectivity 5-7x; this checks what it costs the chemosensory results, which are what G_SYN was fitted on.")
     ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
                              or ("cuda" if torch.cuda.is_available()
                                  else "cpu")))

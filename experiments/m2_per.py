@@ -147,6 +147,8 @@ def main() -> int:
     ap.add_argument("--duration", type=float, default=1.0)
     ap.add_argument("--quick", action="store_true",
                     help="3 trials, skip the dose-response sweep")
+    ap.add_argument("--inh-scale", type=float, default=1.0,
+                    help="global scalar on every inhibitory synapse. Doubling it raises motion selectivity 5-7x; this checks what it costs the chemosensory results, which are what G_SYN was fitted on.")
     ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
                              or ("cuda" if torch.cuda.is_available()
                                  else "cpu")))
@@ -163,6 +165,13 @@ def main() -> int:
 
     g = ConnectomeGraph.load()
     ann = AnnotationTable.load(config.RAW_DIR)
+    if getattr(args, "inh_scale", 1.0) != 1.0:
+        neg = g.signed_syn < 0
+        sw = g.signed_syn.astype(np.float32).copy()
+        sw[neg] *= args.inh_scale
+        g.signed_syn = sw
+        print(f"inhibitory conductance scaled x{args.inh_scale:g} "
+              f"({int(neg.sum()):,} edges)")
     net = LIFNetwork.from_graph(g, device=args.device, seed=0)
     print(f"synapses   {net.conductance_summary}")
 
