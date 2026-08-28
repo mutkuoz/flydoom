@@ -228,6 +228,7 @@ class ConnectomeGraph:
         e = pl.read_parquet(out / "edges.parquet")
 
         _inh = float(os.environ.get("FLYDOOM_INH_SCALE", "1") or 1)
+        _inh_optic = float(os.environ.get("FLYDOOM_OPTIC_INH_SCALE", "1") or 1)
         if _inh != 1.0:
             # One global scalar over every inhibitory synapse. Not a
             # per-cell-type gain: those are the study's independent
@@ -243,12 +244,25 @@ class ConnectomeGraph:
                   f"{int(_neg.sum()):,} inhibitory edges")
         else:
             _sy = e["signed_syn"].to_numpy().astype(np.float32)
-        return cls(
+        _g = cls(
             e["pre_idx"].to_numpy().astype(np.int32),
             e["post_idx"].to_numpy().astype(np.int32),
             _sy,
             ids["root_id"].to_numpy().astype(np.int64),
         )
+        if _inh_optic != 1.0:
+            # ONE regional parameter: inhibition onto the visual populations
+            # only. Forced by a measured contradiction -- see
+            # gains.optic_inhibitory_multipliers.
+            from .gains import optic_inhibitory_multipliers
+            from .cells import AnnotationTable
+            from . import config as _cfg
+            _ann = AnnotationTable.load(_cfg.RAW_DIR)
+            _m = optic_inhibitory_multipliers(_g, _ann, _inh_optic)
+            _g.signed_syn = (_g.signed_syn * _m).astype(np.float32)
+            print(f"FLYDOOM_OPTIC_INH_SCALE={_inh_optic:g} applied to "
+                  f"{int((_m != 1.0).sum()):,} inhibitory edges onto vision")
+        return _g
 
     # -- gpu -------------------------------------------------------------
 

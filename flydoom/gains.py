@@ -136,3 +136,42 @@ def gain_onto_types(graph, ann, types, gain: float) -> np.ndarray:
     mult = np.ones(len(graph.pre_idx), dtype=np.float32)
     mult[target[graph.post_idx]] = float(gain)
     return mult
+
+
+def optic_inhibitory_multipliers(graph, ann, scale: float) -> np.ndarray:
+    """Per-edge multiplier scaling INHIBITORY synapses onto the visual
+    populations only.
+
+    ONE regional parameter, and it is not a free one -- it is forced by a
+    measured contradiction. A correlator's multiplication must come from
+    inhibition dividing, but in this model the division cancels itself: the
+    shunt divides by g_tot (x1.77 at T4a) while the hyperpolarisation it causes
+    raises the driving force (E_e - v) by x1.85, leaving <11% interaction with
+    the wrong sign. Raising g_i/g_e restores it and lifts direction selectivity
+    5-7x. Doing so GLOBALLY destroys the SEZ taste circuit -- bitter stops
+    suppressing the proboscis and starts driving it at 168 Hz -- because 51% of
+    inhibitory edges land on other inhibitory neurons, so a global scalar
+    doubles disinhibition just as hard and inverts the sign.
+
+    The eye therefore requires an E/I ratio the taste circuit cannot survive.
+    No single global value satisfies both, which is the argument for a regional
+    one. Scoped to config.BIASED_SUPER_CLASSES, the same population the optic
+    gain and the tonic bias before it were applied to.
+    """
+    from . import config
+    cls = pl.read_csv(Path(config.RAW_DIR) / "classification.csv.gz",
+                      infer_schema_length=50_000)
+    ids = cls.filter(
+        pl.col("super_class").is_in(list(config.BIASED_SUPER_CLASSES))
+    )["root_id"].to_list()
+    pos = {int(r): i for i, r in enumerate(graph.root_ids)}
+    target = np.zeros(graph.n_neurons, dtype=bool)
+    for r in ids:
+        i = pos.get(int(r))
+        if i is not None:
+            target[i] = True
+    mult = np.ones(len(graph.pre_idx), dtype=np.float32)
+    onto_visual = target[graph.post_idx]
+    inhibitory = graph.signed_syn < 0
+    mult[onto_visual & inhibitory] = float(scale)
+    return mult

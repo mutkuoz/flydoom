@@ -282,6 +282,49 @@ E_INH = -70e-3     # V  [PUBLISHED] chloride reversal for GABA-A / GluCl.
 # sweep if shunting turns out to be the active ingredient.
 
 G_SYN = 0.00278    # dimensionless conductance per synapse  [FITTED]
+
+# ---- per-transmitter conductance: the parameter arm 2 needs ----
+#
+# G_SYN above is ONE fitted number applied to every synapse regardless of which
+# receptor it acts on. That is the assumption this project has now shown to be
+# not merely imprecise but self-contradictory: the optic lobe requires a g_i/g_e
+# ratio the SEZ taste circuit cannot survive (bitter inverts from suppressing
+# the proboscis to driving it at 168 Hz when inhibition is doubled globally).
+#
+# The connectome already labels every edge with its transmitter, and the model
+# already uses PUBLISHED per-class reversal potentials (E_EXC, E_INH). What is
+# missing is the conductance, which genuinely differs by receptor:
+#
+#     ACH  -> nAChR      cation channel
+#     GABA -> Rdl        GABA-A, chloride
+#     GLUT -> GluCl-alpha  chloride, inhibitory in flies
+#
+# Setting these from published electrophysiology is INDEPENDENT DATA, not a
+# fit: nothing about the values would be chosen to make motion work. That is
+# what distinguishes it from tuning.
+#
+# VALUES ARE NOT YET FILLED IN. Every entry equals G_SYN, so this is currently
+# a no-op and the model behaves exactly as before. Populating it requires real
+# citations for Drosophila nAChR / Rdl / GluCl-alpha synaptic conductance; they
+# are deliberately NOT guessed here, because a fabricated "published" value
+# would make the independent arm worse than having no independent arm.
+G_SYN_BY_NT = {
+    "ACH": G_SYN,    # [NEEDS CITATION] nicotinic ACh receptor
+    "GABA": G_SYN,   # [NEEDS CITATION] Rdl GABA-A
+    "GLUT": G_SYN,   # [NEEDS CITATION] GluCl-alpha
+    "DA": G_SYN,     # metabotropic -- see note below
+    "OCT": G_SYN,    # metabotropic
+    "SER": G_SYN,    # metabotropic
+    "UNK": G_SYN,
+}
+
+# DA, OCT and SER are METABOTROPIC. They act through second messengers over
+# 100 ms to seconds, not as fast ionotropic conductances, and the model treats
+# all 23,197 of their edges as fast excitatory synapses. That is wrong in KIND
+# rather than in magnitude, and unlike the conductances above it needs no
+# literature value to state -- only a timescale. Left as-is for now and
+# recorded here so it is not mistaken for a modelling choice that was checked.
+METABOTROPIC = ("DA", "OCT", "SER")
 # [FITTED] 2026-08-21 by m2_per.py against the Buhmann v783 graph, same
 # protocol as W_SYN: sugar GRNs at 100 Hz Poisson -> 79.8% of the saturating
 # MN9 response. M2 passes in conductance mode with all eight checks, including
