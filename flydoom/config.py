@@ -277,6 +277,15 @@ SYNAPSE_MODEL = "conductance"   # "subtractive" (paper) | "conductance" (ours)
 
 E_EXC = 0.0        # V  [PUBLISHED] cation reversal for nicotinic ACh, ~0 mV
 E_INH = -70e-3     # V  [PUBLISHED] chloride reversal for GABA-A / GluCl.
+                   # CONFIRMED by direct measurement in the exact cell this
+                   # project cares about: Groschner et al. 2022 record
+                   # E_Glu = -71 mV and E_GABA = -68 mV in ADULT T4 IN VIVO,
+                   # and state explicitly that these two are NOT subject to the
+                   # space-clamp distortion that corrupts their E_ACh estimate.
+                   # Caveat worth stating in any write-up: every published
+                   # GABA/Cl reversal in adult Drosophila is whole-cell and so
+                   # pipette-imposed. No dialysis-free (gramicidin perforated
+                   # patch) E_Cl exists for any adult central neuron.
 # Sits 18 mV below V_rest, so inhibition here both hyperpolarises AND shunts.
 # Moving E_INH toward V_REST makes it purely divisive; that is the knob to
 # sweep if shunting turns out to be the active ingredient.
@@ -308,15 +317,68 @@ G_SYN = 0.00278    # dimensionless conductance per synapse  [FITTED]
 # citations for Drosophila nAChR / Rdl / GluCl-alpha synaptic conductance; they
 # are deliberately NOT guessed here, because a fabricated "published" value
 # would make the independent arm worse than having no independent arm.
-G_SYN_BY_NT = {
-    "ACH": G_SYN,    # [NEEDS CITATION] nicotinic ACh receptor
-    "GABA": G_SYN,   # [NEEDS CITATION] Rdl GABA-A
-    "GLUT": G_SYN,   # [NEEDS CITATION] GluCl-alpha
-    "DA": G_SYN,     # metabotropic -- see note below
-    "OCT": G_SYN,    # metabotropic
-    "SER": G_SYN,    # metabotropic
-    "UNK": G_SYN,
+# RATIOS, not absolutes. Absolute unitary conductances divided by assumed
+# synapse counts give only a bracket (0.002-0.014, which does contain our
+# fitted G_SYN); the RATIO between receptor types is measured far more
+# reliably, and the ratio is what matters here -- the correlator's failure is a
+# g_i/g_e problem, not a g_tot one.
+G_SYN_RATIO = {
+    "ACH": 1.0,
+    # [PUBLISHED] GABA-A (Rdl) is ~2.5x the cholinergic conductance. Two
+    # unrelated preparations agree: Su & O'Dowd 2003 (quantal events, both
+    # transmitters in the SAME cells, ratio 2.5) and Groschner et al. 2022
+    # (adult T4 IN VIVO, their own fit, 2.6). The agreement across preparations
+    # is what makes this usable; neither was measured with our result in view.
+    "GABA": 2.5,
+    #   Su & O'Dowd 2003, cultured pupal Kenyon cells, quantal events for BOTH
+    #     transmitters in the SAME cells: nAChR 22.1 pA / 83.9 mV = 263 pS,
+    #     GABA 24.6 pA / 37.0 mV = 665 pS -> 2.5. Driving forces known, so the
+    #     ratio survives the pipette-imposed reversals.
+    #   Groschner et al. 2022, ADULT T4 IN VIVO, relative conductances already
+    #     in units of g_leak: Mi4 2.20, C3 2.98 (GABA) against Mi1 1.30,
+    #     Tm3 0.70 (ACh) -> 2.59.
+    #   A cultured pupal mushroom-body preparation and an adult in vivo optic
+    #   lobe neuron, entirely unrelated, agreeing at 2.5 and 2.6. That
+    #   agreement is the argument; neither was measured with our result in
+    #   view. Charge-weighted (multiplying by decay tau 1.4 vs 3.7 ms) the
+    #   ratio is 6.7, so 2.5 is the conservative choice.
+    # [FITTED BY OTHERS, NOT MEASURED] No Drosophila GluCl-alpha conductance
+    # measurement exists -- not single-channel, not quantal, not a decay
+    # constant. What surfaces in searches must be actively excluded: the 120 pS
+    # figure is a CATION channel (Heckmann & Dudel 1995), and the other
+    # candidates are nematode AVR-14B or larval-muscle substates. The value
+    # below is Groschner et al. 2022's least-squares fit to adult T4 voltage
+    # traces (Mi9 gain 0.92 against Mi1 1.30, both already divided by their
+    # g_leak = 0.50, i.e. our units). It is an independent group's fit to real
+    # data rather than ours, but it IS a fit, and is labelled so.
+    "GLUT": 0.92,
+    "DA": 1.0,       # metabotropic; magnitude is not the issue, timescale is
+    "OCT": 1.0,
+    "SER": 1.0,
+    "UNK": 1.0,
 }
+G_SYN_BY_NT = {k: G_SYN * v for k, v in G_SYN_RATIO.items()}
+
+# CAVEAT ON EVERYTHING KEYED BY nt_type, INCLUDING THE RATIOS ABOVE.
+# These are PREDICTED transmitters, not measured ones, and the prediction is
+# demonstrably unreliable for the minority classes. Measured on this graph:
+#
+#   46.2% of ORN_DM1's output synapses are predicted SER -- 3,481 of them onto
+#   DM1_lPN, the projection neuron carrying that odour to the lateral horn.
+#   ORN_DA1 is 19.7% SER. Olfactory receptor neurons are CHOLINERGIC.
+#   The largest DA source and the largest SER source in the entire graph are
+#   both lLN1_bc, an antennal-lobe local interneuron; lLNs are GABAergic.
+#
+# Consequences, both load-bearing:
+#   * M8's olfactory result survives only because SIGN["SER"] = +1 happens to
+#     agree with the acetylcholine those synapses really use. Silencing the
+#     "modulatory" edges does not remove modulation, it cuts the olfactory
+#     nerve -- which is why M8 degrades into INTERMITTENCY (2 of 4 seeds show
+#     nothing) rather than shrinking smoothly.
+#   * Applying per-receptor conductances by predicted class inherits this.
+#     ACH/GABA/GLUT are the large, better-predicted classes and are where the
+#     ratios above act, but the accuracy is not uniform and this is a stated
+#     limitation of arm 2 rather than an assumption.
 
 # DA, OCT and SER are METABOTROPIC. They act through second messengers over
 # 100 ms to seconds, not as fast ionotropic conductances, and the model treats
@@ -325,6 +387,19 @@ G_SYN_BY_NT = {
 # literature value to state -- only a timescale. Left as-is for now and
 # recorded here so it is not mistaken for a modelling choice that was checked.
 METABOTROPIC = ("DA", "OCT", "SER")
+
+# [PUBLISHED, PARTIAL] Onset ~100 ms, decay >= 1 s -- not the 5 ms tau_syn the
+# model gives them. Held et al. 2025 measure a 122 ms median latency for
+# octopaminergic modulation by in vivo patch clamp; GRAB-OA sensor kinetics
+# (tau_off ~1.4 s in HEK, ~5.9 s in vivo) show the second-scale decay is
+# biology rather than sensor lag. NO FITTED TIME CONSTANT EXISTS in the
+# literature reachable without institutional access; a dozen primary papers
+# were read and none reports one. Gervasi & Preat 2010 (PKA-FRET, mushroom
+# body) is paywalled and UNREAD -- it is the most likely place such a value
+# still hides, so any "no published tau exists" claim must be softened until
+# somebody pulls it.
+METABOTROPIC_TAU_ONSET_S = 0.122
+METABOTROPIC_TAU_DECAY_S = 1.4
 # [FITTED] 2026-08-21 by m2_per.py against the Buhmann v783 graph, same
 # protocol as W_SYN: sugar GRNs at 100 Hz Poisson -> 79.8% of the saturating
 # MN9 response. M2 passes in conductance mode with all eight checks, including

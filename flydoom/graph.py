@@ -229,6 +229,7 @@ class ConnectomeGraph:
 
         _inh = float(os.environ.get("FLYDOOM_INH_SCALE", "1") or 1)
         _inh_optic = float(os.environ.get("FLYDOOM_OPTIC_INH_SCALE", "1") or 1)
+        _nt_cond = os.environ.get("FLYDOOM_NT_CONDUCTANCE", "") not in ("", "0")
         if _inh != 1.0:
             # One global scalar over every inhibitory synapse. Not a
             # per-cell-type gain: those are the study's independent
@@ -250,6 +251,35 @@ class ConnectomeGraph:
             _sy,
             ids["root_id"].to_numpy().astype(np.int64),
         )
+        if _nt_cond:
+            # ARM 2: per-receptor conductance from published physiology.
+            # The processed graph stores only signed_syn, so the transmitter
+            # survives as a SIGN and GABA is indistinguishable from glutamate
+            # once loaded -- harmless while every synapse shared one
+            # conductance, wrong the moment they do not. nt_type.parquet is
+            # built by scripts/build_nt_mask.py, which verifies row alignment
+            # against edges.parquet before writing. See config.G_SYN_RATIO for
+            # the values and their sources.
+            ntp = Path(out_dir) / "nt_type.parquet"
+            if not ntp.exists():
+                raise FileNotFoundError(
+                    f"{ntp} missing; run scripts/build_nt_mask.py first. "
+                    "FLYDOOM_NT_CONDUCTANCE needs the per-edge transmitter, "
+                    "which edges.parquet does not retain.")
+            _nt = pl.read_parquet(ntp)["nt_type"].to_numpy()
+            if len(_nt) != len(_g.signed_syn):
+                raise ValueError(
+                    f"nt_type.parquet has {len(_nt):,} rows against "
+                    f"{len(_g.signed_syn):,} edges; rebuild it.")
+            _r = np.ones(len(_g.signed_syn), dtype=np.float32)
+            for _k, _v in config.G_SYN_RATIO.items():
+                if _v != 1.0:
+                    _r[_nt == _k] = _v
+            _g.signed_syn = (_g.signed_syn * _r).astype(np.float32)
+            _changed = {k: int((_nt == k).sum())
+                        for k, v in config.G_SYN_RATIO.items() if v != 1.0}
+            print(f"FLYDOOM_NT_CONDUCTANCE: per-receptor ratios applied "
+                  f"{_changed}")
         if _inh_optic != 1.0:
             # ONE regional parameter: inhibition onto the visual populations
             # only. Forced by a measured contradiction -- see
