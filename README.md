@@ -157,20 +157,61 @@ machinery works fine. Something about how it's embedded doesn't.
 Fix both — restore the threshold, drive the cell from its synapses instead of from injected
 current — and cells above the experimental cutoff go from **2.8% to 12.3%**.
 
-**It still doesn't see motion.** A real detector's preferred direction comes from its
-wiring, so it can't change when you change the stimulus. Ours swings from 34% to 70%
-preferring one direction depending on stripe width and speed — it *reverses*. The residual
-response has no delay tuning either: change the delay twelve-fold and it barely moves.
-Whatever that 2% is, it isn't a motion detector, and we stopped calling it a weak one.
+That still wasn't enough, and finding out why took twenty eliminated explanations. The
+answer turned out to be arithmetic.
 
-Nineteen explanations tested and eliminated, including the two above, which are real and
-fixed and still not sufficient. The honest state is: every part is correct, the parts work
-in isolation, and the assembled thing doesn't. We don't know why yet.
+### The multiplication that wasn't there
 
-And the check that stops you fooling yourself: we took the same brain, **randomly rewired
-it** while keeping every neuron's connection count identical, and showed it the same thing.
-The scrambled brain performed the same as the real one. Whatever visual response survives
-isn't coming from the wiring.
+To tell left from right you need an **AND**: *was something there a moment ago* **and** *is
+something here now*. An AND is multiplication — if either half is zero the answer must be
+zero. Addition won't do it; addition fires whenever *either* thing happens, which tells you
+something moved but never which way.
+
+Neurons mostly add. There's one way they can multiply: some inputs don't push the cell,
+they **open a drain**. Picture the cell as a bathtub — normal inputs are taps, inhibition
+is a drain, and with the drain open every tap counts for less. That's division. Divide by
+one signal while adding another and you have your multiplication. That is the mechanism the
+fly's detector is supposed to use.
+
+**Ours cancels itself.** Opening the drain also lowers the water level — and the lower the
+water, the harder the tap pushes. So the drain makes each drop count for less (**÷1.77**)
+while making the tap push harder (**×1.85**). Net: **1.06**. A 6% effect where a large one
+was needed, pointing the wrong way.
+
+The cell had been *adding* the whole time. Not multiplying badly — not multiplying at all.
+And addition cannot tell left from right no matter how perfect the wiring is. That is why
+nineteen fixes did nothing: they were all repairing things that weren't broken.
+
+### The fix, and why *where* matters more than *how much*
+
+Make the drain much bigger than the taps and the cancellation stops. Do it **everywhere in
+the brain** and motion improves — while bitter stops suppressing the fly's feeding reflex
+and starts *driving* it, harder than sugar does. The reason is that **half the brakes in
+this brain are applied to other brakes**: 557,080 of 1,099,675 inhibitory connections land
+on inhibitory cells, so doubling every brake also doubles the braking *on the brakes*, they
+release, and the sign flips.
+
+Do exactly the same thing **to the visual system only** and the feeding circuit comes out
+*byte-identical* — same numbers to the last digit, because the tongue motor neuron receives
+0.00% of its input from visual cells. Smell survives too.
+
+Same change. Same size. Opposite outcome. The only difference is **where**.
+
+### And then it played better
+
+With that one regional change, on thirty environment seeds it had never been tuned on, the
+connectome beat a command-matched random agent on **10 of 18 measures** — the frozen model
+beats it on **0 of 18**. It covers more ground, spends less time stuck, collects more
+health, and **hits fewer walls**.
+
+Two things we won't oversell. Freeze the retina on a single frame and about **half** the
+collision advantage survives — so part of the win is a smoother motor command beating a
+random one, not seeing. And the optimum is sharp, which is what over-tuning a single dial
+looks like.
+
+The honest headline is not *"a wiring diagram can't produce behaviour."* It's: **one volume
+knob for the whole brain is not just imprecise, it's self-contradictory** — the eye needs a
+setting the tongue cannot survive — and that is a measurement, not an opinion.
 
 ---
 
@@ -289,18 +330,22 @@ Each one prints pass or fail.
 | M6 | It runs from an enemy, unprompted | ❌ |
 | M7 | It can tell which side a target is on | ❌ |
 | M8 | **Smell changes what it does** | ✅ beats the control |
-| M9 | Does it actually play better than random? | ❌ no, on any of 18 measures |
+| M9 | Does it actually play better than random? | ⚠️ frozen: 0/18 · regional fix: **10/18** |
 
 124 automated tests.
 
-**M9 is the coldest result.** With 30 environment seeds per arm, the connectome beats a
-command-matched random agent on **none** of eighteen behavioural measures. Two things are
-worth saying about that. First, an earlier version of this table quoted much friendlier
-numbers from 5 seeds; the metric has a standard deviation of ~13, so 5 seeds could only
-resolve differences of ~20 and two runs of the *same* configuration returned 3.2 and 11.2.
-Those comparisons were noise and we withdrew them. Second, behaviour was never the
-measurable — the fly has no ventral nerve cord here and Doom is outside anything it
-evolved for. What M9 rules out is the flattering interpretation, not the project.
+**M9 is where the argument lands.** With 30 environment seeds per arm, the frozen model
+beats a command-matched random agent on **none** of eighteen behavioural measures. With one
+regional parameter changed — inhibition onto the visual system doubled, nothing else — it
+beats it on **ten**, on seeds it was never tuned against: more tiles covered, less time
+stuck, longer paths, more health, and fewer collisions.
+
+Two caveats we keep attached. An earlier version of this table quoted friendlier numbers
+from 5 seeds; the metric has a standard deviation of ~13, so 5 seeds could only resolve
+differences of ~20, and two runs of the *same* configuration returned 3.2 and 11.2. Those
+were noise and we withdrew them — everything here is n=30. And blinding the fly (freezing
+the retina on one frame) leaves about half the collision advantage intact, so a real part
+of the win is a smoother motor command rather than vision.
 
 Beyond the milestones there are diagnostics, mostly built to kill our own explanations:
 `m3b`–`m3f` (arm modulation, phase offset, fan-in, isolation, add-back), `m3i` (are the
