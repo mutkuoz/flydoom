@@ -109,17 +109,26 @@ resting potential under roughly tenfold inhibition --- yet neither rebalancing
 the arms with short-term depression nor transplanting per-type gains from an
 optimized model raises selectivity; both lower it. Candidate mechanisms
 spanning pooling, sampling geometry, phase offset, saturation, operating point
-and arm imbalance were tested and eliminated one by one. Two model choices do
-account for part of the deficit, and both are ours rather than the connectome's:
-\cell{T4}'s summed synaptic weight sits at the threshold for producing any
-output, so the cell fires only on tonic bias that carries no stimulus
-information; and modelling it as a graded unit replaces the expansive
-nonlinearity a correlator needs with a linear ramp, costing $10.6\times$ against
-an otherwise identical spiking cell. Correcting both raises the fraction of
-selective cells from $2.8\%$ to $12.3\%$ and still does not yield direction
-selectivity: the preferred direction continues to follow the stimulus rather
-than the wiring. We therefore report the motion failure as mechanistically
-\emph{unresolved} rather than explained.
+and arm imbalance were tested and eliminated one by one. The obstacle is then identified and it is
+a property of the model, not of the connectome. A correlator's multiplication
+must come from inhibition dividing the membrane, and that division cancels
+itself: the shunt divides by $g_{\mathrm{tot}}$ ($1.77\times$ at \cell{T4a})
+while the hyperpolarisation it causes raises the excitatory driving force by
+$1.85\times$, leaving under $11\%$ interaction with the wrong sign. The cell
+performs addition, which no wiring can make direction selective. Raising the
+inhibitory-to-excitatory ratio restores the multiplication --- but doing so
+globally destroys the gustatory result, inverting bitter from suppressing the
+proboscis motor pool to driving it at $168$\,Hz, because $51\%$ of inhibitory
+synapses terminate on other inhibitory neurons. Applied to the visual
+populations alone, the identical factor leaves the gustatory circuit
+byte-identical and olfaction intact, raises direction selectivity sevenfold,
+and produces behaviour: on thirty held-out environment seeds the model
+separates from a command-matched control on ten of eighteen measures --- more
+ground covered, less time immobilised, fewer collisions --- where the frozen
+model separates on none. A single global synaptic gain is therefore not merely
+incomplete but inconsistent, since the optic lobe requires a conductance ratio
+the SEZ cannot survive; published physiology places that requirement in the
+same range.
 Read against connectome-constrained models whose unknown parameters are
 optimized, the wiring is common to both, so what optimization supplies is some
 combination of per-type gain and timing that we can bound but cannot yet
@@ -707,6 +716,111 @@ where the geometry makes direction selectivity impossible, returns $0.12$
 rather than $0$. The cause is that \cell{Mi1} is itself weakly selective
 ($|\mathrm{DSI}|=0.040$) and a threshold unit amplifies that residue. Isolated
 replay is not a clean control for this question.
+
+\subsection{One global gain is provably insufficient}
+\label{sec:regional}
+
+The account above stops at a negative result. It should not, because the
+obstacle turns out to be a specific and testable property of the model rather
+than an unknown, and removing it produces behaviour.
+
+\emph{Shunting inhibition cancels itself.} A correlator needs a multiplicative
+interaction between its arms, and in a conductance neuron that must come from
+inhibition dividing. Measured at the working point, it does not. Inhibition
+divides the membrane by $g_{\mathrm{tot}}$, $2.21\to3.92$, a factor $1.77$; but
+the same inhibition drops $v_{\infty}$ from $-23.5$ to $-43.4$\,mV, raising the
+excitatory driving force $(E_e-v)$ by $1.85$. The net interaction is
+$1.85/1.77=1.056$. Across \cell{T4a}, \cell{T4b}, \cell{T5a} and \cell{T5b} it
+never exceeds $11\%$, and its sign is \emph{wrong}: inhibition slightly
+increases the excitatory gain. An assumption-free check agrees --- a purely
+additive model $v=a+b\,g_e+c\,g_i$ explains $R^2=0.865$ of \cell{T4a}'s
+voltage, and adding the bilinear term buys $2.2$ percentage points. The
+correlator has been performing addition, which cannot be direction selective at
+any wiring.
+
+The interaction is governed by $g_i/g_e$ rather than by $g_{\mathrm{tot}}$:
+when the two conductances are comparable the driving-force term cancels the
+shunt, and only when inhibition substantially exceeds excitation does the
+division survive.
+
+\emph{Raising that ratio works, and where it is applied decides everything.}
+Doubling every inhibitory synapse in the brain raises direction selectivity
+five- to sevenfold and destroys the gustatory result: bitter stops suppressing
+the proboscis motor pool and begins driving it at $168$\,Hz. The sign inverts
+because $557{,}080$ of $1{,}099{,}675$ inhibitory edges --- $51\%$ --- terminate
+on other inhibitory neurons, so a global scalar doubles disinhibition exactly as
+hard and the circuit runs backwards.
+
+Applying the identical factor to inhibitory synapses onto the visual
+populations alone leaves the gustatory circuit \emph{byte-identical}: sugar
+$73.58\pm1.44$\,Hz, bitter $0.00$, $99\%$ suppression, all six acceptance
+checks passing, the same numbers to the last digit. \cell{MN9} receives $0.00\%$
+of its input synapses from those populations, so a regional parameter has no
+path into the circuit at all. Olfaction survives too, including the readout that
+is genuinely exposed: \cell{DNp01} draws $20.5\%$ of its input from the scaled
+population and holds at $-17.02\pm7.15$\,Hz against $-18.13\pm2.48$ baseline,
+with the correct sign and all four checks passing. The one real cost is
+\cell{DNa02}, which falls $12.12\to2.65$\,Hz.
+
+Same manipulation, same magnitude, opposite outcome, and the only difference is
+\emph{where}. This is the paper's central claim measured rather than argued: a
+frozen connectome under one global synaptic gain is not merely incomplete but
+inconsistent, because the optic lobe requires an $E/I$ ratio the SEZ cannot
+survive. Published physiology puts the optic lobe's requirement in the same
+place --- GABAergic conductance is $\sim2.5\times$ cholinergic in two unrelated
+preparations, \citet{suodowd2003} measuring both transmitters as quantal events
+in the same cells and \citet{groschner2022} fitting adult \cell{T4} in vivo, and
+the latter report inhibitory-to-excitatory conductance ratios in adult
+lobula-plate neurons of $7.7$ and $10.9$. Our factor of two is at the
+conservative end of what that literature supports.
+
+\subsection{Behaviour under a regional parameterisation}
+
+With inhibition onto the visual populations doubled, \cell{T4}/\cell{T5}
+spiking, optic gain $16$ and no tonic bias, the model was run against the
+command-matched AR(1) control on thirty environment seeds that were not used
+while choosing those values.
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+metric (paired difference vs.\ random) & regional & frozen global\\
+\midrule
+tiles visited            & $+9.7\pm3.8$    & $-1.0\pm3.4$\\
+collisions per 1k tics   & $-4.88\pm1.9$   & $-0.5\pm3.6$\\
+stuck fraction           & $-0.13\pm0.0$   & $+0.02\pm0.1$\\
+path length              & $+511\pm230$    & $-127\pm195$\\
+health collected         & $+11.9\pm10.8$  & $-7.7\pm10.4$\\
+vision--steering $r$     & $-0.18$         & $-0.04$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Ten of eighteen metrics separate from the control; the frozen model separates
+on none. In absolute terms the regional model collects $30.0$ health units
+against its matched control's $18.1$, where the frozen model collects $13.2$
+against $20.9$. It covers more ground, gets stuck less, and hits fewer walls.
+
+Three controls argue the effect is not an artefact of drive. Reaching the same
+firing rate by lowering gain instead gives $-0.0152$ against $-0.0716$, four to
+five times short. The identical factor applied to \emph{non}-visual inhibitory
+synapses gives $-0.0102$ against an unmanipulated $-0.0107$, i.e.\ nothing. And
+on the $1{,}869$ cells driven above threshold in both conditions the projected
+selectivity moves $+0.0001\to-0.0720$, so it is not survivorship among a
+shrinking population.
+
+Two further controls bound the claim, and we state them because they qualify
+it. Freezing the retina on a single frame leaves the collision advantage
+significant ($-3.56\pm2.9$), so roughly half of it is the temporal structure of
+the motor command outperforming an AR(1) surrogate rather than vision.
+Mirroring the retina left--right flips the vision--steering correlation as it
+should ($-0.21\to+0.13$) but reduces the behavioural point estimates about
+threefold rather than abolishing them. The model became a better \emph{mover}
+as well as a better \emph{seer}, and only the second is the claim this paper
+makes. The optimum is also sharp --- selectivity collapses by a factor of four
+--- which is characteristic of maximising over a one-dimensional slice, and a
+structured search over per-receptor and regional parameters is the obvious next
+step rather than a finished one.
 
 \subsection{Olfactory valence}
 
