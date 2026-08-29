@@ -210,8 +210,34 @@ random one, not seeing. And the optimum is sharp, which is what over-tuning a si
 looks like.
 
 The honest headline is not *"a wiring diagram can't produce behaviour."* It's: **one volume
-knob for the whole brain is not just imprecise, it's self-contradictory** — the eye needs a
-setting the tongue cannot survive — and that is a measurement, not an opinion.
+knob for the whole brain is not just imprecise, it's self-contradictory**. The eye needs a
+setting the tongue cannot survive, and that is a measurement rather than an opinion.
+
+### We tried it four ways
+
+A wiring diagram tells you which neurons connect. It does **not** tell you how strong each
+connection is. Something has to supply those numbers, and we compared four ways of doing it:
+
+| how the strengths were set | applied | motion | plays better than random? | taste | smell |
+|---|---|---|---|---|---|
+| one number for everything | whole brain | baseline | **0 of 18** | ok | ok |
+| real measured values from published biology | whole brain | 3.3× better | — | weaker | **broken** |
+| turn all inhibition up 2× | whole brain | 5× better | — | **broken** | — |
+| **same 2×, in the visual system only** | **eye only** | **6.7× better** | **10 of 18** | ok | ok |
+
+**Row two is the one that surprised us.** Those are *real numbers*, measured in actual flies
+by labs with no connection to this project. GABA synapses really are about 2.5× stronger
+than acetylcholine ones. We plugged in the correct values and **smell broke** — an escape
+neuron that normally idles got clamped to silence, so there was nothing left for an odour to
+push down.
+
+So it was never about finding the right numbers. **No single set of numbers works for the
+whole brain, however correct.** You need the right values *and* the right geography, and a
+connectome gives you neither.
+
+That is the finding. It's also exactly what the models that *do* get fly vision working are
+quietly supplying when they fit 604 separate parameters — we can now say precisely what that
+buys and why it's needed.
 
 ---
 
