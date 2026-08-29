@@ -85,6 +85,18 @@ class AgentConfig:
     describes two worlds rather than two brains -- M9 uses it as a behavioural
     reference, never as an attribution control. M8 is where it does real work."""
 
+    optic_gain: float = 1.0
+    """Multiplier on synapses ONTO the visual populations
+    (config.BIASED_SUPER_CLASSES). The replacement for the tonic bias: a gain
+    multiplies the stimulus-driven signal where a bias only raises a pedestal.
+    T4/T5 sit sub-threshold on their own inputs at 1.0, so with bias_mv = 0 the
+    optic lobe is silent unless this is raised. See config.OPTIC_GAIN."""
+
+    spiking_t4: bool = False
+    """Exempt T4/T5 from the graded mask, restoring their spike threshold.
+    A graded unit is a clamped LINEAR ramp and a correlator needs a
+    nonlinearity; measured at 10.6x in m3m."""
+
     shuffle_seed: int = 0
     """Fixed independently of `seed`, so every episode faces the SAME alternative
     wiring. Re-shuffling per episode would average over graphs and turn a
@@ -127,7 +139,24 @@ class FlyDoomAgent:
         edge_delay = self.graph.edge_delay_steps(
             self.ann, config.DT, t_slow=c.slow_delay_s
         )
+        if c.optic_gain != 1.0:
+            from .gains import optic_gain_multipliers
+            self.graph.signed_syn = (
+                self.graph.signed_syn
+                * optic_gain_multipliers(self.graph, self.ann, c.optic_gain)
+            ).astype(np.float32)
+
         graded = self.graph.graded_mask(self.ann) if c.graded else None
+        if graded is not None and c.spiking_t4:
+            import polars as _pl
+            d_ = self.ann.df
+            for t_ in ("T4a", "T4b", "T4c", "T4d", "T5a", "T5b", "T5c", "T5d"):
+                ids_ = d_.filter(
+                    (_pl.col("primary_type") == t_)
+                    | (_pl.col("visual_type") == t_)
+                )["root_id"].unique().to_list()
+                if ids_:
+                    graded[self.graph.index_of(ids_)] = False
         if c.compartments:
             # dendrites are appended after every existing neuron, so readout,
             # motor and retina indices keep their meaning; edge count and order

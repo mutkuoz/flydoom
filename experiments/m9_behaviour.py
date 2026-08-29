@@ -242,22 +242,59 @@ def _chatter(x) -> float:
 def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               device: str, bias_mv: float = 0.0,
               smell: bool = False,
-              tau_baseline: float | None = None) -> tuple[dict, dict]:
+              tau_baseline: float | None = None,
+              optic_gain: float = 1.0,
+              spiking_t4: bool = False,
+              motor_kw: dict | None = None,
+              mirror: bool = False,
+              blind: bool = False) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
     """
+    mk = dict(motor_kw or {})
+    if tau_baseline is not None:
+        mk["tau_baseline"] = tau_baseline
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
                         labels=smell),
-        motor=(MotorConfig() if tau_baseline is None
-               else MotorConfig(tau_baseline=tau_baseline)),
+        motor=MotorConfig(**mk),
         smell=smell,
         shuffle_graph=shuffled,
         seed=seed,
         bias_mv=bias_mv,
+        optic_gain=optic_gain,
+        spiking_t4=spiking_t4,
         device=device,
     ))
+    # ---- controls that should DESTROY a vision-driven effect ----------
+    #
+    # `mirror` flips the retinal sampling grid horizontally, so every column
+    # looks at the mirror image of where it used to. Rigid horizontal motion of
+    # the world then sweeps the retina the OTHER way, which reverses the sign
+    # of every horizontal optic-flow signal while leaving firing rates,
+    # contrast statistics and the wiring untouched. Genuine optomotor steering
+    # must change; a collision advantage that survives it is not steering by
+    # optic flow.
+    #
+    # `blind` freezes the first frame, so the retina sees a constant scene for
+    # the whole episode. Any behavioural advantage that survives this is not
+    # coming from the visual input at all.
+    if mirror:
+        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
+    if blind:
+        _first = {}
+
+        def _frozen():
+            # copy: ViZDoom hands back a view onto its own buffer and
+            # overwrites it in place, so keeping the reference would silently
+            # give a LIVE frame and quietly destroy the control.
+            if "f" not in _first:
+                raw = agent.doom.__class__.frame(agent.doom)
+                _first["f"] = None if raw is None else np.array(raw, copy=True)
+            return _first["f"]
+        agent.doom.frame = _frozen
+
     ep = Episode()
     try:
         def on_tic(ag, rec):
@@ -381,6 +418,40 @@ def main() -> int:
                          "columnar readouts (LPLC2 is silent at 0) but also "
                          "lifts MDN, and BPN-MDN is the walk command -- see "
                          "the sweep in the write-up.")
+    ap.add_argument("--optic-gain", type=float, default=1.0,
+                    help="synaptic gain onto the visual populations. The "
+                         "replacement for --bias; at 1.0 with bias 0 the "
+                         "optic lobe is sub-threshold on its own inputs.")
+    ap.add_argument("--spiking-t4", action="store_true",
+                    help="restore the spike threshold on T4/T5. A graded unit "
+                         "is a clamped linear ramp; a correlator needs a "
+                         "nonlinearity (10.6x, m3m).")
+    ap.add_argument("--mirror", action="store_true",
+                    help="CONTROL: flip the retinal sampling grid left-right. "
+                         "Reverses the sign of horizontal optic flow without "
+                         "changing rates or wiring, so any genuine optomotor "
+                         "steering must change.")
+    ap.add_argument("--blind", action="store_true",
+                    help="CONTROL: freeze the first frame. The retina sees a "
+                         "constant scene; anything that survives is not "
+                         "visual.")
+    ap.add_argument("--yaw-gain", type=float, default=None)
+    ap.add_argument("--forward-gain", type=float, default=None)
+    ap.add_argument("--lateral-gain", type=float, default=None)
+    ap.add_argument("--deadzone-hz", type=float, default=None,
+                    help="differential below which the turn command is zero. "
+                         "Raising it makes steering SACCADIC -- straight runs "
+                         "punctuated by discrete turns -- which is what a "
+                         "walking fly does and what an AR(1)-matched random "
+                         "arm cannot reproduce. Note the obvious confound: a "
+                         "deadzone does that to ANY smooth signal, so the "
+                         "shuffled arm is the reference that says whether the "
+                         "wiring contributed anything.")
+    ap.add_argument("--arms", nargs="+", default=list(ARMS),
+                    help="which arms to run. The `shuffled` arm costs as much "
+                         "as `connectome` and is a behavioural reference "
+                         "rather than an attribution control (see the "
+                         "docstring), so a sweep may drop it.")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--device",
                     default=(os.environ.get("FLYDOOM_DEVICE")
@@ -404,36 +475,61 @@ def main() -> int:
               "started": _dt.datetime.now().isoformat(timespec="seconds"),
               "runs": []}
 
+    arms = [a for a in ARMS if a in set(args.arms)]
+    if "connectome" not in arms:
+        arms = ["connectome"] + arms
+    motor_kw = {k: v for k, v in (("yaw_gain", args.yaw_gain),
+                                  ("forward_gain", args.forward_gain),
+                                  ("lateral_gain", args.lateral_gain),
+                                  ("deadzone_hz", args.deadzone_hz))
+                if v is not None}
+    record["arms"] = arms
+    record["optic_gain"] = args.optic_gain
+    record["spiking_t4"] = args.spiking_t4
+    record["motor_kw"] = motor_kw
+    record["mirror"] = args.mirror
+    record["blind"] = args.blind
+    record["env"] = {k: v for k, v in os.environ.items()
+                     if k.startswith("FLYDOOM_")}
+
     for scen in args.scenarios:
         print(f"\n{paint(scen, '1;36')}")
-        per_arm: dict[str, list[dict]] = {a: [] for a in ARMS}
+        per_arm: dict[str, list[dict]] = {a: [] for a in arms}
         for seed in range(args.seed_start,
                           args.seed_start + args.seeds):
             m_int, dist = run_agent(scen, seed, args.tics, False, args.device,
-                                    args.bias, args.smell, args.tau_baseline)
+                                    args.bias, args.smell, args.tau_baseline,
+                                    args.optic_gain, args.spiking_t4,
+                                    motor_kw, args.mirror, args.blind)
             per_arm["connectome"].append(m_int)
-            m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
-                                  args.bias, args.smell, args.tau_baseline)
-            per_arm["shuffled"].append(m_shuf)
+            if "shuffled" in per_arm:
+                m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
+                                      args.bias, args.smell,
+                                      args.tau_baseline, args.optic_gain,
+                                      args.spiking_t4, motor_kw,
+                                      args.mirror, args.blind)
+                per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
-            per_arm["random"].append(
-                run_scripted(scen, seed, args.tics, dist, rng))
-            per_arm["still"].append(
-                run_scripted(scen, seed, args.tics, None, rng))
+            if "random" in per_arm:
+                per_arm["random"].append(
+                    run_scripted(scen, seed, args.tics, dist, rng))
+            if "still" in per_arm:
+                per_arm["still"].append(
+                    run_scripted(scen, seed, args.tics, None, rng))
             print(f"  seed {seed}: "
                   f"tiles {m_int.get('tiles_visited', 0):4.0f}  "
                   f"healed {m_int.get('healed', 0):5.0f}  "
                   f"hp {m_int.get('health_end', 0):5.0f}")
 
-        for arm in ARMS:
+        for arm in arms:
             record["runs"].append(
                 {"scenario": scen, "arm": arm, "episodes": per_arm[arm]})
 
         w = max(len(lbl) for _, lbl, _ in REPORT) + 2
-        print(f"\n  {'':<{w}}" + "".join(f"{a:>16}" for a in ARMS))
+        print(f"\n  {'':<{w}}" + "".join(f"{a:>16}" for a in arms))
         for key, label, fmt in REPORT:
             cells = []
-            for arm in ARMS:
+            for arm in arms:
                 vals = [e.get(key) for e in per_arm[arm] if key in e]
                 cells.append(f"{fmt.format(np.mean(vals))}"
                              f" ±{np.std(vals):.0f}" if vals else "-")
@@ -452,7 +548,7 @@ def main() -> int:
                 for r in record["runs"] if r["scenario"] == scen}
 
         def mean(arm, key):
-            v = [e.get(key, 0.0) for e in rows[arm]]
+            v = [e.get(key, 0.0) for e in rows.get(arm, [])]
             return float(np.mean(v)) if v else 0.0
 
         for key, label in (("yaw_clip_frac", "yaw"),

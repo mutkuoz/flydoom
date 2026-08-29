@@ -748,8 +748,8 @@ the uniform scaling that motivates the third.
 parameterisation & values from & proj.\ DSI & behav. & gustatory & olfactory\\
 \midrule
 (i) single global gain & fitted on taste & $-0.0107$ & 0/18 & pass & pass\\
-(ii) per-receptor, global & published physiology & $-0.0356$ &: & pending & pending\\
-(iii) uniform $\times2$, global & search & $-0.0533$ &: & \textbf{fail} &: \\
+(ii) per-receptor, global & published physiology & $-0.0356$ & n/a & pass$^{*}$ & \textbf{fail}\\
+(iii) uniform $\times2$, global & search & $-0.0533$ & n/a & \textbf{fail} & n/a\\
 (iv) $\times2$ on vision only & search & $\mathbf{-0.0716}$ & \textbf{10/18} & pass & pass\\
 \bottomrule
 \end{tabular}
@@ -759,7 +759,11 @@ axis; the raw population mean cancels across cells whose axes oppose.
 Behavioural column gives the number of eighteen metrics on which the model
 separates from a command-matched control over thirty held-out environment
 seeds. Row (iii) fails because bitter stimulation drives the proboscis motor
-pool to $168$\,Hz instead of suppressing it.}
+pool to $168$\,Hz instead of suppressing it. Row (ii) passes the gustatory
+checks but degraded ($^{*}$sugar $63.79\pm9.31$ against $73.58\pm1.44$\,Hz,
+suppression $95\%$ against $99\%$) and fails olfaction. Both global
+assignments break a circuit the frozen model preserves; only the regional
+assignment does not.}
 \label{tab:threeway}
 \end{table}
 
@@ -776,7 +780,18 @@ $g_{\mathrm{GluCl}}/g_{\mathrm{ACh}} = 0.92$ from the latter and note that it is
 a fit rather than a measurement, no direct \emph{Drosophila} GluCl conductance
 having been published. Applying both ratios raises $g_i/g_e$ from $0.713$ to
 $1.323$ and improves selectivity $3.3\times$, with the absolute rate difference
-rising from $1.09$ to $2.97$\,Hz.
+rising from $1.09$ to $2.97$\,Hz. It nonetheless fails the olfactory
+constraint. \cell{DNp01} falls to $0.00$\,Hz in both the odour and control
+arms: raising inhibition brain-wide silences the neuron outright, so no
+baseline discharge remains for the odour to suppress and the measured
+difference is zero by construction rather than by loss of the pathway.
+\cell{LHN} falls from $+14.38$ to $+4.16$\,Hz and \cell{DNa02} from $+12.12$
+to $+0.05$\,Hz. This is the informative result in the comparison. The values
+are not ours and were not selected to produce any outcome reported here, yet
+applying them uniformly breaks a circuit that the cruder single-gain model
+preserves. Correct per-receptor ratios are therefore necessary but not
+sufficient: the assignment must also be regional, which is a property of this
+brain that receptor measurements cannot themselves supply.
 
 \emph{(iii) Uniform scaling, applied globally.} Doubling every inhibitory
 synapse improves selectivity but inverts the gustatory response: bitter
@@ -845,11 +860,20 @@ that approximately half of it derives from the temporal structure of the motor
 command rather than from vision. Mirroring the retina reverses the
 vision--steering correlation as expected ($-0.21$ to $+0.13$) but reduces the
 behavioural point estimates by a factor of three rather than abolishing them.
-The optimum is also narrow, selectivity collapsing by a factor of four, which
-is characteristic of maximisation over a one-dimensional parameter slice. A
-structured search over per-receptor and regional parameters jointly is
-therefore the appropriate next step, and configuration (iv) should be read as a
-lower bound on what regional parameterisation can achieve.
+We initially described the optimum as narrow, on the grounds that selectivity
+collapses at a scaling of four. A structured search over $137$ parameter
+combinations measured the local curvature directly and does not support that
+reading. Holding the score within $20\%$ of its maximum admits scalings from
+$1.67$ to $2.81$, a band $\pm25\%$ about the chosen value on a three-stimulus
+mean; the collapse at four is the far shoulder rather than the local shape.
+That search found no feasible configuration superior to (iv). A scaling of
+$2.5$ raises the ratio further but not the absolute rate difference, which is
+maximal at $2.0$ ($3.97$\,Hz averaged over three stimuli) and reverses on both
+held-out stimuli. Scaling the complementary non-visual population has no effect
+at any value between $0.5$ and $3$, despite rescaling $467{,}082$ edges, which
+is a further specificity control. Every higher-scoring point the search located
+lay outside the feasible region, failing the olfactory constraint in the manner
+described for row (ii).
 
 \subsection{Olfactory valence}
 

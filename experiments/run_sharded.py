@@ -71,6 +71,17 @@ def main() -> int:
                          "min(nproc/1.3, vram/0.6GB, budget_GB/1.4). At 24 "
                          "cores / 12 GB VRAM / 18 GB budget that is "
                          "min(18, 20, 12) = 12.")
+    ap.add_argument("--seed-base", type=int, default=0,
+                    help="First seed. The tuned arm of this study tunes on one "
+                         "block of seeds and validates on another, and the "
+                         "held-out block has to be one nothing was chosen on.")
+    ap.add_argument("--optic-gain", type=float, default=1.0)
+    ap.add_argument("--spiking-t4", action="store_true")
+    ap.add_argument("--yaw-gain", type=float, default=None)
+    ap.add_argument("--deadzone-hz", type=float, default=None)
+    ap.add_argument("--mirror", action="store_true")
+    ap.add_argument("--blind", action="store_true")
+    ap.add_argument("--arms", nargs="+", default=None)
     ap.add_argument("--json", type=Path, required=True)
     ap.add_argument("--device", default="cuda")
     args = ap.parse_args()
@@ -90,6 +101,20 @@ def main() -> int:
         base.append("--smell")
     if args.tau_baseline is not None:
         base += ["--tau-baseline", str(args.tau_baseline)]
+    if args.optic_gain != 1.0:
+        base += ["--optic-gain", str(args.optic_gain)]
+    if args.spiking_t4:
+        base.append("--spiking-t4")
+    if args.yaw_gain is not None:
+        base += ["--yaw-gain", str(args.yaw_gain)]
+    if args.deadzone_hz is not None:
+        base += ["--deadzone-hz", str(args.deadzone_hz)]
+    if args.mirror:
+        base.append("--mirror")
+    if args.blind:
+        base.append("--blind")
+    if args.arms:
+        base += ["--arms", *args.arms]
 
     def _done(path: Path) -> bool:
         """A shard counts as finished only if it parses and carries episodes.
@@ -104,7 +129,8 @@ def main() -> int:
             return False
         return bool(d.get("runs")) and all(r.get("episodes") for r in d["runs"])
 
-    shards = [(s, shard_dir / f"seed{s:03d}.json") for s in range(args.seeds)]
+    shards = [(s, shard_dir / f"seed{s:03d}.json")
+              for s in range(args.seed_base, args.seed_base + args.seeds)]
     jobs, resumed = [], []
     for s, out in shards:
         if _done(out):
@@ -116,6 +142,10 @@ def main() -> int:
           f"scenarios, {args.jobs} at a time")
     print(f"  git {_sha()}   device {args.device}   tics {args.tics}"
           f"   smell {args.smell}   tau_baseline {args.tau_baseline}")
+    print(f"  seeds {args.seed_base}..{args.seed_base + args.seeds - 1}"
+          f"   optic_gain {args.optic_gain}   spiking_t4 {args.spiking_t4}")
+    _envs = {k: v for k, v in os.environ.items() if k.startswith("FLYDOOM_")}
+    print(f"  env {_envs}")
     if resumed:
         print(f"  resuming: {len(resumed)} shards already complete, "
               f"{len(jobs)} to run")
@@ -168,6 +198,13 @@ def main() -> int:
         "tics": args.tics, "seeds": args.seeds, "smell": args.smell,
         "bias_mv": args.bias, "tau_baseline": args.tau_baseline,
         "device": args.device, "git_sha": _sha(),
+        "seed_base": args.seed_base, "optic_gain": args.optic_gain,
+        "spiking_t4": args.spiking_t4, "yaw_gain": args.yaw_gain,
+        "mirror": args.mirror, "blind": args.blind,
+        "deadzone_hz": args.deadzone_hz,
+        "arms": args.arms,
+        "env": {k: v for k, v in os.environ.items()
+                if k.startswith("FLYDOOM_")},
         "argv": sys.argv[1:],
         "started": dt.datetime.fromtimestamp(t0).isoformat(timespec="seconds"),
         "finished": dt.datetime.now().isoformat(timespec="seconds"),
@@ -183,7 +220,8 @@ def main() -> int:
     KEYS = [("healed", "health picked up"), ("tiles_visited", "tiles visited"),
             ("collisions_per_1k_tics", "collisions/1k"),
             ("stuck_frac", "stuck frac"), ("tics", "tics survived")]
-    ARMS = ("connectome", "shuffled", "random", "still")
+    ARMS = tuple(args.arms) if args.arms else (
+        "connectome", "shuffled", "random", "still")
     print(f"\n  wall {wall/60:.1f} min   ->  {args.json}")
     for scen in args.scenarios:
         print(f"\n{scen}   (n = {args.seeds}, mean +/- 95% CI)")
