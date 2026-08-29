@@ -1,0 +1,207 @@
+{
+ "objective": "-pooled projected_dsi from m3k_axis_dsi (larger = better)",
+ "n_points": 137,
+ "n_constraint_checks": 14,
+ "tuning_stimulus": "period 15 / tf 2",
+ "held_out_stimuli": [
+  "period 30 / tf 1",
+  "period 30 / tf 2"
+ ],
+ "held_out_behaviour_seeds": [
+  40,
+  41,
+  42,
+  43,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  50,
+  51
+ ],
+ "recommendation": {
+  "params": {
+   "FLYDOOM_OPTIC_INH_SCALE": 2.0,
+   "FLYDOOM_NT_CONDUCTANCE": 0,
+   "FLYDOOM_NONOPTIC_INH_SCALE": 1.0,
+   "optic_gain_m3k_measurement_only": 16
+  },
+  "verdict": "keep the incumbent; no feasible point beats it",
+  "three_stimulus_mean_score": 0.0531,
+  "twenty_pct_band_oinh": [
+   1.67,
+   2.81
+  ],
+  "mean_abs_rate_diff_hz": 3.971
+ },
+ "runner_up_feasible": {
+  "params": {
+   "FLYDOOM_OPTIC_INH_SCALE": 2.5
+  },
+  "three_stimulus_mean_score": 0.0498,
+  "mean_abs_rate_diff_hz": 3.401,
+  "note": "higher on the tuning stimulus (0.0750 vs 0.0716), lower on both held-out ones; better on two behaviour metrics; worse in Hz"
+ },
+ "infeasible": {
+  "FLYDOOM_NT_CONDUCTANCE=1, any ratios tested": "M8 FAIL -- DNp01 silent (0.00 Hz), including at the published GABA 2.5 / GluCl 0.92",
+  "NT_CONDUCTANCE with GluCl>=3.0, or GABA<=2.0 with GluCl>=2.5": "M2 FAIL as well -- bitter drives MN9 instead of suppressing it"
+ },
+ "constraints": {
+  "m2_oi1_ni1_nt1_ga2.5_gl3": {
+   "check": "m2",
+   "verdict": "FAIL",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 3.0,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2.5_gl0.92": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt0_ga2.5_gl0.92": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 0
+   }
+  },
+  "m2_oi2.5_ni1_nt0_ga2.5_gl0.92": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 2.5,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 0
+   }
+  },
+  "m8_oi1_ni1_nt0_ga2.5_gl0.92": {
+   "check": "m8",
+   "verdict": null,
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 0
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2_gl3": {
+   "check": "m2",
+   "verdict": "FAIL",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.0,
+    "glut": 3.0,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2.5_gl2": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 2.0,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2.5_gl2.5": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 2.5,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2_gl2.5": {
+   "check": "m2",
+   "verdict": "FAIL",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.0,
+    "glut": 2.5,
+    "nt": 1
+   }
+  },
+  "m8_oi2_ni1_nt0_ga2.5_gl0.92": {
+   "check": "m8",
+   "verdict": null,
+   "params": {
+    "oinh": 2.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 0
+   }
+  },
+  "m8_oi2.5_ni1_nt0_ga2.5_gl0.92": {
+   "check": "m8",
+   "verdict": null,
+   "params": {
+    "oinh": 2.5,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 0
+   }
+  },
+  "m8_oi1_ni1_nt1_ga2.5_gl0.92": {
+   "check": "m8",
+   "verdict": null,
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 0.92,
+    "nt": 1
+   }
+  },
+  "m8_oi1_ni1_nt1_ga2.5_gl2.5": {
+   "check": "m8",
+   "verdict": null,
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 2.5,
+    "nt": 1
+   }
+  },
+  "m2_oi1_ni1_nt1_ga2.5_gl2.75": {
+   "check": "m2",
+   "verdict": "PASS",
+   "params": {
+    "oinh": 1.0,
+    "ninh": 1.0,
+    "gaba": 2.5,
+    "glut": 2.75,
+    "nt": 1
+   }
+  }
+ }
+}
