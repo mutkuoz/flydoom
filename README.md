@@ -213,6 +213,18 @@ The honest headline is not *"a wiring diagram can't produce behaviour."* It's: *
 knob for the whole brain is not just imprecise, it's self-contradictory**. The eye needs a
 setting the tongue cannot survive, and that is a measurement rather than an opinion.
 
+### Watch all four
+
+One recording per row of the table below, same level and same starting seed, so
+the only thing that differs between them is how synaptic strength was assigned:
+
+| video | configuration |
+|---|---|
+| [`media/arm1_global.mp4`](media/arm1_global.mp4) | one number for the whole brain (the frozen model) |
+| [`media/arm2_published.mp4`](media/arm2_published.mp4) | real measured receptor values, applied brain-wide |
+| [`media/arm3_uniform.mp4`](media/arm3_uniform.mp4) | all inhibition doubled, brain-wide |
+| [`media/arm4_regional.mp4`](media/arm4_regional.mp4) | the same doubling, visual system only |
+
 ### We tried it four ways
 
 A wiring diagram tells you which neurons connect. It does **not** tell you how strong each

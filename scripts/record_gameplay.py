@@ -403,6 +403,17 @@ def main() -> int:
     ap.add_argument("--height", type=int, default=640)
     ap.add_argument("--no-smell", action="store_true",
                     help="record without the odour channel")
+    ap.add_argument("--optic-gain", type=float, default=1.0,
+                    help="synaptic gain onto the visual populations. The "
+                         "regional configuration uses 16.")
+    ap.add_argument("--spiking-t4", action="store_true",
+                    help="give T4/T5 a spike threshold instead of a graded "
+                         "ramp. Required for the regional configuration.")
+    ap.add_argument("--bias", type=float, default=0.0,
+                    help="tonic drive to the optic lobe, mV.")
+    ap.add_argument("--label", default=None,
+                    help="caption burned into the frame, to identify which "
+                         "parameterisation a recording shows.")
     ap.add_argument("--no-gif", action="store_true")
     ap.add_argument("--gif-fps", type=int, default=10)
     ap.add_argument("--gif-width", type=int, default=640)
@@ -433,6 +444,9 @@ def main() -> int:
                         labels=not args.no_smell),
         smell=not args.no_smell,
         device=args.device,
+        optic_gain=args.optic_gain,
+        spiking_t4=args.spiking_t4,
+        bias_mv=args.bias,
     ))
     print(agent.summary())
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
