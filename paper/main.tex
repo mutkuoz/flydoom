@@ -173,9 +173,8 @@ running system.
 \paragraph{Contributions.}
 \begin{enumerate}\itemsep2pt
 \item A closed-loop embodiment of a frozen whole-brain connectome
-(139{,}255 neurons, single consumer GPU or CPU), released as open code. An
-earlier version of this manuscript described the loop as \emph{real time} at
-$1.01\times$; that figure is wrong by a factor of 17 and is corrected below.
+(139{,}255 neurons, single consumer GPU or CPU), released as open code, running
+at $0.19\times$ realtime.
 \item A modality dissociation: chemosensory transformations transfer, visual
 motion computations do not.
 \item A mechanistic account of the visual failure, with six candidate remedies
@@ -454,7 +453,7 @@ not connected in this brain at all, zero edges in either direction, at any
 synapse threshold, so the aggression state cannot reach that suppression to
 lift it or to deepen it.
 
-\subsection{Diagnosing the motion failure}
+\subsection{Candidate mechanisms for the motion failure}
 \label{sec:mech}
 
 \begin{figure}[t]\centering
@@ -482,11 +481,10 @@ Direction selectivity and looming selectivity are both computations over the
 Motion to the right makes column $A$ lead column $B$; motion to the left makes
 $B$ lead $A$. The two cases contain identical events and differ only in order.
 
-An earlier version of this manuscript argued that the failure was structural.
-In the model presynaptic inputs sum into a conductance and the only
-nonlinearity is a threshold on that sum; since $\mathrm{thr}(A+B)$ is symmetric
-in its arguments, we concluded that no unit of this class can distinguish the
-two cases. \textbf{That argument is wrong, and we withdraw it.} It holds only
+A symmetry argument appears to make the failure structural. Presynaptic inputs
+sum into a conductance and the only nonlinearity is a threshold on that sum;
+since $\mathrm{thr}(A+B)$ is symmetric in its arguments, no unit of this class
+would distinguish the two cases. The argument is invalid, because it holds only
 for a unit with no memory. The model has memory in two places the argument
 ignores: per-connection conduction delays, and a synaptic conductance that
 decays with $\tau_{\mathrm{syn}}=5$\,ms rather than vanishing within the step.
@@ -540,9 +538,8 @@ the qualitative signature is absent: both mirror pairs oppose at only 3 of the
 45 unsaturated points, where two independent coin flips would give about 11. A
 correlator's sign does not depend on its operating point, so what we are
 measuring is a quantity fluctuating about zero rather than a small but real
-selectivity. An earlier version of this manuscript reported opposed mirror
-pairs from a single configuration; the sweep does not support that claim and we
-withdraw it.
+selectivity. Individual configurations can show apparent mirror opposition, but it does not
+survive the sweep.
 
 \input{tab_dsi}
 
@@ -570,7 +567,7 @@ per-type gains of the optimized model of \citet{lappalainen2024} onto the
 matching connections (571 of its 604 type-pairs align with our graph). Both
 \emph{lowered} $|\mathrm{DSI}|$. The $37\times$ ratio is therefore a real
 property of the wiring under a single global gain, but it is not the operative
-cause, and the hypothesis we previously drew from it, that optimization
+cause, and the hypothesis drawn from it, that optimization
 supplies relative gain along the ON pathway's disinhibitory chain, is not
 supported by the transplant. We note the transplant is approximate: that model
 was fitted on a different reconstruction (fib25--fib19), so an unmatched gain
@@ -694,16 +691,16 @@ and cannot depend on the stimulus that probes it. We therefore do not describe
 the residual as weak direction selectivity; it is a stimulus-timing artefact,
 which also explains the below-chance mirror opposition reported above.
 
-One methodological caution follows from this work. An earlier draft reported
-mean $|\mathrm{DSI}|=0.37$ for \cell{T4a} cells driven by their own recorded
-inputs in isolation, and built a causal account on it. That measurement is an
-artefact and is withdrawn: the same procedure applied to a \emph{single} input,
-where the geometry makes direction selectivity impossible, returns $0.12$
-rather than $0$. The cause is that \cell{Mi1} is itself weakly selective
+One methodological result follows from this work: isolated replay is not a
+valid control for this question. Driving \cell{T4a} cells with their own
+recorded inputs in isolation yields mean $|\mathrm{DSI}|=0.37$, which invites a
+causal account. The same procedure applied to a \emph{single} input, where the
+geometry makes direction selectivity impossible, returns $0.12$ rather than the
+required $0$. The cause is that \cell{Mi1} is itself weakly selective
 ($|\mathrm{DSI}|=0.040$) and a threshold unit amplifies that residue. Isolated
 replay is not a clean control for this question.
 
-\subsection{Mechanism: shunting inhibition cancels itself}
+\subsection{Cancellation of the shunting nonlinearity}
 \label{sec:shunt}
 
 Direction selectivity requires a multiplicative interaction between the two
@@ -734,7 +731,7 @@ When the two conductances are comparable, the driving-force term cancels the
 shunt; the division survives only when inhibition substantially exceeds
 excitation.
 
-\subsection{Three parameterisations compared}
+\subsection{Comparison of conductance parameterisations}
 \label{sec:threeway}
 
 The preceding result makes the assignment of synaptic conductances the
@@ -819,7 +816,7 @@ report inhibitory-to-excitatory conductance ratios of $7.7$ and $10.9$ in adult
 lobula plate neurons, so the factor of two used here is conservative relative to
 the published requirement.
 
-\subsection{Behaviour under regional parameterisation}
+\subsection{Closed-loop behaviour}
 \label{sec:behaviour}
 
 Configuration (iv) was evaluated against the command-matched AR(1) control on
@@ -1237,8 +1234,8 @@ direction, is the part the argument rests on.
 earlier statements.} The \texttt{-{}-spiking-t4} option was applied in only one
 of three code paths; the per-cell and operating-grid paths build their own
 graded mask and silently ignored it. Any conclusion about spiking \cell{T4}
-drawn from those paths measured the graded model twice, and is withdrawn. The
-option is now applied in one place used by all three. Separately, an earlier
+drawn from those paths measured the graded model twice. The option is now
+applied in one place used by all three. Separately, an earlier
 per-subtype geometry analysis pooled \cell{Mi9} with \cell{Mi4}, which sit on
 \emph{opposite} flanks; averaging them produced a vector that flips with their
 relative weight and manufactured both a spurious bimodality and an apparent
@@ -1257,6 +1254,22 @@ connectome plus task does not identify them uniquely. Also deferred: gap
 junctions, absent from the reconstruction and carrying the giant fibre's
 fastest output; neuromodulation, flattened here to fast transmission; and a
 ventral nerve cord, without which every behavioural timescale is the engine's.
+
+\section*{Note on this revision}
+
+This version corrects four claims made in the previous release, each superseded
+by a measurement reported above. The closed-loop rate was given as $1.01\times$
+realtime; that figure counted GPU kernel time and omitted dispatch overhead,
+and the measured rate is $0.19\times$ (Table~\ref{tab:graph}). Direction
+selectivity was attributed to a structural property of the model class via a
+symmetry argument that holds only for memoryless units
+(Sec.~\ref{sec:mech}). A mean $|\mathrm{DSI}|$ of $0.37$ was reported for
+cells driven by their own inputs in isolated replay; the same procedure returns
+$0.12$ where the answer must be $0$, and the figure is an artefact of the
+method. Mirror-pair opposition was reported from a single operating point and
+does not survive the sweep. Two defects in our own instrumentation are
+described in Methods: a command-line option applied in one of three code paths,
+and a geometry analysis that pooled inputs from opposite dendritic flanks.
 
 \section*{Data availability}
 
