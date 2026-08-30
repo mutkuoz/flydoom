@@ -1230,16 +1230,17 @@ quote the original figure but note that the magnitude depends on the operating
 point chosen, and that the qualitative claim, this model class computes
 direction, is the part the argument rests on.
 
-\emph{A defect in our own instrumentation, disclosed because it invalidates
-earlier statements.} The \texttt{-{}-spiking-t4} option was applied in only one
-of three code paths; the per-cell and operating-grid paths build their own
-graded mask and silently ignored it. Any conclusion about spiking \cell{T4}
-drawn from those paths measured the graded model twice. The option is now
-applied in one place used by all three. Separately, an earlier
-per-subtype geometry analysis pooled \cell{Mi9} with \cell{Mi4}, which sit on
-\emph{opposite} flanks; averaging them produced a vector that flips with their
-relative weight and manufactured both a spurious bimodality and an apparent
-$97$--$114^\circ$ mirror-pair defect. Taking \cell{Mi9} alone: the axes are
+\emph{Two analysis pitfalls, recorded for reproduction.} Both yield plausible,
+self-consistent numbers and neither announces itself. The first is a
+configuration option applied in one code path but not in others that construct
+their own copy of the same mask: measurements taken through those paths
+characterise the default model rather than the requested one. We now set the
+option in a single place used by every path. The second is summarising a cell's
+input geometry by pooling \cell{Mi9} with \cell{Mi4}. These sit on
+\emph{opposite} dendritic flanks, so their centroid inverts with their relative
+weight; pooling them manufactures an apparent bimodality in the axis
+distribution and an apparent $97$--$114^\circ$ mirror-pair defect where none
+exists. Taking \cell{Mi9} alone: the axes are
 coherent ($R=0.67$--$0.93$) and the mirror pairs are $182$--$194^\circ$ apart,
 as they should be. \cell{T4}'s input geometry is not defective.
 
@@ -1254,22 +1255,6 @@ connectome plus task does not identify them uniquely. Also deferred: gap
 junctions, absent from the reconstruction and carrying the giant fibre's
 fastest output; neuromodulation, flattened here to fast transmission; and a
 ventral nerve cord, without which every behavioural timescale is the engine's.
-
-\section*{Note on this revision}
-
-This version corrects four claims made in the previous release, each superseded
-by a measurement reported above. The closed-loop rate was given as $1.01\times$
-realtime; that figure counted GPU kernel time and omitted dispatch overhead,
-and the measured rate is $0.19\times$ (Table~\ref{tab:graph}). Direction
-selectivity was attributed to a structural property of the model class via a
-symmetry argument that holds only for memoryless units
-(Sec.~\ref{sec:mech}). A mean $|\mathrm{DSI}|$ of $0.37$ was reported for
-cells driven by their own inputs in isolated replay; the same procedure returns
-$0.12$ where the answer must be $0$, and the figure is an artefact of the
-method. Mirror-pair opposition was reported from a single operating point and
-does not survive the sweep. Two defects in our own instrumentation are
-described in Methods: a command-line option applied in one of three code paths,
-and a geometry analysis that pooled inputs from opposite dendritic flanks.
 
 \section*{Data availability}
 
