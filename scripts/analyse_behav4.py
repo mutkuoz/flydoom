@@ -26,14 +26,19 @@ DATA = Path(__file__).resolve().parent.parent / "paper" / "data" / "behav4"
 #   vision_steer_r_best, vision_steer_lag_tics -- defined only for the
 #     connectome arm (the control has no retina), so they admit no paired
 #     difference and are reported separately below.
-METRICS = [
-    "tiles_visited", "tiles_per_1k_path", "path", "net_displacement",
-    "healed", "health_end", "damage",
-    "collisions_per_1k_tics", "free_run_tics", "stuck_frac", "spin",
-    "tics",
-    "yaw_abs_mean", "yaw_chatter", "yaw_clip_frac",
-    "fwd_abs_mean", "fwd_clip_frac", "lat_clip_frac",
-]
+# metric -> +1 if larger is better for the agent, -1 if smaller is better,
+# 0 if the metric has no better direction (it describes what the agent did,
+# not how well). Only the signed ones can support a claim that the model
+# "exceeds" a control; the unsigned ones can only show that it differs.
+METRICS = {
+    "tiles_visited": +1, "tiles_per_1k_path": +1, "path": 0,
+    "net_displacement": +1,
+    "healed": +1, "health_end": +1, "damage": -1,
+    "collisions_per_1k_tics": -1, "free_run_tics": +1, "stuck_frac": -1,
+    "spin": -1, "tics": +1,
+    "yaw_abs_mean": 0, "yaw_chatter": -1, "yaw_clip_frac": -1,
+    "fwd_abs_mean": 0, "fwd_clip_frac": -1, "lat_clip_frac": -1,
+}
 VISION_ONLY = ["vision_steer_r_best", "vision_steer_lag_tics"]
 ARMS = ["arm1_frozen", "arm2_published", "arm3_uniform", "arm4_regional"]
 
@@ -48,17 +53,26 @@ def ci95(v):
 
 
 def load(tag):
-    """seed -> arm -> episode metrics."""
-    f = DATA / f"{tag}.json"
-    if not f.exists():
-        return None
-    d = json.loads(f.read_text())
+    """seed -> arm -> episode metrics.
+
+    Read from the per-seed shards rather than the merged file: the merge
+    groups episodes by arm and drops the seed label, and pairing by seed is
+    the whole point of the comparison.
+    """
+    shards = sorted((DATA / f"{tag}_shards").glob("seed*.json"))
     per = {}
-    for r in d.get("runs", []):
-        seed = r.get("seed")
-        for e in r.get("episodes", []):
-            per.setdefault(seed, {})[r["arm"]] = e
-    return per
+    for f in shards:
+        try:
+            d = json.loads(f.read_text())
+        except Exception:
+            continue
+        if not d.get("runs"):
+            continue
+        seed = int(f.stem[4:])
+        for r in d["runs"]:
+            for e in r.get("episodes", []):
+                per.setdefault(seed, {})[r["arm"]] = e
+    return per or None
 
 
 def main():
@@ -79,12 +93,12 @@ def main():
     print(f"seeds complete in every arm: {len(common)}")
     print(f"metrics tested: {len(METRICS)}\n")
 
-    print(f"{'arm':<16}{'separating':>12}   {'vision r':>10}")
-    print("-" * 42)
+    print(f"{'arm':<16}{'differs':>8}{'better':>11}  {'vision r':>9}")
+    print("-" * 46)
     detail = {}
     for tag, per in loaded.items():
-        sep, rows = 0, []
-        for k in METRICS:
+        differ, better, rows = 0, 0, []
+        for k, direction in METRICS.items():
             diffs = [per[s]["connectome"][k] - per[s]["random"][k]
                      for s in common
                      if k in per[s]["connectome"] and k in per[s]["random"]]
@@ -92,19 +106,25 @@ def main():
                 continue
             m, h = ci95(diffs)
             ok = abs(m) > h            # CI excludes zero
-            sep += ok
-            rows.append((k, m, h, ok))
+            good = bool(ok and direction and m * direction > 0)
+            differ += ok
+            better += good
+            rows.append((k, m, h, ok, good, direction))
         vr = [per[s]["connectome"].get("vision_steer_r_best")
               for s in common if per[s].get("connectome")]
         vr = [x for x in vr if x is not None]
         vm = sum(vr) / len(vr) if vr else float("nan")
-        print(f"{tag:<16}{sep:>7}/{len(METRICS):<4}   {vm:>10.3f}")
+        n_signed = sum(1 for d in METRICS.values() if d)
+        print(f"{tag:<16}{differ:>4}/{len(METRICS):<3}"
+              f"{better:>7}/{n_signed:<4}  {vm:>9.3f}")
         detail[tag] = rows
 
     for tag, rows in detail.items():
         print(f"\n=== {tag} : paired difference vs command-matched control ===")
-        for k, m, h, ok in rows:
-            print(f"  {'*' if ok else ' '} {k:<24}{m:>10.2f} +/-{h:<8.2f}")
+        for k, m, h, ok, good, direction in rows:
+            mark = "+" if good else ("*" if ok else " ")
+            arrow = {1: "up", -1: "dn", 0: "--"}[direction]
+            print(f"  {mark} {k:<24}{m:>10.2f} +/-{h:<8.2f} ({arrow})")
     return 0
 
 
