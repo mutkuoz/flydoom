@@ -230,6 +230,7 @@ the only thing that differs between them is how synaptic strength was assigned:
 | [`media/arm2_published.mp4`](media/arm2_published.mp4) | real measured receptor values, applied brain-wide |
 | [`media/arm3_uniform.mp4`](media/arm3_uniform.mp4) | all inhibition doubled, brain-wide |
 | [`media/arm4_regional.mp4`](media/arm4_regional.mp4) | the same doubling, visual system only |
+| [`media/arm5_regional_nt.mp4`](media/arm5_regional_nt.mp4) | real measured values, visual system only — nothing invented |
 
 They look broadly alike, and that is the honest state of the result: the configurations
 differ sharply in motion selectivity and barely at all in what they do with it.
@@ -245,9 +246,26 @@ connection is. Something has to supply those numbers, and we compared four ways 
 | real measured values from published biology | whole brain | 3.3× better | 4 of 18 | weaker | **broken** |
 | turn all inhibition up 2× | whole brain | 5× better | 5 of 18 | **broken** | — |
 | **same 2×, in the visual system only** | **eye only** | **6.7× better** | 6 of 18 | ok | ok |
+| **real measured values, visual system only** | **eye only** | **4.7× better** | not run | ok | ok |
 
 Read the motion column and the behaviour column together: motion selectivity climbs steadily
 down the table, and the behaviour column does not move at all. That mismatch is the result.
+
+**The last row is the one we'd defend.** Rows two and five use the *same* published
+numbers and differ only in where they're applied — brain-wide breaks smell, eye-only doesn't.
+That isolates *where* as the thing that matters, with the values held fixed. And unlike row
+four, nothing in row five was chosen by us to make it work: every number is someone else's
+measurement of a real fly.
+
+**We also went looking for a bigger fix and found a wall.** Inhibition has two effects: it
+turns the volume down (divides) and it pushes the cell away from firing (subtracts). Motion
+detection needs the dividing kind. We forced the model to use *only* the dividing kind —
+and direction sensing vanished completely. So the little that works isn't division at all;
+it's the pushing-away part plus the cell's firing threshold, which fakes an "AND" crudely.
+That also means the real measured value is already the best one: we swept it in both
+directions and it got worse each way. Sweeping everything else we're allowed to touch, the
+ceiling is ~0.08 where a real fly needs ~0.5. **Still about 6× short, and now that's
+measured rather than assumed.**
 
 **Row two is the one that surprised us.** Those are *real numbers*, measured in actual flies
 by labs with no connection to this project. GABA synapses really are about 2.5× stronger

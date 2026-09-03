@@ -82,11 +82,11 @@ and the only fitted quantity is a single global synaptic gain calibrated on a
 non-visual behaviour.
 
 Transfer is dissociated by modality. Chemosensory transformations are
-reproduced: sugar stimulation drives the proboscis motor pool to 77\,Hz,
-co-stimulation with bitter is 99\% suppressed, and an olfactory channel raises
-lateral horn activity to $14.1\pm5.5$\,Hz while suppressing a descending neuron
-one synapse downstream ($-17.7\pm7.4$\,Hz), none of which was fitted and none of
-which survives a degree-preserving shuffle. Visual motion computation is not
+reproduced: sugar drives the proboscis motor pool to 77\,Hz, bitter
+co-stimulation suppresses it by 99\%, and an olfactory channel raises lateral
+horn activity to $14.1\pm5.5$\,Hz while suppressing a descending neuron one
+synapse downstream ($-17.7\pm7.4$\,Hz). None of this was fitted and none of it
+survives a degree-preserving shuffle. Visual motion computation is not
 reproduced: $|\mathrm{DSI}|\leq0.0121$ across an operating-point sweep, roughly
 $40\times$ below the threshold at which experimental studies classify a terminal
 as direction-tuned.
@@ -95,26 +95,30 @@ We identify the obstacle as a property of the neuron model rather than of the
 connectome. Direction selectivity requires a multiplicative interaction between
 the correlator arms, which in a conductance-based neuron must arise from
 inhibitory division. That division cancels itself: shunting divides the membrane
-by $g_{\mathrm{tot}}$ ($1.77\times$ at \cell{T4a}) while the accompanying
-hyperpolarisation raises the excitatory driving force by $1.85\times$, leaving
-an interaction below 11\% and of the wrong sign. The cell sums its inputs, and
-summation cannot be direction selective at any wiring.
+by $g_{\mathrm{tot}}$ ($1.77\times$ at \cell{T4a}) while the hyperpolarisation
+it causes raises the excitatory driving force by $1.85\times$, leaving an
+interaction below 11\% and of the wrong sign. The cell sums, and summation
+cannot be direction selective at any wiring. Making inhibition purely divisive
+abolishes what selectivity remains rather than restoring it: the residue is a
+threshold conjunction, not a product.
 
-Increasing the inhibitory-to-excitatory conductance ratio restores the
-interaction. Applied globally it inverts the gustatory result, driving the
-proboscis pool to 168\,Hz under bitter stimulation, because 51\% of inhibitory
-synapses terminate on inhibitory neurons. Applied to the visual populations
-alone, the same factor leaves the gustatory circuit numerically unchanged,
-preserves olfaction, and increases direction selectivity sevenfold. It does
+Increasing the inhibitory-to-excitatory ratio restores the interaction.
+Applied globally it inverts the gustatory result, driving the proboscis pool to
+168\,Hz under bitter, because 51\% of inhibitory synapses terminate on
+inhibitory neurons. Restricted to the visual populations the same factor leaves
+the gustatory circuit numerically unchanged, preserves olfaction, and raises
+direction selectivity sevenfold. It does
 not, however, produce closed-loop behaviour. On thirty held-out environment
 seeds the regionally scaled model separates from a command-matched control on
 six of eighteen measures, the same number as the frozen model, and the two are
-not distinguishable by that criterion. Only locomotion statistics change:
-compared directly against the frozen model on identical seeds, collisions fall
-by $3.95\pm3.79$ per 1{,}000 tics and net displacement rises by $131\pm102$
-units, while health collected, the task objective, does not improve. Restoring
-the arithmetic a computation requires is therefore not sufficient to produce
-the behaviour that computation supports.
+not distinguishable by that criterion. Only locomotion statistics change: against the frozen model on identical
+seeds, collisions fall by $3.95\pm3.79$ per 1{,}000 tics and net displacement
+rises by $131\pm102$, while health collected, the task objective, does not.
+
+The published ratios under that same regional restriction, which fits nothing,
+recover most of the gain and preserve both chemosensory results, isolating
+scope rather than the values. Over all parameters that do not entail
+per-cell-type fitting the largest selectivity found was $0.0792$.
 
 A single global synaptic gain is therefore not merely incomplete but
 inconsistent: the optic lobe requires a conductance ratio the subesophageal zone
@@ -184,7 +188,17 @@ motion computations do not.
 \item A mechanistic account of the visual failure. Twenty candidate
 explanations were implemented and measured; the operative one is that shunting
 inhibition cancels itself, so the neuron sums its inputs where the computation
-requires a product.
+requires a product. Separating the two components of inhibition shows the
+residue is a threshold conjunction rather than a division, and that the
+measured reversal potential is already at the optimum.
+
+\item A parameterisation carrying no fitted quantity. Published per-receptor
+conductances restricted to the visual populations preserve both chemosensory
+results and recover most of the selectivity gain, where the same values
+applied brain-wide silence a descending neuron outright, which isolates scope
+from the values themselves. Across every parameter that does not entail
+per-cell-type fitting, selectivity does not exceed $0.0792$, so the shortfall
+is a measured property of the accessible space.
 \item A demonstration that a single global synaptic gain is inconsistent rather
 than merely approximate. Raising the inhibitory-to-excitatory ratio restores
 the multiplicative interaction, but the optic lobe requires a value the
@@ -874,6 +888,40 @@ When the two conductances are comparable, the driving-force term cancels the
 shunt; the division survives only when inhibition substantially exceeds
 excitation.
 
+A direct test separates the two components of inhibition and shows that the
+residual selectivity does not come from division at all. At
+$E_i = -70$\,mV inhibition both hyperpolarises and shunts. Setting
+$E_i = V_{\mathrm{rest}}$ removes the hyperpolarising component and leaves
+inhibition purely divisive, which is the condition under which the
+multiplicative account predicts the largest effect. Selectivity instead
+vanishes, and it falls off monotonically as $E_i$ approaches
+$V_{\mathrm{rest}}$ from below:
+
+\begin{center}
+\small
+\begin{tabular}{rrrrrrrr}
+\toprule
+$E_i$ (mV) & $-52$ & $-60$ & $-65$ & $-70$ & $-75$ & $-80$ & $-90$\\
+\midrule
+projected DSI & $+0.0023$ & $-0.0176$ & $-0.0573$ & $-0.0716$ &
+$\mathbf{-0.0792}$ & $-0.0578$ & $-0.0253$\\
+cells & 3926 & 3325 & 2369 & 1872 & 1410 & 1017 & 608\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The selectivity that survives is therefore produced by hyperpolarisation
+acting against the spike threshold, not by shunting division. A threshold
+supplies a coarse conjunction, since two inputs arriving together can cross it
+where neither does alone, and that is a poor substitute for a product, which
+is consistent with the magnitude observed. Two features of the sweep bound
+the claim. The included population shrinks as $E_i$ falls, from 3926 cells to
+608, so part of the variation is selection among cells driven above the
+inclusion rate rather than a change in selectivity itself. And the curve peaks
+at $-75$\,mV against a published value of $-70$\,mV, a difference within the
+standard errors ($0.0064$ and $0.0055$), so the measured reversal potential
+is at or near the optimum and is not the parameter holding the model back.
+
 \subsection{Comparison of conductance parameterisations}
 \label{sec:threeway}
 
@@ -891,6 +939,7 @@ parameterisation & values from & proj.\ DSI & behav. & gustatory & olfactory\\
 (ii) per-receptor, global & published physiology & $-0.0356$ & 4/18 & pass$^{*}$ & \textbf{fail}\\
 (iii) uniform $\times2$, global & search & $-0.0533$ & 5/18 & \textbf{fail} & n/a\\
 (iv) $\times2$ on vision only & search & $\mathbf{-0.0716}$ & 6/18 & pass & pass\\
+(v) per-receptor, vision only & published physiology & $-0.0500$ & n/r & pass & pass\\
 \bottomrule
 \end{tabular}
 \caption{Parameterisations of synaptic conductance. Projected DSI is the
@@ -905,8 +954,13 @@ not exceed row (i). Row (iii) fails because bitter stimulation drives the probos
 pool to $168$\,Hz instead of suppressing it. Row (ii) passes the gustatory
 checks but degraded ($^{*}$sugar $63.79\pm9.31$ against $73.58\pm1.44$\,Hz,
 suppression $95\%$ against $99\%$) and fails olfaction. Both global
-assignments break a circuit the frozen model preserves; only the regional
-assignment does not.}
+assignments break a circuit the frozen model preserves; neither regional
+assignment does. Rows (ii) and (v) apply the same published ratios and differ
+only in scope, which isolates the regional requirement from the value of the
+ratios themselves. Row (v) carries no fitted quantity at all and is marked
+n/r because its behavioural battery was not run: rows (i) through (iv) are
+mutually indistinguishable on that column, so a fifth measurement would not
+separate it.}
 \label{tab:threeway}
 \end{table}
 
@@ -961,6 +1015,35 @@ conductance ratio the subesophageal zone does not tolerate. \citet{groschner2022
 report inhibitory-to-excitatory conductance ratios of $7.7$ and $10.9$ in adult
 lobula plate neurons, so the factor of two used here is conservative relative to
 the published requirement.
+
+\emph{(v) Published per-receptor conductances restricted to the visual
+populations.} Rows (ii) and (iv) vary two things at once: (ii) supplies
+measured ratios but applies them brain-wide, and (iv) applies a factor
+obtained by search but restricts it to vision. The combination the argument
+implies, measured ratios restricted to vision, completes the design. It uses
+the ratios of row (ii) and the scope of row (iv), and introduces no quantity
+of our own. Projected selectivity reaches $-0.0500$ against $-0.0107$
+frozen, the gustatory result is numerically unchanged (sugar $73.58$\,Hz,
+$99\%$ suppression, six of six checks) and olfaction is preserved (lateral
+horn $+12.42$\,Hz, \cell{DNp01} $-17.55$\,Hz), where the identical ratios
+applied globally silence \cell{DNp01} altogether. Scope alone therefore
+accounts for the difference between failure and preservation, with the values
+held fixed. Row (iv) reaches higher selectivity, but by a factor chosen to do
+so; row (v) reaches most of it with published numbers throughout, and is the
+configuration we would defend as the model rather than as a tuning.
+
+\emph{The accessible range is bounded.} Selectivity was measured across the
+parameters that do not entail per-cell-type fitting: the inhibitory reversal
+potential from $-52$ to $-100$\,mV, the regional inhibitory scale from
+$1$ to $3.5$, per-receptor ratios global and regional, and the optic gain
+from $4$ to $64$, this last raising selectivity monotonically but shallowly
+($-0.0245$ to $-0.0596$) at firing rates well above physiological. The
+largest value found anywhere was $-0.0792$, at $E_i = -75$\,mV with the
+regional scale at $2$. Every configuration in this space therefore remains
+close to an order of magnitude below the threshold at which experimental
+studies classify a terminal as direction-tuned, which makes the shortfall a
+measured property of the accessible space rather than a consequence of the
+particular values we report.
 
 \subsection{Closed-loop behaviour: a negative result}
 \label{sec:behaviour}
@@ -1057,7 +1140,11 @@ present and measured. What the frozen model fails to supply is the arithmetic
 that combines them. A product requires a nonlinear interaction between the arms,
 which in a conductance-based neuron can only come from inhibitory division, and
 that division is cancelled by the hyperpolarisation it produces
-(Sec.~\ref{sec:shunt}). The cell sums where it must multiply. This accounts for
+(Sec.~\ref{sec:shunt}). The cell sums where it must multiply. Removing the
+hyperpolarising component entirely, which is the condition most favourable to
+a divisive account, abolishes the residual selectivity instead of raising it:
+what survives is a threshold conjunction rather than a product, which is a
+poor substitute and measures as one. This accounts for
 the twenty candidate remedies that changed nothing: each addressed a component
 that was not defective. It also accounts for the one remedy that appeared
 promising and was not, the $37\times$ imbalance between the arms, which is a
@@ -1300,6 +1387,13 @@ rather than once per substep, giving it an effective time constant of 14\,s in
 place of 0.25\,s. Each of these corrupts precisely the cue under test. None of
 them changed the outcome, which is itself informative: the negative result does
 not rest on a badly delivered stimulus.
+
+\emph{Bounding the accessible space:} the inhibitory reversal potential from
+$-52$ to $-100$\,mV, which peaks at the published value and collapses when
+inhibition is made purely divisive; the regional inhibitory scale from $1$ to
+$3.5$; published per-receptor ratios both globally and regionally; and the
+optic gain from $4$ to $64$, monotone but shallow and at rates well above
+physiological. Largest selectivity found anywhere: $-0.0792$.
 
 \emph{Also tested, and also negative:} presynaptic short-term
 depression as an arm rebalancer; transplantation of 571 per-type gains from an
