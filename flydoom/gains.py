@@ -138,6 +138,43 @@ def gain_onto_types(graph, ann, types, gain: float) -> np.ndarray:
     return mult
 
 
+def optic_nt_multipliers(graph, nt_type, ann=None) -> np.ndarray:
+    """Per-edge multiplier applying PUBLISHED per-receptor conductance ratios
+    to the visual populations only.
+
+    This is the cell the four-way comparison left empty. Row (ii) applied the
+    measured ratios brain-wide and silenced DNp01, so olfaction failed. Row
+    (iv) applied a crude uniform doubling regionally, which preserved
+    olfaction but is not a measured quantity. Correct values and regional
+    assignment were argued to be separate requirements and were never tested
+    together; this supplies both at once.
+
+    It adds no free parameter. The ratios come from config.G_SYN_RATIO, whose
+    sources are published, and the scope is config.BIASED_SUPER_CLASSES, the
+    same population the optic gain, the tonic bias and the regional
+    inhibitory scale are already applied to. Nothing here is fitted per cell
+    type, which remains this study's independent variable rather than a knob.
+    """
+    from . import config
+    cls = pl.read_csv(Path(config.RAW_DIR) / "classification.csv.gz",
+                      infer_schema_length=50_000)
+    ids = cls.filter(
+        pl.col("super_class").is_in(list(config.BIASED_SUPER_CLASSES))
+    )["root_id"].to_list()
+    pos = {int(r): i for i, r in enumerate(graph.root_ids)}
+    target = np.zeros(graph.n_neurons, dtype=bool)
+    for r in ids:
+        i = pos.get(int(r))
+        if i is not None:
+            target[i] = True
+    onto_visual = target[graph.post_idx]
+    mult = np.ones(len(graph.pre_idx), dtype=np.float32)
+    for k, v in config.G_SYN_RATIO.items():
+        if v != 1.0:
+            mult[onto_visual & (nt_type == k)] = float(v)
+    return mult
+
+
 def optic_inhibitory_multipliers(graph, ann, scale: float) -> np.ndarray:
     """Per-edge multiplier scaling INHIBITORY synapses onto the visual
     populations only.

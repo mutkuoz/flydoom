@@ -280,6 +280,27 @@ class ConnectomeGraph:
                         for k, v in config.G_SYN_RATIO.items() if v != 1.0}
             print(f"FLYDOOM_NT_CONDUCTANCE: per-receptor ratios applied "
                   f"{_changed}")
+        if os.environ.get("FLYDOOM_OPTIC_NT_CONDUCTANCE", "") not in ("", "0"):
+            # Published per-receptor ratios, scoped to vision. Row (ii) of the
+            # comparison applied these brain-wide and broke olfaction; row (iv)
+            # applied a crude uniform factor regionally. This is both at once,
+            # which the argument implies but the search never tested.
+            ntp = Path(out_dir) / "nt_type.parquet"
+            if not ntp.exists():
+                raise FileNotFoundError(
+                    f"{ntp} missing; run scripts/build_nt_mask.py first.")
+            _ntv = pl.read_parquet(ntp)["nt_type"].to_numpy()
+            if len(_ntv) != len(_g.signed_syn):
+                raise ValueError(
+                    f"nt_type.parquet has {len(_ntv):,} rows against "
+                    f"{len(_g.signed_syn):,} edges; rebuild it.")
+            from .gains import optic_nt_multipliers
+            from .cells import AnnotationTable
+            from . import config as _cfg
+            _mnt = optic_nt_multipliers(_g, _ntv)
+            _g.signed_syn = (_g.signed_syn * _mnt).astype(np.float32)
+            print(f"FLYDOOM_OPTIC_NT_CONDUCTANCE: per-receptor ratios applied "
+                  f"to {int((_mnt != 1.0).sum()):,} edges onto vision")
         if _inh_optic != 1.0:
             # ONE regional parameter: inhibition onto the visual populations
             # only. Forced by a measured contradiction -- see

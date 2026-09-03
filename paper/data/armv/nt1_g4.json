@@ -1,0 +1,55 @@
+{
+ "bias_mv": 0.0,
+ "period_deg": 15.0,
+ "tf_hz": 2.0,
+ "inh_scale": 1.0,
+ "optic_gain": 4.0,
+ "subtypes": {
+  "T5a": {
+   "n": 346,
+   "r_azimuth": -0.04999017098718163,
+   "r_elevation": 0.015690619211943632,
+   "r_length": 0.0007184670183638514,
+   "mean_abs_az_deg": 1.763525258996913,
+   "mean_abs_el_deg": 1.909430783696419,
+   "mean_dsi": 0.06929650033389224,
+   "n_driven": 346,
+   "projected_dsi": -0.028376115487546146,
+   "global_dsi": 0.03378558747872925,
+   "sign_balance": -0.3352601156069364,
+   "geometry_linked_dsi": -0.017049155523579114,
+   "rate_hz": 67.41444675240048,
+   "rate_diff_hz": -0.47514447967000073,
+   "min_rate_hz": 20.0
+  },
+  "T5b": {
+   "n": 316,
+   "r_azimuth": -0.08264828736914491,
+   "r_elevation": 0.008625858580308397,
+   "r_length": -0.06527229702706284,
+   "mean_abs_az_deg": 1.8457764514772468,
+   "mean_abs_el_deg": 1.592941425846364,
+   "mean_dsi": 0.06973813111199542,
+   "n_driven": 316,
+   "projected_dsi": -0.02063643168377608,
+   "global_dsi": -0.011807389803879116,
+   "sign_balance": 0.5569620253164557,
+   "geometry_linked_dsi": -0.0140601639449067,
+   "rate_hz": 62.13417342282065,
+   "rate_diff_hz": -0.4759493380389634,
+   "min_rate_hz": 20.0
+  }
+ },
+ "pooled": {
+  "n": 664,
+  "projected_dsi": -0.024525783027706683,
+  "projected_dsi_se": 0.005504347664408733,
+  "rate_hz": 64.74939363837184,
+  "rate_diff_hz": -0.4734939470038354,
+  "global_dsi": 0.011904442242842692,
+  "sign_balance": 0.08734939759036145,
+  "geometry_linked_dsi": -0.025565628886268243,
+  "shuffle_null_mean": 0.001813618713860865,
+  "shuffle_null_sd": 0.005484595627666782
+ }
+}
