@@ -197,17 +197,23 @@ Do exactly the same thing **to the visual system only** and the feeding circuit 
 
 Same change. Same size. Opposite outcome. The only difference is **where**.
 
-### And then it played better
+### And then it did not play better
 
-With that one regional change, on thirty environment seeds it had never been tuned on, the
-connectome beat a command-matched random agent on **10 of 18 measures** — the frozen model
-beats it on **0 of 18**. It covers more ground, spends less time stuck, collects more
-health, and **hits fewer walls**.
+This is where we expected the payoff and did not get one. On thirty environment seeds it had
+never been tuned on, the regionally fixed model beat a command-matched random agent on
+**6 of 18 measures** — and so did the frozen model. Applying published physiology globally:
+4 of 18. Doubling inhibition everywhere: 5 of 18. **No configuration beat the baseline.**
 
-Two things we won't oversell. Freeze the retina on a single frame and about **half** the
-collision advantage survives — so part of the win is a smoother motor command beating a
-random one, not seeing. And the optimum is sharp, which is what over-tuning a single dial
-looks like.
+Head-to-head against the frozen model on identical seeds, two things do move: ~4 fewer
+collisions per 1000 tics and ~131 more units of net displacement. Health collected does not
+improve, and the vision–steering correlation goes the wrong way (−0.09 → **+0.16**).
+
+So: sevenfold more direction selectivity, no more behaviour. Either the fix is still far too
+small — selectivity remains ~10× below the threshold real experiments use to call a neuron
+direction-tuned — or thirty episodes of a stochastic level simply cannot see an effect this
+size. Health collected swings ~13 units between seeds; two runs of the *identical*
+configuration returned 3.2 and 11.2. We can't currently tell those two explanations apart,
+so we report the negative rather than the friendliest slice of it.
 
 The honest headline is not *"a wiring diagram can't produce behaviour."* It's: **one volume
 knob for the whole brain is not just imprecise, it's self-contradictory**. The eye needs a
@@ -232,10 +238,13 @@ connection is. Something has to supply those numbers, and we compared four ways 
 
 | how the strengths were set | applied | motion | plays better than random? | taste | smell |
 |---|---|---|---|---|---|
-| one number for everything | whole brain | baseline | **0 of 18** | ok | ok |
-| real measured values from published biology | whole brain | 3.3× better | — | weaker | **broken** |
-| turn all inhibition up 2× | whole brain | 5× better | — | **broken** | — |
-| **same 2×, in the visual system only** | **eye only** | **6.7× better** | **10 of 18** | ok | ok |
+| one number for everything | whole brain | baseline | 6 of 18 | ok | ok |
+| real measured values from published biology | whole brain | 3.3× better | 4 of 18 | weaker | **broken** |
+| turn all inhibition up 2× | whole brain | 5× better | 5 of 18 | **broken** | — |
+| **same 2×, in the visual system only** | **eye only** | **6.7× better** | 6 of 18 | ok | ok |
+
+Read the motion column and the behaviour column together: motion selectivity climbs steadily
+down the table, and the behaviour column does not move at all. That mismatch is the result.
 
 **Row two is the one that surprised us.** Those are *real numbers*, measured in actual flies
 by labs with no connection to this project. GABA synapses really are about 2.5× stronger
@@ -368,22 +377,29 @@ Each one prints pass or fail.
 | M6 | It runs from an enemy, unprompted | ❌ |
 | M7 | It can tell which side a target is on | ❌ |
 | M8 | **Smell changes what it does** | ✅ beats the control |
-| M9 | Does it actually play better than random? | ⚠️ frozen: 0/18 · regional fix: **10/18** |
+| M9 | Does it actually play better than random? | ❌ frozen: 6/18 · regional fix: 6/18 — no difference |
 
 124 automated tests.
 
-**M9 is where the argument lands.** With 30 environment seeds per arm, the frozen model
-beats a command-matched random agent on **none** of eighteen behavioural measures. With one
-regional parameter changed — inhibition onto the visual system doubled, nothing else — it
-beats it on **ten**, on seeds it was never tuned against: more tiles covered, less time
-stuck, longer paths, more health, and fewer collisions.
+**M9 is where the argument stops.** All four parameterisations were run on the same 30
+held-out seeds (40–69), each against its own command-matched random agent. The frozen model
+separates on 6 of 18 measures. The regional fix — inhibition onto the visual system doubled,
+nothing else — also separates on 6. Published physiology applied globally: 4. Uniform
+doubling: 5. **None of them beats the frozen baseline.** Fixing the arithmetic that
+direction selectivity needs raised selectivity sevenfold and bought no behaviour.
 
-Two caveats we keep attached. An earlier version of this table quoted friendlier numbers
-from 5 seeds; the metric has a standard deviation of ~13, so 5 seeds could only resolve
-differences of ~20, and two runs of the *same* configuration returned 3.2 and 11.2. Those
-were noise and we withdrew them — everything here is n=30. And blinding the fly (freezing
-the retina on one frame) leaves about half the collision advantage intact, so a real part
-of the win is a smoother motor command rather than vision.
+Compared head-to-head against the frozen model on identical seeds, the regional model does
+move two things: about 4 fewer collisions per 1000 tics and ~131 more units of net
+displacement. But health collected — the thing the level actually asks for — doesn't
+improve, and the vision–steering correlation moves the *wrong* way (−0.09 → +0.16).
+
+Why we believe the negative rather than hunting for a friendlier cut: health collected has
+a standard deviation of ~13 units across seeds against an effect of a few units, two runs of
+the *same* configuration returned 3.2 and 11.2, and resolving a 5-unit difference at 80%
+power would need n≈106. Episode-level behaviour in a stochastic level is a blunt instrument.
+Either the fix is still far too small to steer — selectivity is *still* ~10× under the
+threshold real experiments use — or this measurement can't see it. We can't currently tell
+those apart, and say so.
 
 Beyond the milestones there are diagnostics, mostly built to kill our own explanations:
 `m3b`–`m3f` (arm modulation, phase offset, fan-in, isolation, add-back), `m3i` (are the

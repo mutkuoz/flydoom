@@ -105,10 +105,16 @@ interaction. Applied globally it inverts the gustatory result, driving the
 proboscis pool to 168\,Hz under bitter stimulation, because 51\% of inhibitory
 synapses terminate on inhibitory neurons. Applied to the visual populations
 alone, the same factor leaves the gustatory circuit numerically unchanged,
-preserves olfaction, increases direction selectivity sevenfold, and yields
-behaviour: on thirty held-out environment seeds the model exceeds a
-command-matched control on ten of eighteen measures, where the frozen model
-exceeds it on none.
+preserves olfaction, and increases direction selectivity sevenfold. It does
+not, however, produce closed-loop behaviour. On thirty held-out environment
+seeds the regionally scaled model separates from a command-matched control on
+six of eighteen measures, the same number as the frozen model, and the two are
+not distinguishable by that criterion. Only locomotion statistics change:
+compared directly against the frozen model on identical seeds, collisions fall
+by $3.95\pm3.79$ per 1{,}000 tics and net displacement rises by $131\pm102$
+units, while health collected, the task objective, does not improve. Restoring
+the arithmetic a computation requires is therefore not sufficient to produce
+the behaviour that computation supports.
 
 A single global synaptic gain is therefore not merely incomplete but
 inconsistent: the optic lobe requires a conductance ratio the subesophageal zone
@@ -184,9 +190,9 @@ than merely approximate. Raising the inhibitory-to-excitatory ratio restores
 the multiplicative interaction, but the optic lobe requires a value the
 subesophageal zone does not tolerate; applied regionally the same factor
 increases direction selectivity sevenfold at no cost to the chemosensory
-results, and produces closed-loop behaviour that separates from a
-command-matched control on ten of eighteen measures over held-out environment
-seeds.
+results. The same manipulation does not produce closed-loop behaviour, which
+we report as a negative result: no parameterisation separates from a
+command-matched control by more than the frozen model does.
 \item A positive result that beats a degree-preserving shuffle: an olfactory
 channel reaches descending neurons through the anatomically named route with the
 wiring-predicted sign.
@@ -881,18 +887,21 @@ the uniform scaling that motivates the third.
 \toprule
 parameterisation & values from & proj.\ DSI & behav. & gustatory & olfactory\\
 \midrule
-(i) single global gain & fitted on taste & $-0.0107$ & 0/18 & pass & pass\\
-(ii) per-receptor, global & published physiology & $-0.0356$ & n/a & pass$^{*}$ & \textbf{fail}\\
-(iii) uniform $\times2$, global & search & $-0.0533$ & n/a & \textbf{fail} & n/a\\
-(iv) $\times2$ on vision only & search & $\mathbf{-0.0716}$ & \textbf{10/18} & pass & pass\\
+(i) single global gain & fitted on taste & $-0.0107$ & 6/18 & pass & pass\\
+(ii) per-receptor, global & published physiology & $-0.0356$ & 4/18 & pass$^{*}$ & \textbf{fail}\\
+(iii) uniform $\times2$, global & search & $-0.0533$ & 5/18 & \textbf{fail} & n/a\\
+(iv) $\times2$ on vision only & search & $\mathbf{-0.0716}$ & 6/18 & pass & pass\\
 \bottomrule
 \end{tabular}
 \caption{Parameterisations of synaptic conductance. Projected DSI is the
 population mean after projecting each cell's response onto its own correlator
 axis; the raw population mean cancels across cells whose axes oppose.
 Behavioural column gives the number of eighteen metrics on which the model
-separates from a command-matched control over thirty held-out environment
-seeds. Row (iii) fails because bitter stimulation drives the proboscis motor
+separates from its own command-matched control over thirty held-out
+environment seeds (40--69), all four rows run through the identical protocol
+on the same seeds. The column does not order the rows: selectivity rises
+monotonically down it while the behavioural count does not, and row (iv) does
+not exceed row (i). Row (iii) fails because bitter stimulation drives the proboscis motor
 pool to $168$\,Hz instead of suppressing it. Row (ii) passes the gustatory
 checks but degraded ($^{*}$sugar $63.79\pm9.31$ against $73.58\pm1.44$\,Hz,
 suppression $95\%$ against $99\%$) and fails olfaction. Both global
@@ -953,48 +962,69 @@ report inhibitory-to-excitatory conductance ratios of $7.7$ and $10.9$ in adult
 lobula plate neurons, so the factor of two used here is conservative relative to
 the published requirement.
 
-\subsection{Closed-loop behaviour}
+\subsection{Closed-loop behaviour: a negative result}
 \label{sec:behaviour}
 
-Configuration (iv) was evaluated against the command-matched AR(1) control on
-thirty environment seeds not used while selecting parameters.
+All four parameterisations were run through the identical protocol on the same
+thirty environment seeds (40--69), none of which was used while selecting
+parameters. Each is compared against its own command-matched AR(1) control,
+paired by seed, because seed-to-seed variance in this environment is far larger
+than the differences under test. A metric counts as separating when the paired
+difference has a 95\% confidence interval excluding zero.
 
 \begin{center}
 \small
-\begin{tabular}{lrr}
+\begin{tabular}{lrrr}
 \toprule
-paired difference vs.\ control & regional (iv) & frozen (i)\\
+parameterisation & separating & in the model's favour & vision--steering $r$\\
 \midrule
-tiles visited            & $+9.7\pm3.8$    & $-1.0\pm3.4$\\
-collisions per 1k tics   & $-4.88\pm1.9$   & $-0.5\pm3.6$\\
-stuck fraction           & $-0.13\pm0.0$   & $+0.02\pm0.1$\\
-path length              & $+511\pm230$    & $-127\pm195$\\
-health collected         & $+11.9\pm10.8$  & $-7.7\pm10.4$\\
-vision--steering $r$     & $-0.18$         & $-0.04$\\
+(i) frozen                 & 6/18 & 2/15 & $-0.090$\\
+(ii) per-receptor, global  & 4/18 & 2/15 & $+0.017$\\
+(iii) uniform, global      & 5/18 & 3/15 & $-0.031$\\
+(iv) regional              & 6/18 & 3/15 & $+0.161$\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Ten of eighteen metrics separate from the control under (iv) and none under
-(i). In absolute terms the regional model collects $30.0$ health units against
-its matched control's $18.1$, where the frozen model collects $13.2$ against
-$20.9$.
+No parameterisation separates from its control by more than the frozen model
+does. The second column counts only metrics with a defined better direction:
+three of the eighteen (path length, and mean yaw and forward magnitude)
+describe what the agent did rather than how well, and are excluded rather than
+assigned a sign. Restoring the multiplicative interaction therefore raises
+direction selectivity sevenfold without producing task-level behaviour.
 
-Three controls exclude the possibility that the effect follows from reduced
-drive alone. Matching the firing rate by lowering gain instead of raising
+The direct comparison is more sensitive than either against a control, since
+the regional and frozen models see identical seeds. Two of nine task metrics
+move: collisions fall by $3.95\pm3.79$ per 1{,}000 tics and net displacement
+rises by $131\pm102$ units, both favouring the regional model. Health
+collected, which is the objective in this scenario, does not improve
+($-6.53\pm7.81$), and against its own control the regional model collects
+\emph{less} than the control does ($-7.73\pm8.86$). The vision--steering
+correlation separates the two models ($+0.25\pm0.16$) but moves in the
+direction opposite to optomotor steering, from $-0.090$ frozen to $+0.161$
+regional. The defensible reading is that the manipulation changes how the model
+moves without changing how well it does the task.
+
+This is the outcome the power analysis in Sec.~\ref{sec:stats} predicts.
+Health collected carries a standard deviation of roughly 13 units across seeds,
+so thirty seeds resolve differences of about 9 units, and two executions of one
+identical configuration have returned means of 3.2 and 11.2. An open-loop
+measurement that moves sevenfold is simply not visible through this much
+environmental variance at any seed count we can afford: detecting a 5-unit
+difference at 80\% power would require $n\approx106$. We report the negative
+result rather than a subset of metrics chosen after the fact, and note that it
+constrains what any closed-loop connectome study can claim from episode-level
+measures.
+
+Three controls exclude the possibility that the gain in selectivity follows
+from reduced drive alone. Matching the firing rate by lowering gain instead of raising
 inhibition yields $-0.0152$ against $-0.0716$. Applying the identical factor to
 non-visual inhibitory synapses yields $-0.0102$ against an unmanipulated
 $-0.0107$. On the $1{,}869$ cells driven above threshold in both conditions,
 projected selectivity moves from $+0.0001$ to $-0.0720$, excluding selection
 among a shrinking population.
 
-Two further controls bound the result. With the retina frozen on a single
-frame, the collision advantage remains significant ($-3.56\pm2.9$), indicating
-that approximately half of it derives from the temporal structure of the motor
-command rather than from vision. Mirroring the retina reverses the
-vision--steering correlation as expected ($-0.21$ to $+0.13$) but reduces the
-behavioural point estimates by a factor of three rather than abolishing them.
-We initially described the optimum as narrow, on the grounds that selectivity
+The chosen scaling is not a sharp optimum. We initially described it as narrow, on the grounds that selectivity
 collapses at a scaling of four. A structured search over $137$ parameter
 combinations measured the local curvature directly and does not support that
 reading. Holding the score within $20\%$ of its maximum admits scalings from
@@ -1061,22 +1091,33 @@ measured ratios uniformly, however, is not sufficient: it improves selectivity
 and breaks olfaction (Table~\ref{tab:threeway}), which indicates that correct
 per-receptor values and regional assignment are separate requirements.
 
-The behavioural result should be read with its controls. Ten of eighteen
-measures separate from a command-matched control on held-out seeds where the
-frozen model separates on none, and the vision-steering correlation moves from
-$-0.04$ to $-0.18$. With the retina frozen, however, roughly half the collision
-advantage remains, so a substantial fraction reflects the temporal structure of
-the motor command rather than vision, and mirroring the retina reduces the
-behavioural estimates threefold rather than abolishing them. Selectivity also
-remains an order of magnitude below the experimental selection threshold. The
-defensible claim is that removing an identified obstacle produces measurable
-closed-loop behaviour, not that the model sees motion as a fly does.
+The behavioural measurements do not extend the result, and we take that
+seriously rather than reporting the subset that would. On thirty held-out
+seeds no parameterisation separates from its command-matched control by more
+than the frozen model does, and the regionally scaled model matches the frozen
+model at six of eighteen measures. Restoring the arithmetic that direction
+selectivity requires is therefore not sufficient to produce the behaviour that
+selectivity supports, at least not measurably through this environment.
+
+Two readings of that are available and we cannot presently separate them. The
+manipulation may be too small: selectivity after the fix remains an order of
+magnitude below the experimental selection threshold, and a system that far
+from the animal's operating point need not steer. Or the measurement may be
+too coarse: health collected varies by roughly 13 units across seeds against
+an effect of a few units, which is why the power analysis puts the required
+sample near $n\approx106$ and why two runs of one configuration returned 3.2
+and 11.2. The second is not a dismissal of the first. What can be said is
+that episode-level behavioural measures in a stochastic environment are a weak
+instrument for this question, and that a closed-loop connectome study should
+establish their power before resting a claim on them.
 
 Two further readings should be excluded. First, none of this is a claim about
 whether a fly brain can play a video game. The environment lies outside the
 animal's evolutionary experience and the model has no ventral nerve cord, so
-the behavioural measures are used as a sensitive assay of whether a
-sensorimotor transformation is present at all, not as a measure of competence. Second: the olfaction result
+the behavioural measures were intended as an assay of whether a sensorimotor
+transformation is present at all, never as a measure of competence, and the
+result above is that they are not sensitive enough to serve even that purpose.
+Second, the olfaction result
 is not evidence of enemy detection: the odour magnitude is supplied by the
 engine. What both results measure is transfer: whether a transformation
 implied by the wiring appears in a running system.
@@ -1187,6 +1228,7 @@ estimation, and a $\tau=3$\,s baseline removes the standing left--right
 asymmetry.
 
 \subsection{Statistical analysis}
+\label{sec:stats}
 
 The olfaction comparison uses 10 independent
 environment seeds. Each seed contributes one paired on/off difference, averaged
