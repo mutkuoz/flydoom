@@ -231,6 +231,9 @@ the only thing that differs between them is how synaptic strength was assigned:
 | [`media/arm3_uniform.mp4`](media/arm3_uniform.mp4) | all inhibition doubled, brain-wide |
 | [`media/arm4_regional.mp4`](media/arm4_regional.mp4) | the same doubling, visual system only |
 
+They look broadly alike, and that is the honest state of the result: the configurations
+differ sharply in motion selectivity and barely at all in what they do with it.
+
 ### We tried it four ways
 
 A wiring diagram tells you which neurons connect. It does **not** tell you how strong each
