@@ -197,19 +197,40 @@ Do exactly the same thing **to the visual system only** and the feeding circuit 
 
 Same change. Same size. Opposite outcome. The only difference is **where**.
 
-### And then it played better
+### And then it moved differently — but it did not play better
 
-With that one regional change, on thirty environment seeds it had never been tuned on, the
-connectome beat a command-matched random agent on **10 of 18 measures** — the frozen model
-beats it on **0 of 18**. It covers more ground, spends less time stuck, collects more
-health, and **hits fewer walls**.
+With that one regional change, on thirty environment seeds it had never been tuned on, it
+**moves measurably differently** from the frozen model: compared head-to-head on the same
+seeds, it hits **3.95 ± 3.79 fewer walls** per thousand tics and covers **131 ± 102 more
+ground**. That is a real difference and it is the strongest thing we can say.
 
-Two things we won't oversell. Freeze the retina on a single frame and about **half** the
-collision advantage survives — so part of the win is a smoother motor command beating a
-random one, not seeing. And the optimum is sharp, which is what over-tuning a single dial
-looks like.
+What it does **not** do is play better. We ran all four parameterisations against a
+command-matched random agent, same thirty seeds, same protocol — and they all come out the
+same:
 
-The honest headline is not *"a wiring diagram can't produce behaviour."* It's: **one volume
+| arm | differs from random | better than random | vision→steering |
+|---|---|---|---|
+| frozen (one global number) | 6 of 18 | 2 of 15 | −0.090 |
+| published values, brain-wide | 4 of 18 | 2 of 15 | +0.017 |
+| all inhibition 2×, brain-wide | 5 of 18 | 3 of 15 | −0.031 |
+| **2× on the visual system only** | 6 of 18 | 3 of 15 | +0.161 |
+
+The frozen model differs from a random agent on **six** measures. So does the regional
+model. Beating a random agent is not measuring the change — the baseline does it just as
+often. And on **health collected**, which is the thing the level actually scores, the
+regional model does **worse** than its own control (−7.73).
+
+An earlier version of this README said 10 of 18 against 0 of 18, and that the regional model
+collected 30.0 health units against 18.1. Both came from measuring one arm and assuming the
+frozen model was a null. It isn't. Those numbers are **withdrawn**. So is the claim that the
+vision→steering correlation strengthens: it moves from −0.090 to +0.161, the opposite sign
+to what we reported.
+
+So the claim shrinks to something narrower and duller: **a regional parameter change makes
+the agent move differently. It does not make it better at anything.** The place the argument
+actually holds is the motion measurement, not the game.
+
+The honest headline is still not *"a wiring diagram can't produce behaviour."* It's: **one volume
 knob for the whole brain is not just imprecise, it's self-contradictory**. The eye needs a
 setting the tongue cannot survive, and that is a measurement rather than an opinion.
 
@@ -232,10 +253,14 @@ connection is. Something has to supply those numbers, and we compared four ways 
 
 | how the strengths were set | applied | motion | plays better than random? | taste | smell |
 |---|---|---|---|---|---|
-| one number for everything | whole brain | baseline | **0 of 18** | ok | ok |
-| real measured values from published biology | whole brain | 3.3× better | — | weaker | **broken** |
-| turn all inhibition up 2× | whole brain | 5× better | — | **broken** | — |
-| **same 2×, in the visual system only** | **eye only** | **6.7× better** | **10 of 18** | ok | ok |
+| one number for everything | whole brain | baseline | 6 of 18 · 2 of 15 better | ok | ok |
+| real measured values from published biology | whole brain | 3.3× better | 4 of 18 · 2 of 15 better | weaker | **broken** |
+| turn all inhibition up 2× | whole brain | 5× better | 5 of 18 · 3 of 15 better | **broken** | — |
+| **same 2×, in the visual system only** | **eye only** | **6.7× better** | 6 of 18 · 3 of 15 better | ok | ok |
+
+The motion column separates the arms. The behaviour column does not — all four sit in the
+same band, so it tells you nothing about which parameterisation is right. That is itself a
+result about what closed-loop measures in this environment can support.
 
 **Row two is the one that surprised us.** Those are *real numbers*, measured in actual flies
 by labs with no connection to this project. GABA synapses really are about 2.5× stronger
@@ -368,22 +393,28 @@ Each one prints pass or fail.
 | M6 | It runs from an enemy, unprompted | ❌ |
 | M7 | It can tell which side a target is on | ❌ |
 | M8 | **Smell changes what it does** | ✅ beats the control |
-| M9 | Does it actually play better than random? | ⚠️ frozen: 0/18 · regional fix: **10/18** |
+| M9 | Does it actually play better than random? | ❌ no arm beats the control; regional fix changes locomotion only |
 
 124 automated tests.
 
-**M9 is where the argument lands.** With 30 environment seeds per arm, the frozen model
-beats a command-matched random agent on **none** of eighteen behavioural measures. With one
-regional parameter changed — inhibition onto the visual system doubled, nothing else — it
-beats it on **ten**, on seeds it was never tuned against: more tiles covered, less time
-stuck, longer paths, more health, and fewer collisions.
+**M9 is where the argument was supposed to land, and it doesn't.** With 30 environment
+seeds per arm and every arm measured under the same protocol, no parameterisation beats a
+command-matched random agent: all four differ from it on four to six of eighteen measures
+and favourably on two to three of fifteen, the frozen model included. The frozen model is
+not a null, so "beats the control" was never measuring the manipulation.
 
-Two caveats we keep attached. An earlier version of this table quoted friendlier numbers
-from 5 seeds; the metric has a standard deviation of ~13, so 5 seeds could only resolve
-differences of ~20, and two runs of the *same* configuration returned 3.2 and 11.2. Those
-were noise and we withdrew them — everything here is n=30. And blinding the fly (freezing
-the retina on one frame) leaves about half the collision advantage intact, so a real part
-of the win is a smoother motor command rather than vision.
+What survives is narrower. Compared **directly against the frozen model** on the same
+seeds — a paired test, which removes the control's variance instead of adding it — the
+regional model hits 3.95 ± 3.79 fewer walls per 1k tics and covers 131 ± 102 more ground.
+The parameterisation changes locomotion. It does not improve health collection, which is
+what the level scores.
+
+This is the n=5 lesson repeating at n=30. We already withdrew one set of friendlier numbers
+from 5 seeds (standard deviation ~13, so 5 seeds resolved nothing under ~20; two runs of the
+*same* configuration returned 3.2 and 11.2). Thirty seeds is enough for the paired
+comparison and still not enough for the against-a-control comparison — the paired form
+differences out the seed and the control-referenced form doesn't. Assume any
+"beats the control" claim in this environment is under-powered until shown otherwise.
 
 Beyond the milestones there are diagnostics, mostly built to kill our own explanations:
 `m3b`–`m3f` (arm modulation, phase offset, fan-in, isolation, add-back), `m3i` (are the
