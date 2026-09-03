@@ -66,6 +66,19 @@ def population_indices(graph, ann, handle, side=None):
     return graph.index_of(res.root_ids)
 
 
+def _hs_indices(graph, ann, side):
+    """Horizontal-system cells on one side, resolved by type rather than by a
+    registry handle: HS is not a named handle in this project, and the
+    optomotor readout in the animal is this population."""
+    from flydoom.registry import Handle
+    h = Handle(name="HS", group="optic", exact_only=True,
+               patterns=("HSE", "HSN", "HSS", "H2"))
+    res = ann.resolve(h, side=side)
+    if not res.root_ids:
+        return np.zeros(0, np.int32)
+    return graph.index_of(res.root_ids)
+
+
 class GratingRig:
     """Drives the network with a drifting grating, entirely on the GPU."""
 
@@ -784,6 +797,15 @@ def main() -> int:
         "LPLC2": population_indices(g, ann, "LPLC2"),
         "DNa02_L": population_indices(g, ann, "DNa02", side="left"),
         "DNa02_R": population_indices(g, ann, "DNa02", side="right"),
+        # The horizontal system. In the animal these, not DNa02, are the
+        # optomotor output stage: large-field cells whose function is to pool
+        # thousands of T4/T5 terminals across the eye. Reading here is an
+        # electrode placement, not a change to the model, and it is where the
+        # optomotor literature records. DNa02 is one cell per side and carries
+        # a standing left-right asymmetry of tens of Hz, which is the wrong
+        # instrument for a signal this size.
+        "HS_L": _hs_indices(g, ann, "left"),
+        "HS_R": _hs_indices(g, ann, "right"),
     }
     mon_t = {k: torch.as_tensor(v.astype(np.int64), device=args.device)
              for k, v in mons.items()}
@@ -898,6 +920,16 @@ def main() -> int:
     c.check(best_dsi > 0.1, "direction selectivity is BIOLOGICALLY STRONG",
             f"best |DSI| {best_dsi:.4f}, need >0.1 (real fly ~0.5-0.9)")
 
+    hs = {k: (v[0]["HS_L"] - v[0]["HS_R"]) for k, v in results.items()}
+    if hs:
+        print("\n  HORIZONTAL SYSTEM (HS_L - HS_R), the optomotor readout:")
+        for k, v in hs.items():
+            lbl = f"tf {k[0]:g} {'rightward' if k[1] > 0 else 'leftward'}"
+            print(f"    {lbl:>18}  {v:+8.3f} Hz")
+        vals = list(hs.values())
+        if len(vals) >= 2:
+            print(f"    separation  {max(vals) - min(vals):.3f} Hz   "
+                  f"signs {'OPPOSE' if max(vals) * min(vals) < 0 else 'agree'}")
     dn = max(max(v[0]["DNa02_L"], v[0]["DNa02_R"]) for v in results.values())
     c.check(dn > 0.5, "signal reaches DNa02", f"peak {dn:.2f} Hz")
 
