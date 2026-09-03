@@ -44,3 +44,6 @@ texput.log
 
 # per-seed shards: redundant with the merged *_n30.json / m8_adapt_*.json
 paper/data/*_shards/
+# ...except the four-arm behavioural battery: it is 1.6 MB and it is the
+# evidence for every closed-loop claim, which must not live outside git.
+!paper/data/behav4/**

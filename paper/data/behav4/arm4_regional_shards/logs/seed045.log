@@ -1,0 +1,51 @@
+flydoom M9 — closed-loop behaviour
+============================================================================
+1 seeds x 700 tics (20 s) x 1 scenarios, 4 arms
+
+health_gathering_supreme
+FLYDOOM_OPTIC_INH_SCALE=2 applied to 632,593 inhibitory edges onto vision
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:299: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:816.)
+  m = torch.sparse_coo_tensor(
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  mats.append(m.to_sparse_csr())
+FLYDOOM_OPTIC_INH_SCALE=2 applied to 632,593 inhibitory edges onto vision
+  seed 45: tiles   19  healed     0  hp     4
+
+                             connectome        shuffled          random           still
+  tiles visited                 19.0 ±0         11.0 ±0         16.0 ±0          1.0 ±0
+  path (map units)              1148 ±0          853 ±0         1043 ±0            0 ±0
+  tiles / 1k path              16.55 ±0        12.90 ±0        15.35 ±0      1000.00 ±0
+  health picked up               0.0 ±0         20.0 ±0         12.0 ±0          0.0 ±0
+  damage taken                  88.0 ±0        104.0 ±0         96.0 ±0         88.0 ±0
+  final health                   4.0 ±0          8.0 ±0          8.0 ±0          4.0 ±0
+  kills                         0.00 ±0         0.00 ±0         0.00 ±0         0.00 ±0
+  tics survived                  384 ±0          448 ±0          448 ±0          384 ±0
+  wall hits / 1k tics            7.8 ±0          0.0 ±0         24.6 ±0          0.0 ±0
+  stuck when walking            7.0% ±0         0.0% ±0        29.2% ±0         0.0% ±0
+  tics between hits            127.7 ±0        447.0 ±0         40.6 ±0        383.0 ±0
+
+  wrote paper/data/behav4/arm4_regional_shards/seed045.json
+
+ACCEPTANCE
+  PASS  health_gathering_supreme: yaw command is not pinned at its clamp   1% of tics
+  PASS  health_gathering_supreme: forward command is not pinned at its clamp   0% of tics
+  PASS  health_gathering_supreme: lateral command is not pinned at its clamp   10% of tics
+  PASS  health_gathering_supreme: not locked in a constant spin   mean sign 0.13
+  PASS  health_gathering_supreme: explores more than matched random   19 vs 16 tiles
+  FAIL  health_gathering_supreme: survives longer than matched random   384 vs 448 tics
+  PASS  health_gathering_supreme: hits walls less than matched random   7.8 vs 24.6 per 1k tics
+  PASS  health_gathering_supreme: steering is coupled to what the eyes see   |r| = 0.296 at best lag
+        health_gathering_supreme: intact vs shuffled   19 vs 11 tiles   (intact ahead)
+
+VERDICT: stable
+
+Read the last two checks per scenario, not the stability ones. Stability only
+says the decoder is not clipping or spinning.
+
+Wall avoidance is the behavioural read-out of M3 and M4: a fly steers away from
+a looming wall using optic-flow expansion, which is the computation those two
+milestones show this model cannot perform. `vision_steer_r` is the same
+question one level lower down -- whether the turn command is coupled to the
+left-right luminance difference on the retinas at all. A near-zero correlation
+there is the mechanism behind a negative wall-avoidance result, and both are
+results rather than bugs.
