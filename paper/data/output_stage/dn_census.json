@@ -1,0 +1,15 @@
+{
+ "measurement": "spikes accumulated every simulation substep in the running closed loop, 120 tics, health_gathering_supreme seed 0, default configuration",
+ "n_descending": 1305,
+ "refractory_ceiling_hz": 454.5,
+ "silent_below_0.1hz": 1041,
+ "physiological_1_to_50hz": 134,
+ "hz_50_to_200": 111,
+ "above_200hz": 19,
+ "median_hz": 0.0,
+ "mean_hz": 14.2,
+ "max_hz": 318,
+ "steering_readout": {"DNa02_L_hz": 140, "DNa02_R_hz": 400,
+   "note": "the pair the motor decoder reads sits in the top 1.5%, near the refractory ceiling, where dynamic range is compressed"},
+ "caveat": "an earlier version of this measurement sampled once per Doom tic while dividing by a substep-resolved window, undercounting by up to 57x and making the population appear uniformly silent. Accumulate every substep."
+}
