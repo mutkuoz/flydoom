@@ -16,7 +16,8 @@ import math
 import sys
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parent.parent / "paper" / "data" / "behav4"
+ROOT = Path(__file__).resolve().parent.parent / "paper" / "data"
+DATA = ROOT / "behav4"
 
 # Metrics compared against the matched control. Excluded, with reasons:
 #   kills, attack_frac, attack_chatter, use_frac -- no weapon in this scenario,
@@ -42,6 +43,17 @@ METRICS = {
 VISION_ONLY = ["vision_steer_r_best", "vision_steer_lag_tics"]
 ARMS = ["arm1_frozen", "arm2_published", "arm3_uniform", "arm4_regional"]
 
+# The 2x2 that matters: T4/T5 transfer function crossed with the regional
+# inhibitory scale. The graded cells were run before it was noticed that the
+# closed loop had always used graded T4/T5 while every selectivity measurement
+# used spiking ones.
+GRID = {
+    "graded  oinh=1": ROOT / "behav4" / "arm1_frozen_shards",
+    "graded  oinh=2": ROOT / "behav4" / "arm4_regional_shards",
+    "spiking oinh=1": ROOT / "behav_spk" / "spk_oi1_shards",
+    "spiking oinh=2": ROOT / "behav_spk" / "spk_oi2_shards",
+}
+
 
 def ci95(v):
     n = len(v)
@@ -50,6 +62,59 @@ def ci95(v):
     m = sum(v) / n
     sd = math.sqrt(sum((x - m) ** 2 for x in v) / (n - 1))
     return m, 1.96 * sd / math.sqrt(n)
+
+
+def load_dir(d: Path):
+    """seed -> arm -> episode metrics, from a shard directory."""
+    per = {}
+    for f in sorted(Path(d).glob("seed*.json")):
+        try:
+            dd = json.loads(f.read_text())
+        except Exception:
+            continue
+        if not dd.get("runs"):
+            continue
+        for r in dd["runs"]:
+            for e in r.get("episodes", []):
+                per.setdefault(int(f.stem[4:]), {})[r["arm"]] = e
+    return per or None
+
+
+def grid_report():
+    """Compare the four cells of the transfer-function x inhibition grid."""
+    loaded = {k: load_dir(v) for k, v in GRID.items()}
+    have = {k: v for k, v in loaded.items() if v}
+    missing = [k for k, v in loaded.items() if not v]
+    if missing:
+        print("not yet run: " + ", ".join(missing))
+    if not have:
+        return
+    common = None
+    for v in have.values():
+        s_ = {k for k, arms in v.items()
+              if "connectome" in arms and "random" in arms}
+        common = s_ if common is None else (common & s_)
+    common = sorted(common or [])
+    n_signed = sum(1 for d in METRICS.values() if d)
+    print(f"\nseeds common to every cell: {len(common)}")
+    print(f"\n{'cell':<16}{'differs':>9}{'better':>10}{'vision r':>11}")
+    print("-" * 46)
+    for k, per in have.items():
+        differ = better = 0
+        for m, direction in METRICS.items():
+            v = [per[s]["connectome"][m] - per[s]["random"][m] for s in common
+                 if m in per[s]["connectome"] and m in per[s]["random"]]
+            if len(v) < 2:
+                continue
+            mu, h = ci95(v)
+            ok = abs(mu) > h
+            differ += ok
+            better += bool(ok and direction and mu * direction > 0)
+        vr = [per[s]["connectome"].get("vision_steer_r_best") for s in common]
+        vr = [x for x in vr if x is not None]
+        vm = sum(vr) / len(vr) if vr else float("nan")
+        print(f"{k:<16}{differ:>4}/{len(METRICS):<4}{better:>5}/{n_signed:<4}"
+              f"{vm:>11.3f}")
 
 
 def load(tag):
@@ -76,6 +141,9 @@ def load(tag):
 
 
 def main():
+    if "--grid" in sys.argv:
+        grid_report()
+        return 0
     loaded = {t: load(t) for t in ARMS}
     missing = [t for t, v in loaded.items() if not v]
     if missing:
