@@ -231,6 +231,7 @@ the only thing that differs between them is how synaptic strength was assigned:
 | [`media/arm3_uniform.mp4`](media/arm3_uniform.mp4) | all inhibition doubled, brain-wide |
 | [`media/arm4_regional.mp4`](media/arm4_regional.mp4) | the same doubling, visual system only |
 | [`media/arm5_regional_nt.mp4`](media/arm5_regional_nt.mp4) | real measured values, visual system only — nothing invented |
+| [`media/arm6_touch.mp4`](media/arm6_touch.mp4) | with antennal touch: it can finally feel walls |
 
 They look broadly alike, and that is the honest state of the result: the configurations
 differ sharply in motion selectivity and barely at all in what they do with it.
@@ -283,6 +284,32 @@ that compute maximising a number behaviour can't use.
 with fix/no-fix, 30 identical levels each. The version carrying +24 Hz and the version
 carrying −1.5 Hz behave *the same* (4 of 18 vs 6 of 18 measures). The engine makes power;
 the transmission isn't connected.
+
+**And then we found where the signal actually goes.** DNa02 — the neuron this whole
+project reads to steer — gets **2.3%** of its input from vision, and **0.34%** from the
+motion-pooling cells. It's also firing at up to 400 Hz against a hard ceiling of 454, so it's
+nearly blind *and* nearly maxed out. Textbooks say the motion pathway runs to DNa02; in this
+wiring diagram that connection is 75 of 7,297 units of weight. The signal goes somewhere
+else — to **DNp15** — where it measures **32 Hz**.
+
+So the computation happens, leaves the eye, and reaches a command neuron. We were reading a
+different one. And across the whole output stage, **80% of the 1,305 command neurons never
+fire at all.**
+
+We did *not* just switch to reading DNp15. Picking the readout that shows the answer you want
+is fitting the instrument to the result, and nothing in a wiring diagram proves DNp15 steers a
+real fly.
+
+**We also gave it a sense of touch.** It had eyes, a nose and a tongue, and no way to feel a
+wall — so 2,674 mechanosensory neurons sat unused while collisions were the metric that kept
+moving. Antennae, not bristles: bristles connect to the *grooming* neurons, so wiring wall-hits
+there would make it wash its face on impact. Touch reaches the steering neuron and shifts it
+~3 Hz — but the same direction whichever antenna is hit, because both antennae feed the same
+side. No turn-away reflex is possible at two synapses.
+
+Three senses, three different failures: **vision** computes a signal that lands on a neuron we
+don't read, **touch** lands on the right neuron but can't tell left from right, and **smell**
+lands on the right neuron *and* knows its side — which is why smell is the one that works.
 
 **One number retracted.** We had a "vision–steering correlation" that looked like proof
 vision was driving the fly. It tracks the inhibition knob — the one that *abolishes* the

@@ -237,6 +237,60 @@ def fig_olfaction():
     plt.close(fig)
 
 
+def fig_readout():
+    """Where the directional signal goes, and where the decoder listens."""
+    fig, ax = plt.subplots(1, 3, figsize=(7.2, 2.35))
+
+    # (a) visual input fraction of descending neurons
+    names = ["DNp20", "DNp04", "DNp11", "DNp03", "DNp01", "DNa02"]
+    vals = [79.5, 75.6, 65.8, 50.7, 20.3, 2.3]
+    cols = ["0.55"] * 4 + ["0.35", "#c0392b"]
+    ax[0].barh(range(len(names)), vals, color=cols)
+    ax[0].set_yticks(range(len(names)))
+    ax[0].set_yticklabels(names)
+    ax[0].invert_yaxis()
+    ax[0].set_xlabel("visual share of input (%)")
+    ax[0].set_title("(a) what vision reaches", loc="left")
+    ax[0].annotate("steering readout", xy=(2.3, 5), xytext=(28, 5),
+                   fontsize=7, color="#c0392b", va="center",
+                   arrowprops=dict(arrowstyle="->", color="#c0392b", lw=0.8))
+
+    # (b) descending rate census
+    labs = ["silent\n<0.1", "1-50", "50-200", ">200"]
+    cnt = [1041, 134, 111, 19]
+    ax[1].bar(range(4), cnt, color=["0.75", "#2c7fb8", "0.55", "#c0392b"])
+    ax[1].set_xticks(range(4))
+    ax[1].set_xticklabels(labs, fontsize=7)
+    ax[1].set_ylabel("descending neurons")
+    ax[1].set_xlabel("firing rate (Hz)")
+    ax[1].set_title("(b) the output stage", loc="left")
+    ax[1].annotate("DNa02 here\n(ceiling 454)", xy=(3, 19), xytext=(1.6, 640),
+                   fontsize=6.5, color="#c0392b",
+                   arrowprops=dict(arrowstyle="->", color="#c0392b", lw=0.8))
+
+    # (c) directional signal by recording site
+    tf = [0.5, 1, 2, 3, 4, 6]
+    hs = [26.1, 3.5, 24.1, 16.9, 11.4, 6.4]
+    p15 = [19.0, -4.0, 32.0, 26.0, 11.5, -20.5]
+    a02 = [0.5, 2.5, 0.5, 0.4, 2.0, 1.0]
+    ax[2].axhline(0, color="0.8", lw=0.7)
+    ax[2].plot(tf, hs, "o-", ms=3, lw=1.2, color="#2c7fb8", label="HS")
+    ax[2].plot(tf, p15, "s-", ms=3, lw=1.2, color="#31a354", label="DNp15")
+    ax[2].plot(tf, a02, "^-", ms=3, lw=1.2, color="#c0392b", label="DNa02")
+    ax[2].set_xscale("log")
+    ax[2].set_xticks(tf)
+    ax[2].set_xticklabels([str(t) for t in tf], fontsize=7)
+    ax[2].set_xlabel("drift frequency (Hz)")
+    ax[2].set_ylabel("T4/T5-dependent L-R (Hz)")
+    ax[2].set_title("(c) by recording site", loc="left")
+    ax[2].legend(frameon=False, loc="lower left", fontsize=6.5)
+
+    fig.tight_layout()
+    fig.savefig(FIGS / "fig4_readout.pdf")
+    plt.close(fig)
+    print("  wrote fig4_readout.pdf")
+
+
 if __name__ == "__main__":
     fig_pipeline(); print("fig1 ok")
     fig_mechanism(); print("fig2 ok")
@@ -244,3 +298,4 @@ if __name__ == "__main__":
         fig_olfaction(); print("fig3 ok")
     else:
         print("fig3 skipped - m8 json not ready")
+    fig_readout(); print("fig4 ok")

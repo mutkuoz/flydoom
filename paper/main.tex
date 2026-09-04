@@ -75,8 +75,8 @@ in a closed sensorimotor loop}
 \begin{abstract}
 \noindent
 Synapse-resolution connectomics permits simulation of an entire brain with
-essentially no free parameters, but such models are typically driven open loop.
-We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
+essentially no free parameters, but such models are typically driven open
+loop. We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
 2{,}710{,}038 edges) in a closed sensorimotor loop with a video game. No
 parameter is trained, and the only fitted quantity is a single global synaptic
 gain calibrated on a non-visual behaviour.
@@ -85,49 +85,47 @@ Transfer is dissociated by modality. Chemosensory transformations are
 reproduced: sugar drives the proboscis motor pool to 77\,Hz, bitter
 co-stimulation suppresses it by 99\%, and an olfactory channel raises lateral
 horn activity to $14.1\pm5.5$\,Hz while suppressing a descending neuron one
-synapse downstream ($-17.7\pm7.4$\,Hz). None of this was fitted and none
-survives a degree-preserving shuffle. Per-cell direction selectivity is not
-reproduced: $|\mathrm{DSI}|\leq0.0121$, roughly $40\times$ below the threshold
-at which experimental studies classify a terminal as direction-tuned.
+synapse downstream ($-17.7\pm7.4$\,Hz), none of it fitted and none surviving a
+degree-preserving shuffle. Per-cell direction selectivity is not:
+$|\mathrm{DSI}|\leq0.0121$, roughly $40\times$ below the experimental
+threshold for calling a terminal direction-tuned.
 
-The obstacle is a property of the neuron model. A product requires a
-multiplicative interaction between the correlator arms, which in a
-conductance-based neuron must arise from inhibitory division, and that division
-cancels itself: shunting divides the membrane by $1.77\times$ at \cell{T4a}
-while the accompanying hyperpolarisation raises the excitatory driving force by
-$1.85\times$, leaving an interaction below 11\% and of the wrong sign. Making
-inhibition purely divisive abolishes the residue rather than restoring it, so
-what survives is a threshold conjunction and not a product.
+The obstacle is the neuron model. A product requires a multiplicative
+interaction between the correlator arms, which in a conductance-based neuron
+must come from inhibitory division, and that division cancels itself: shunting
+divides the membrane by $1.77\times$ while the hyperpolarisation it causes
+raises the excitatory driving force by $1.85\times$. Making inhibition purely
+divisive abolishes the residue rather than restoring it, so what survives is a
+threshold conjunction. Raising the inhibitory-to-excitatory ratio restores the
+interaction, but no single value serves the brain: applied globally it drives
+the proboscis pool to 168\,Hz under bitter, because 51\% of inhibitory
+synapses terminate on inhibitory neurons. Restricted to the visual populations
+it leaves the chemosensory results intact and raises selectivity sevenfold.
 
-Raising the inhibitory-to-excitatory ratio restores the interaction but no
-single value serves the brain: applied globally it drives the proboscis pool to
-168\,Hz under bitter, because 51\% of inhibitory synapses terminate on
-inhibitory neurons. Restricted to the visual populations it leaves the
-chemosensory results intact and raises selectivity sevenfold. Published
-per-receptor ratios under the same restriction, which fit nothing, recover most
-of that gain, isolating scope rather than the values as the operative variable.
+Recording site then proves more consequential than any parameter. Read at the
+horizontal system, the optomotor output stage, the frozen model carries a
+directional signal of 17 to 26\,Hz that ablating \cell{T4}/\cell{T5}
+abolishes, an order of magnitude above anything resolvable at the descending
+pair used as the steering readout, and the regional scale maximising per-cell
+selectivity drives that signal to zero. Behaviour follows neither: over thirty
+held-out seeds, conditions differing by an order of magnitude and in sign at
+the output stage return four and six of eighteen measures against a
+command-matched control.
 
-Recording site proves more consequential than any of these parameters. Read at
-the horizontal system, the optomotor output stage in the animal, the frozen
-model carries a directional signal of 17 to 26\,Hz that ablating
-\cell{T4}/\cell{T5} abolishes, an order of magnitude above anything resolvable
-at the single descending pair used as the steering readout. The regional scale
-that maximises per-cell selectivity drives that signal to zero or below: the
-two measures move against each other, and the parameter search optimised the
-one behaviour cannot use. Crossing the neuron transfer function with the scale
-over thirty held-out seeds separates them completely, conditions differing by
-an order of magnitude and in sign at the output stage returning four and six of
-eighteen measures against a command-matched control. The signal exists and does
-not reach the readout. We withdraw the vision--steering correlation as evidence
-of vision, since it tracks the inhibitory scale in both transfer functions
-rather than the directional signal that scale abolishes.
+The readout accounts for it. \cell{DNa02}, which the decoder uses for
+steering, draws $2.3\%$ of its input from visual populations and $0.34\%$ from
+the horizontal system, and fires near its 454\,Hz refractory ceiling. The
+literature's optomotor pathway to \cell{DNa02} is 75 of 7{,}297 units of
+signed weight here; that output goes to \cell{DNp15}, where the
+\cell{T4}/\cell{T5}-dependent difference reaches 32\,Hz. Across the output
+stage, $79.8\%$ of 1{,}305 descending neurons never fire. The computation
+arrives at a descending neuron; the decoder reads a different one.
 
-Two methodological results generalise beyond this model: degree-preserving
-shuffles are invalid as controls in closed loop, because the arms sample
-different stimulus distributions; and episode-level behavioural measures in a
-stochastic environment failed to resolve a population signal varying by an
-order of magnitude across conditions, which bounds what any closed-loop
-connectome study can claim from them.
+Two results generalise beyond this model: degree-preserving shuffles are
+invalid as closed-loop controls, because the arms sample different stimulus
+distributions; and episode-level behavioural measures failed to resolve a
+population signal varying by an order of magnitude across conditions, which
+bounds what any closed-loop connectome study can claim from them.
 \end{abstract}
 
 \vspace{0.4em}
@@ -200,6 +198,12 @@ against each other under the same parameter, so that a search maximising the
 former removes the latter. With the recording site corrected, the frozen model
 carries a directional signal that survives ablation of the motion detectors
 and that the reported parameterisation destroys.
+
+\item A characterisation of the output stage, which no parameter in the
+sensory pathway can compensate for: four fifths of descending neurons never
+fire, the steering readout runs near its refractory ceiling on $2.3\%$ visual
+input, and the directional signal arrives instead at the horizontal system's
+actual descending target.
 
 \item A parameterisation carrying no fitted quantity. Published per-receptor
 conductances restricted to the visual populations preserve both chemosensory
@@ -1129,6 +1133,108 @@ the reported figure describes a configuration that never ran in the loop. The
 behavioural battery below therefore repeats every condition in both transfer
 functions.
 
+\subsection{Where the signal is read on the motor side}
+\label{sec:readout}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figs/fig4_readout.pdf}
+\caption{The directional signal reaches a descending neuron, but not the one
+the decoder reads. \textbf{(a)} Share of each descending neuron's input
+arriving from visual populations. \cell{DNa02}, which the motor decoder uses
+for steering, receives $2.3\%$; several \cell{DNp} types receive $50$--$80\%$.
+\textbf{(b)} Firing-rate census of all 1{,}305 descending neurons in the
+running loop: $79.8\%$ never fire, and the 19 above 200\,Hz include
+\cell{DNa02}, against a refractory ceiling of 454\,Hz. \textbf{(c)} The
+\cell{T4}/\cell{T5}-dependent left-right difference, measured as intact minus
+ablated, at three recording sites.}
+\label{fig:readout}
+\end{figure}
+
+Sec.~\ref{sec:hs} located a directional signal at the horizontal system that
+the behavioural measures do not reflect. The gap is in the readout rather than
+in the signal.
+
+\emph{The steering readout is almost blind.} \cell{DNa02} draws $2.3\%$ of its
+input weight from visual populations and $0.34\%$ from the horizontal system,
+the remainder arriving from the central brain. It is
+excitation-dominated ($g_i/g_e = 0.56$) and fires at 140 and 400\,Hz on the
+two sides against a refractory ceiling of 454\,Hz, so it is both weakly
+connected to vision and close to saturation, where a neuron has little
+dynamic range in which to represent anything. \cell{DNp01}, the neuron the
+olfactory result moves, is the opposite on both counts: $20.3\%$ visual,
+inhibition-dominated at $1.81$, with a baseline that an input can modulate.
+
+\emph{The classic pathway is not in this reconstruction.} The optomotor
+pathway described in the literature runs from the horizontal system to
+\cell{DNa02}. Here the horizontal system sends $14.5\%$ of its output to
+descending neurons, of which 75 of 7{,}297 units of signed weight reach
+\cell{DNa02}. Its strongest descending target is \cell{DNp15}, at $4.7\times$
+that weight.
+
+\emph{And \cell{DNp15} carries the signal.} Measured as intact minus
+\cell{T4}/\cell{T5}-ablated, the left-right difference at \cell{DNp15} is
+$+19.0$, $-4.0$, $+32.0$, $+26.0$, $+11.5$ and $-20.5$\,Hz at 0.5 to 6\,Hz
+drift: substantial and positive at four of six frequencies, larger where
+present than at the horizontal system itself, and with sign inversions at 1
+and 6\,Hz that the same ablation control shows to be artifact-dominated
+frequencies. The visual pathway therefore delivers a directional signal to a
+descending neuron. The decoder reads a different one.
+
+We stop short of calling this a repair. That a directional signal arrives at
+\cell{DNp15} does not establish that \cell{DNp15} drives turning in the
+animal, which is a functional claim no wiring diagram settles, and rewiring
+the decoder to whichever cell carries the signal we are looking for would
+fit the readout to the result. It is reported as a measurement of the
+pathway.
+
+\emph{The output stage as a whole.} Of 1{,}305 descending neurons, 1{,}041
+($79.8\%$) never fire during closed-loop operation, 134 sit in the
+physiological 1--50\,Hz band, and 19 exceed 200\,Hz. The median is zero. A
+model whose motor output is mostly silent and whose active minority runs near
+saturation constrains any behavioural claim independently of what the sensory
+side computes.
+
+\subsection{A third sensory channel, and why it also fails}
+\label{sec:touch}
+
+The model had vision, smell and taste. Walking into a wall produced no
+afferent activity anywhere, which makes collisions, the one behavioural
+measure that moves under every manipulation reported here, a consequence the
+agent cannot sense. The connectome carries 2{,}674 mechanosensory neurons
+that go unused. The environment supplies contact on the same terms it supplies
+odour sources, so the omission is ours rather than the engine's.
+
+The obvious target is the wrong one, and the reason is instructive. FAFB
+contains 1{,}113 eye bristles and 304 head bristles lying one synapse from 109
+descending neurons, which are \cell{DNg15}, \cell{DNg35}, \cell{DNg48},
+\cell{DNg84} and \cell{DNg85}. The \cell{DNg} group is largely grooming, and
+that is correct biology: deflecting a fly's head bristles elicits head
+grooming rather than avoidance. Driving wall contact into bristles would ask
+the model to groom on impact. Flies wall-follow by antennal contact, and the
+486 wind and gravity afferents lie two synapses from \cell{DNa02} against
+roughly six for the visual pathway, on a route that does not depend on the
+multiplicative interaction this neuron model fails to produce.
+
+Contact is derived rather than read: an agent commanding forward motion it
+does not achieve is against something, and the side follows from the slide,
+since a body pushed into an angled surface slides along it. Contact reaches
+\cell{DNa02} and shifts it by roughly 3\,Hz, but the shift does not reverse
+with the contacted side ($-3.12$ against $-3.66$\,Hz, sign consistent on two
+of three seeds) on a standing asymmetry of $-115$\,Hz. Summed two-hop signed
+weight explains why: the left antenna reaches \cell{DNa02}$_L$ $1.35\times$
+more strongly than \cell{DNa02}$_R$, and the right antenna also favours
+\cell{DNa02}$_L$, by $1.26\times$. Both antennae drive the same side, so the
+pathway is not differentially lateralised at two synapses and cannot produce a
+side-dependent turn however the afferents are driven. Whether the real reflex
+runs through the ventral nerve cord, which this reconstruction does not
+contain, we cannot say.
+
+Three sensory channels now give three distinct failures: vision computes a
+signal that reaches a descending neuron the decoder does not read, touch
+reaches the decoded neuron but without lateralisation, and smell reaches it
+lateralised and with the predicted sign, which is the one that works.
+
 \subsection{Closed-loop behaviour: a negative result}
 \label{sec:behaviour}
 
@@ -1314,7 +1420,28 @@ The measurement is nonetheless implicated. Health collected varies by roughly
 puts the required sample near $n\approx106$, and two runs of one configuration
 returned 3.2 and 11.2. An instrument that cannot resolve a population signal
 differing by an order of magnitude between conditions is not the instrument
-for this question. What can be said is
+for this question.
+
+The readout supplies the rest of the answer, and it revises what the negative
+result is about. \cell{DNa02} receives $2.3\%$ of its input from visual
+populations and $0.34\%$ from the horizontal system, and the pathway the
+optomotor literature describes, from the horizontal system to \cell{DNa02},
+carries 75 of 7{,}297 units of signed weight in this reconstruction. The
+signal is not failing to be computed, nor failing to leave the optic lobe: it
+arrives at \cell{DNp15}, the horizontal system's actual descending target, at
+32\,Hz. What fails is the correspondence between the cell a decoder was
+pointed at, chosen from the literature, and the cell this wiring diagram
+routes the computation to.
+
+We resisted the obvious response, which is to decode \cell{DNp15} instead.
+Selecting the readout that carries the signal one is looking for fits the
+instrument to the result, and nothing in the connectome establishes that
+\cell{DNp15} drives turning in the animal. The more useful statement is
+methodological: in a frozen model the readout is a parameter like any other,
+and it was the least examined one here. The same applies at the population
+level, where $79.8\%$ of descending neurons never fire and the decoded pair
+runs near saturation, so the motor stage constrains behavioural claims
+independently of anything the sensory side computes. What can be said is
 that episode-level behavioural measures in a stochastic environment are a weak
 instrument for this question, and that a closed-loop connectome study should
 establish their power before resting a claim on them.
@@ -1511,6 +1638,18 @@ rather than once per substep, giving it an effective time constant of 14\,s in
 place of 0.25\,s. Each of these corrupts precisely the cue under test. None of
 them changed the outcome, which is itself informative: the negative result does
 not rest on a badly delivered stimulus.
+
+\emph{Two silences and a control defect, diagnosed rather than listed.}
+\cell{LC10a} fires exactly zero across the fixation test, which reports a
+left-right difference of $0.000$; its input is inhibition-dominated at
+$g_i/g_e = 1.85$, which accounts for it. \cell{LPLC2} is also silent at
+$0.75$, beside \cell{LC4} at $0.59$ which fires, so that ratio does not
+account for this one and we do not claim it does. In the looming test the
+static control is the expansion's final radius held for the whole window,
+$70^\circ$ against a sweep beginning at $5^\circ$, so it delivers more total
+drive than the stimulus it controls for; \cell{LC4} responding more to static
+than to looming is a defect of that comparison rather than of adaptation, and
+the check cannot pass as written.
 
 \emph{Bounding the accessible space:} the inhibitory reversal potential from
 $-52$ to $-100$\,mV, which peaks at the published value and collapses when

@@ -414,6 +414,9 @@ def main() -> int:
     ap.add_argument("--label", default=None,
                     help="caption burned into the frame, to identify which "
                          "parameterisation a recording shows.")
+    ap.add_argument("--touch", action="store_true",
+                    help="antennal mechanosensation: wall contact drives the "
+                         "wind/gravity afferents. See mechanosensation.py.")
     ap.add_argument("--no-gif", action="store_true")
     ap.add_argument("--gif-fps", type=int, default=10)
     ap.add_argument("--gif-width", type=int, default=640)
@@ -447,6 +450,7 @@ def main() -> int:
         optic_gain=args.optic_gain,
         spiking_t4=args.spiking_t4,
         bias_mv=args.bias,
+        touch=args.touch,
     ))
     print(agent.summary())
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
