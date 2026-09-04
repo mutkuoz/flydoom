@@ -254,6 +254,22 @@ class FlyDoomAgent:
             return np.zeros(0, np.int32)
         return self.graph.index_of(res.root_ids)
 
+    def _named_idx(self, cell_type: str, side: str) -> np.ndarray:
+        """Graph indices for one side of a consolidated cell type.
+
+        DNp15 has no handle in the registry; it is named in the consolidated
+        type table.
+        """
+        import polars as pl
+        ct = pl.read_csv(config.RAW_DIR / "consolidated_cell_types.csv.gz",
+                         infer_schema_length=50_000)
+        cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
+                          infer_schema_length=50_000)
+        ids = ct.filter(pl.col("primary_type") == cell_type)["root_id"].to_list()
+        sel = cls.filter(pl.col("root_id").is_in(ids)
+                         & (pl.col("side") == side))["root_id"].to_list()
+        return self.graph.index_of([int(r) for r in sel])
+
     def _sub_class_idx(self, sub_class: str, side: str) -> np.ndarray:
         """Graph indices for one side of a sensory sub_class.
 
@@ -276,6 +292,8 @@ class FlyDoomAgent:
             "DNa02_R": self._idx("DNa02", side="right"),
             "DNp01_L": self._idx("DNp01", side="left"),
             "DNp01_R": self._idx("DNp01", side="right"),
+            "DNp15_L": self._named_idx("DNp15", "left"),
+            "DNp15_R": self._named_idx("DNp15", "right"),
             "MN9": self._idx("MN9"),
             "LC4": self._idx("LC4"),
             "LPLC2": self._idx("LPLC2"),

@@ -109,7 +109,7 @@ class MotorConfig:
     # The forward channel carries a tonic command and almost no scene.
 
     yaw_gain: float = 0.44
-    """Degrees of turn per tic per Hz of DNa02 differential."""
+    """Degrees of turn per tic per Hz of the yaw differential."""
 
     yaw_max_deg: float = 12.0
     """Clamp per tic. Doom turns feel unusable past roughly this."""
@@ -129,6 +129,10 @@ class MotorConfig:
     attack_off: float = 15.0
     use_on: float = 20.0
     use_off: float = 12.0
+
+    yaw_source: str = "DNa02"
+    """Which bilateral descending pair supplies yaw: "DNa02" (the reported
+    model) or "DNp15". See MotorDecoder.yaw_pair for why the choice matters."""
 
     tau_baseline: float = 3.0
     """Seconds. Time constant for adapting out a CONSTANT command offset.
@@ -268,6 +272,28 @@ class MotorDecoder:
         self.baseline[name] = d * self.baseline[name] + (1 - d) * raw
         return raw - self.baseline[name]
 
+    def yaw_pair(self) -> tuple[str, str]:
+        """Which bilateral pair supplies the steering differential.
+
+        DNa02 is a documented steering neuron, but for goal-directed walking:
+        it is targeted directly by central-complex output (PFL3), sits two
+        synapses from the head-direction system, and in this connectome draws
+        2.3% of its input from visual populations against 97.7% central. It is
+        the navigation pathway, not the optomotor one.
+
+        DNp15 (DNHS1) is the optomotor pathway: HS cells drive it for yaw
+        rotations, and it is the strongest descending target of the horizontal
+        system here (32.3% of HS descending output, against 7.1% to DNa02).
+        Its axons reach the neck motor system, so it rotates gaze rather than
+        body -- which is what this environment's yaw control actually is,
+        since the camera is the head.
+
+        Selected by published function and by connectivity, not by which
+        readout carried the signal we were looking for. See yaw_source.
+        """
+        return (("DNp15_L", "DNp15_R") if self.cfg.yaw_source == "DNp15"
+                else ("DNa02_L", "DNa02_R"))
+
     def decode(self) -> dict[str, float]:
         """Named action values for the current filtered rates."""
         c = self.cfg
@@ -280,9 +306,8 @@ class MotorDecoder:
         self._seen_tics += 1
         warming = self._seen_tics <= c.warmup_tics
 
-        raw = self._centre("yaw",
-                           r.get("DNa02_L", 0.0) - r.get("DNa02_R", 0.0),
-                           warming)
+        yl, yr = self.yaw_pair()
+        raw = self._centre("yaw", r.get(yl, 0.0) - r.get(yr, 0.0), warming)
         diff = self._deadzone(raw)
         yaw = float(np.clip(diff * c.yaw_gain, -c.yaw_max_deg, c.yaw_max_deg))
 

@@ -77,6 +77,8 @@ def main() -> int:
                          "held-out block has to be one nothing was chosen on.")
     ap.add_argument("--optic-gain", type=float, default=1.0)
     ap.add_argument("--spiking-t4", action="store_true")
+    ap.add_argument("--yaw-source", default="DNa02",
+                    choices=["DNa02", "DNp15"])
     ap.add_argument("--yaw-gain", type=float, default=None)
     ap.add_argument("--deadzone-hz", type=float, default=None)
     ap.add_argument("--mirror", action="store_true")
@@ -105,6 +107,8 @@ def main() -> int:
         base += ["--optic-gain", str(args.optic_gain)]
     if args.spiking_t4:
         base.append("--spiking-t4")
+    if args.yaw_source != "DNa02":
+        base += ["--yaw-source", args.yaw_source]
     if args.yaw_gain is not None:
         base += ["--yaw-gain", str(args.yaw_gain)]
     if args.deadzone_hz is not None:
@@ -199,7 +203,8 @@ def main() -> int:
         "bias_mv": args.bias, "tau_baseline": args.tau_baseline,
         "device": args.device, "git_sha": _sha(),
         "seed_base": args.seed_base, "optic_gain": args.optic_gain,
-        "spiking_t4": args.spiking_t4, "yaw_gain": args.yaw_gain,
+        "spiking_t4": args.spiking_t4, "yaw_source": args.yaw_source,
+        "yaw_gain": args.yaw_gain,
         "mirror": args.mirror, "blind": args.blind,
         "deadzone_hz": args.deadzone_hz,
         "arms": args.arms,

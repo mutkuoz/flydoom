@@ -435,6 +435,12 @@ def main() -> int:
                     help="CONTROL: freeze the first frame. The retina sees a "
                          "constant scene; anything that survives is not "
                          "visual.")
+    ap.add_argument("--yaw-source", default="DNa02",
+                    choices=["DNa02", "DNp15"],
+                    help="which bilateral descending pair supplies yaw. "
+                         "DNa02 is the goal-directed walking steering neuron, "
+                         "2.3%% visual input here; DNp15 (DNHS1) is the "
+                         "optomotor one the horizontal system drives.")
     ap.add_argument("--yaw-gain", type=float, default=None)
     ap.add_argument("--forward-gain", type=float, default=None)
     ap.add_argument("--lateral-gain", type=float, default=None)
@@ -478,7 +484,8 @@ def main() -> int:
     arms = [a for a in ARMS if a in set(args.arms)]
     if "connectome" not in arms:
         arms = ["connectome"] + arms
-    motor_kw = {k: v for k, v in (("yaw_gain", args.yaw_gain),
+    motor_kw = {k: v for k, v in (("yaw_source", args.yaw_source),
+                                  ("yaw_gain", args.yaw_gain),
                                   ("forward_gain", args.forward_gain),
                                   ("lateral_gain", args.lateral_gain),
                                   ("deadzone_hz", args.deadzone_hz))
@@ -486,6 +493,7 @@ def main() -> int:
     record["arms"] = arms
     record["optic_gain"] = args.optic_gain
     record["spiking_t4"] = args.spiking_t4
+    record["yaw_source"] = args.yaw_source
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
     record["blind"] = args.blind
