@@ -66,6 +66,44 @@ def population_indices(graph, ann, handle, side=None):
     return graph.index_of(res.root_ids)
 
 
+def _named_dn(graph, cell_type, side):
+    import polars as _pl
+    from flydoom import config as _cfg
+    ct = _pl.read_csv(Path(_cfg.RAW_DIR) / "consolidated_cell_types.csv.gz",
+                      infer_schema_length=50_000)
+    cls = _pl.read_csv(Path(_cfg.RAW_DIR) / "classification.csv.gz",
+                       infer_schema_length=50_000)
+    ids = ct.filter(_pl.col("primary_type") == cell_type)["root_id"].to_list()
+    sel = cls.filter(_pl.col("root_id").is_in(ids)
+                     & (_pl.col("side") == side))["root_id"].to_list()
+    if not sel:
+        return np.zeros(0, np.int32)
+    return graph.index_of([int(r) for r in sel])
+
+
+def _vis_dn_indices(graph, side):
+    """Descending neurons whose input is mostly visual, on one side.
+
+    Selected by connectivity rather than by name: the top of the
+    visual-input-fraction ranking is DNp20, DNp04, DNp11, DNp27, DNp22,
+    DNpe014, DNp03, DNp26, DNpe017.
+    """
+    import polars as _pl
+    from flydoom import config as _cfg
+    ct = _pl.read_csv(Path(_cfg.RAW_DIR) / "consolidated_cell_types.csv.gz",
+                      infer_schema_length=50_000)
+    cls = _pl.read_csv(Path(_cfg.RAW_DIR) / "classification.csv.gz",
+                       infer_schema_length=50_000)
+    want = ["DNp20", "DNp04", "DNp11", "DNp27", "DNp22", "DNpe014",
+            "DNp03", "DNp26", "DNpe017"]
+    ids = set(ct.filter(_pl.col("primary_type").is_in(want))["root_id"].to_list())
+    sel = cls.filter(_pl.col("root_id").is_in(list(ids))
+                     & (_pl.col("side") == side))["root_id"].to_list()
+    if not sel:
+        return np.zeros(0, np.int32)
+    return graph.index_of([int(r) for r in sel])
+
+
 def _hs_indices(graph, ann, side):
     """Horizontal-system cells on one side, resolved by type rather than by a
     registry handle: HS is not a named handle in this project, and the
@@ -806,6 +844,18 @@ def main() -> int:
         # instrument for a signal this size.
         "HS_L": _hs_indices(g, ann, "left"),
         "HS_R": _hs_indices(g, ann, "right"),
+        # Descending neurons that vision actually reaches. DNa02, the steering
+        # readout, draws 2.3% of its input from visual populations; these draw
+        # 42-80%. If a directional signal reaches any descending neuron, it
+        # should reach these first.
+        "visDN_L": _vis_dn_indices(g, "left"),
+        "visDN_R": _vis_dn_indices(g, "right"),
+        # The horizontal system's own strongest descending target. HS->DNa02
+        # is 1% of HS output and 0.34% of DNa02's input, so the classic
+        # optomotor pathway is effectively absent in this reconstruction;
+        # DNp15 is where HS actually projects.
+        "DNp15_L": _named_dn(g, "DNp15", "left"),
+        "DNp15_R": _named_dn(g, "DNp15", "right"),
     }
     mon_t = {k: torch.as_tensor(v.astype(np.int64), device=args.device)
              for k, v in mons.items()}
@@ -920,6 +970,25 @@ def main() -> int:
     c.check(best_dsi > 0.1, "direction selectivity is BIOLOGICALLY STRONG",
             f"best |DSI| {best_dsi:.4f}, need >0.1 (real fly ~0.5-0.9)")
 
+    p15 = {k: (v[0]["DNp15_L"] - v[0]["DNp15_R"]) for k, v in results.items()}
+    if p15:
+        print("\n  DNp15 (the HS target) L-R:")
+        for k, v in p15.items():
+            lbl = f"tf {k[0]:g} {'rightward' if k[1] > 0 else 'leftward'}"
+            print(f"    {lbl:>18}  {v:+8.3f} Hz")
+        vals = list(p15.values())
+        if len(vals) >= 2:
+            print(f"    separation  {max(vals) - min(vals):.3f} Hz")
+    vd = {k: (v[0]["visDN_L"] - v[0]["visDN_R"]) for k, v in results.items()}
+    if vd:
+        print("\n  VISUAL DESCENDING (visDN_L - visDN_R):")
+        for k, v in vd.items():
+            lbl = f"tf {k[0]:g} {'rightward' if k[1] > 0 else 'leftward'}"
+            print(f"    {lbl:>18}  {v:+8.3f} Hz")
+        vals = list(vd.values())
+        if len(vals) >= 2:
+            print(f"    separation  {max(vals) - min(vals):.3f} Hz   "
+                  f"signs {'OPPOSE' if max(vals) * min(vals) < 0 else 'agree'}")
     hs = {k: (v[0]["HS_L"] - v[0]["HS_R"]) for k, v in results.items()}
     if hs:
         print("\n  HORIZONTAL SYSTEM (HS_L - HS_R), the optomotor readout:")

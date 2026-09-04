@@ -1,0 +1,44 @@
+{
+ "question": "the directional signal exists at the horizontal system; why does no behaviour follow?",
+ "answer": "the motor decoder reads a descending neuron the visual pathway barely contacts",
+
+ "input_composition_of_descending_neurons": {
+   "DNa02_steering_readout": {"visual_fraction_pct": 2.3, "I_over_E": 0.56,
+     "firing_hz_in_loop": [140, 400], "refractory_ceiling_hz": 454,
+     "note": "excitation-dominated, driven by central brain activity, running near ceiling with little dynamic range"},
+   "DNp01_escape_readout": {"visual_fraction_pct": 20.3, "I_over_E": 1.81,
+     "note": "inhibition-dominated with a modulable baseline, which is the neuron the olfactory result moves"},
+   "most_visual_descending": {"DNp20": 79.5, "DNp04": 75.6, "DNp11": 65.8,
+     "DNp27": 62.6, "DNp22": 54.9, "DNp03": 50.7}},
+
+ "horizontal_system_output": {
+   "total_signed_weight": 7297,
+   "to_descending_pct": 14.5,
+   "strongest_descending_target": "DNp15 (342)",
+   "to_DNa02": 75,
+   "DNa02_input_fraction_from_HS_pct": 0.34,
+   "note": "the classic HS -> DNa02 optomotor pathway is effectively absent in this reconstruction"},
+
+ "directional_signal_reaching_DNp15_hz": {
+   "method": "intact minus T4/T5-ablated, DNp15_L - DNp15_R",
+   "tf_hz":   [0.5, 1.0, 2.0, 3.0, 4.0, 6.0],
+   "dependent": [19.0, -4.0, 32.0, 26.0, 11.5, -20.5],
+   "horizontal_system_for_comparison": [26.1, 3.5, 24.1, 16.9, 11.4, 6.4],
+   "verdict": "substantial and positive at four of six frequencies, with sign inversions at 1 and 6 Hz; noisier than HS but larger where present",
+   "caveat": "that a directional signal reaches DNp15 does not establish that DNp15 drives turning in the animal; that is a functional claim the connectome cannot settle"},
+
+ "silent_populations": {
+   "LC10a": {"cells": 237, "I_over_E": 1.85,
+     "note": "inhibition-dominated, which accounts for firing exactly zero and for the fixation test returning L-R of 0.000"},
+   "LPLC2": {"cells": 210, "I_over_E": 0.75,
+     "note": "comparable to LC4 at 0.59 which does fire, so the I/E ratio does not account for this one"}},
+
+ "looming_control_defect": {
+   "observed": "LC4 responds to the static disc at 77.2 Hz against 26.4 for looming",
+   "cause": "the static condition is the looming sweep's FINAL radius held for the whole window, 70 degrees against a sweep starting at 5, so it delivers far more total drive",
+   "consequence": "the check comparing looming against static compares against a stronger stimulus and cannot pass as written; this is a control-design flaw, not a failure of adaptation"},
+
+ "unused_sensory_modalities": {
+   "auditory": 393, "wind_gravity": 486, "grooming": 205,
+   "taste_peg": 75, "hygrosensory": 74, "thermosensory": 29}
+}
