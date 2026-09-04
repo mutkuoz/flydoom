@@ -1,0 +1,13 @@
+{
+ "finding": "direction selectivity and closed-loop behaviour were measured on different models",
+ "evidence": {
+   "agent_default": "flydoom/agent.py AgentConfig: graded=True, spiking_t4=False",
+   "behaviour_runs": "run_sharded/m9_behaviour invoked without --spiking-t4, so T4/T5 were graded",
+   "dsi_runs": "m3k_axis_dsi invoked with --spiking-t4 throughout, including the 137-point search"
+ },
+ "projected_dsi_at_oinh2": {"spiking_T4_as_reported": -0.0716, "graded_T4_as_run_in_doom": -0.0336},
+ "hs_directional_signal_tf2_oinh1_hz": {
+   "fully_spiking": 24.12, "all_graded": -0.12, "graded_with_spiking_T4": 5.25},
+ "consequence": "the behavioural battery was run on a configuration whose population directional signal is not distinguishable from zero, so the null cannot separate 'the fix is too small' from 'the model under test had no directional signal to begin with'",
+ "note": "a graded unit is a clamped linear ramp and has no threshold; the E_inh sweep independently showed the residual selectivity in this model is threshold-derived, so removing the threshold removing the signal is consistent rather than surprising"
+}
