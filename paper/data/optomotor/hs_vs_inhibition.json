@@ -1,0 +1,12 @@
+{
+ "question": "does the regional inhibitory scale, selected by maximising per-cell DSI, also maximise the population directional signal at the optomotor output stage?",
+ "readout": "HS_L - HS_R over HSE, HSN, HSS, H2; intact minus T4/T5-ablated",
+ "answer": "no; it inverts it",
+ "tf2_scan": {"oinh": [1, 1.5, 2, 2.5, 3],
+              "dependent_hz": [24.12, 11.62, -1.50, -1.38, 13.38]},
+ "cross_frequency": {
+   "tf0.5": {"oinh1": 26.12, "oinh2": -9.50},
+   "tf2":   {"oinh1": 24.12, "oinh2": -1.50},
+   "tf3":   {"oinh1": 16.88, "oinh2": -0.25}},
+ "caveat": "the ablated control is not a clean additive baseline; at tf 0.5 with oinh 2 it exceeds the intact value, so signal and artifact interact rather than sum. Runs are deterministic, so no error bars are available from repetition."
+}
