@@ -1,0 +1,180 @@
+{
+ "tics": 700,
+ "seeds": 1,
+ "seed_start": 42,
+ "bias_mv": 0.0,
+ "smell": true,
+ "tau_baseline": null,
+ "device": "cpu",
+ "argv": [
+  "--scenarios",
+  "health_gathering_supreme",
+  "--tics",
+  "700",
+  "--seeds",
+  "1",
+  "--device",
+  "cpu",
+  "--bias",
+  "0.0",
+  "--smell",
+  "--optic-gain",
+  "16.0",
+  "--spiking-t4",
+  "--seed-start",
+  "42",
+  "--json",
+  "paper/data/behav_readout/yaw_DNa02_shards/seed042.json"
+ ],
+ "git_sha": "47ac63b-dirty",
+ "started": "2026-09-04T16:48:35",
+ "runs": [
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "connectome",
+   "episodes": [
+    {
+     "tics": 544,
+     "path": 820.0621588257462,
+     "net_displacement": 724.4088159152124,
+     "tiles_visited": 15,
+     "health_end": 8.0,
+     "healed": 44.0,
+     "damage": 128.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 18.291296383531005,
+     "yaw_abs_mean": 1.5007357076539867,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 12.400622597862693,
+     "fwd_clip_frac": 0.0,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.009398496240601503,
+     "yaw_chatter": 0.3867403314917127,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.6109022556390977,
+     "collisions": 6.0,
+     "collisions_per_1k_tics": 11.049723756906078,
+     "free_run_tics": 90.5,
+     "vision_steer_r": -0.03102717092615269,
+     "vision_steer_r_best": 0.07745099920687133,
+     "vision_steer_lag_tics": 12.0
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "shuffled",
+   "episodes": [
+    {
+     "tics": 512,
+     "path": 1412.1925483677805,
+     "net_displacement": 288.4125561595823,
+     "tiles_visited": 21,
+     "health_end": 4.0,
+     "healed": 24.0,
+     "damage": 112.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 14.870493421220717,
+     "yaw_abs_mean": 0.977100742646704,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 21.484375,
+     "fwd_clip_frac": 0.9765625,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.998046875,
+     "use_frac": 0.998046875,
+     "spin": 0.452,
+     "yaw_chatter": 0.32289628180039137,
+     "attack_chatter": 0.0019569471624266144,
+     "stuck_frac": 0.388,
+     "collisions": 6.0,
+     "collisions_per_1k_tics": 11.741682974559687,
+     "free_run_tics": 85.16666666666667,
+     "vision_steer_r": 0.03135827460042686,
+     "vision_steer_r_best": 0.0494414494714492,
+     "vision_steer_lag_tics": 10.0
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "random",
+   "episodes": [
+    {
+     "tics": 512,
+     "path": 1225.2341902793412,
+     "net_displacement": 974.3768859864016,
+     "tiles_visited": 22,
+     "health_end": 8.0,
+     "healed": 36.0,
+     "damage": 120.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 17.955750969522178,
+     "yaw_abs_mean": 1.631226329770101,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 12.542424370148865,
+     "fwd_clip_frac": 0.0,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.048,
+     "yaw_chatter": 0.4227005870841487,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.33659491193737767,
+     "collisions": 12.0,
+     "collisions_per_1k_tics": 23.483365949119374,
+     "free_run_tics": 42.583333333333336
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "still",
+   "episodes": [
+    {
+     "tics": 384,
+     "path": 0.0,
+     "net_displacement": 0.0,
+     "tiles_visited": 1,
+     "health_end": 4.0,
+     "healed": 0.0,
+     "damage": 88.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 1000.0,
+     "yaw_abs_mean": 0.0,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 0.0,
+     "fwd_clip_frac": 0.0,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.0,
+     "yaw_chatter": 0.0,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.0,
+     "collisions": 0.0,
+     "collisions_per_1k_tics": 0.0,
+     "free_run_tics": 383.0
+    }
+   ]
+  }
+ ],
+ "arms": [
+  "connectome",
+  "shuffled",
+  "random",
+  "still"
+ ],
+ "optic_gain": 16.0,
+ "spiking_t4": true,
+ "yaw_source": "DNa02",
+ "motor_kw": {
+  "yaw_source": "DNa02"
+ },
+ "mirror": false,
+ "blind": false,
+ "env": {
+  "FLYDOOM_DEVICE": "cpu"
+ }
+}
