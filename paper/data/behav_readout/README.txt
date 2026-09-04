@@ -52,3 +52,31 @@ so that specific objection does not apply, but promoting the measure back to
 evidence because it now moves favourably would be exactly the error the
 withdrawal was meant to prevent. The mirrored-retina control decides it: a
 genuine optic-flow coupling must reverse sign when the retina is mirrored.
+
+MIRRORED-RETINA CONTROL (30 seeds, DNp15 readout, otherwise identical)
+
+  DNa02, normal retina     vision r -0.043
+  DNp15, normal retina     vision r -0.158
+  DNp15, mirrored retina   vision r -0.034
+  paired change under mirroring  +0.124 +- 0.102  (CI excludes zero)
+
+Mirroring flips the retinal sampling grid horizontally, reversing every
+horizontal optic-flow signal while leaving firing rates, contrast statistics
+and the wiring untouched.
+
+What this establishes: the coupling is retinotopy-dependent. Mirroring
+abolishes it and returns it to the DNa02 baseline (-0.034 against -0.043), so
+the entire advantage of reading the optomotor descending neuron rather than
+the navigation one depends on the retina's spatial arrangement being intact.
+An artifact of wiring or of motor statistics would survive mirroring, and this
+does not.
+
+What it does NOT establish: the coupling does not REVERSE. A clean optic-flow
+relationship should change sign when the retina is mirrored, because rightward
+world motion then sweeps the retina leftward. It goes to zero instead. So the
+measure is vision-dependent without having the sign structure of an optomotor
+response, and we report it as the former only.
+
+This is the strongest visual result in the project, and it is a coupling
+result rather than a behavioural one: the task metrics do not separate
+(7/18 against 5/18).
