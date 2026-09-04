@@ -257,6 +257,38 @@ That isolates *where* as the thing that matters, with the values held fixed. And
 four, nothing in row five was chosen by us to make it work: every number is someone else's
 measurement of a real fly.
 
+**Then we found we'd been listening in the wrong place.** Steering was being read from
+DNa02 — a command neuron the connectome contains *one of per side*. One side sits 20–45 Hz
+louder than the other no matter what happens, because this is a single real brain and its
+halves aren't mirror images. The motion signal riding on that was ~0.5 Hz. Unmeasurable.
+
+Fly labs don't record there. They record from the **horizontal system** — cells whose whole
+job is pooling thousands of motion detectors across the eye. Same brain, same stimulus,
+different electrode:
+
+| | signal |
+|---|---|
+| DNa02 (1 cell/side) | ~0.5 Hz |
+| horizontal system (4 cells/side) | **17–26 Hz** |
+
+And it's real: cut every input to the motion detectors and it collapses to ~1 Hz, so it's
+genuinely motion, not an artifact of how the eye samples the screen.
+
+**But the "fix" destroys it.** Doubling inhibition — our headline result — takes that signal
+from +24 to **−1.5**. It improves the single-cell score sevenfold and wrecks the population
+signal. The entire 137-point parameter search optimised the single-cell score. It spent all
+that compute maximising a number behaviour can't use.
+
+**And the signal never reaches the wheels.** We ran the 2×2 — motion detection on/off crossed
+with fix/no-fix, 30 identical levels each. The version carrying +24 Hz and the version
+carrying −1.5 Hz behave *the same* (4 of 18 vs 6 of 18 measures). The engine makes power;
+the transmission isn't connected.
+
+**One number retracted.** We had a "vision–steering correlation" that looked like proof
+vision was driving the fly. It tracks the inhibition knob — the one that *abolishes* the
+motion signal. So it isn't measuring vision. It was the last behavioural evidence for vision
+in this project and it's withdrawn.
+
 **We also went looking for a bigger fix and found a wall.** Inhibition has two effects: it
 turns the volume down (divides) and it pushes the cell away from firing (subtracts). Motion
 detection needs the dividing kind. We forced the model to use *only* the dividing kind —
@@ -398,7 +430,7 @@ Each one prints pass or fail.
 | M6 | It runs from an enemy, unprompted | ❌ |
 | M7 | It can tell which side a target is on | ❌ |
 | M8 | **Smell changes what it does** | ✅ beats the control |
-| M9 | Does it actually play better than random? | ❌ frozen: 6/18 · regional fix: 6/18 — no difference |
+| M9 | Does it actually play better than random? | ❌ all four configs 4–6/18 — nothing separates |
 
 124 automated tests.
 

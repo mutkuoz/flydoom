@@ -76,56 +76,58 @@ in a closed sensorimotor loop}
 \noindent
 Synapse-resolution connectomics permits simulation of an entire brain with
 essentially no free parameters, but such models are typically driven open loop.
-We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons; 2{,}710{,}038
-edges) in a closed sensorimotor loop with a video game. No parameter is trained,
-and the only fitted quantity is a single global synaptic gain calibrated on a
-non-visual behaviour.
+We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
+2{,}710{,}038 edges) in a closed sensorimotor loop with a video game. No
+parameter is trained, and the only fitted quantity is a single global synaptic
+gain calibrated on a non-visual behaviour.
 
 Transfer is dissociated by modality. Chemosensory transformations are
 reproduced: sugar drives the proboscis motor pool to 77\,Hz, bitter
 co-stimulation suppresses it by 99\%, and an olfactory channel raises lateral
 horn activity to $14.1\pm5.5$\,Hz while suppressing a descending neuron one
-synapse downstream ($-17.7\pm7.4$\,Hz). None of this was fitted and none of it
-survives a degree-preserving shuffle. Visual motion computation is not
-reproduced: $|\mathrm{DSI}|\leq0.0121$ across an operating-point sweep, roughly
-$40\times$ below the threshold at which experimental studies classify a terminal
-as direction-tuned.
+synapse downstream ($-17.7\pm7.4$\,Hz). None of this was fitted and none
+survives a degree-preserving shuffle. Per-cell direction selectivity is not
+reproduced: $|\mathrm{DSI}|\leq0.0121$, roughly $40\times$ below the threshold
+at which experimental studies classify a terminal as direction-tuned.
 
-We identify the obstacle as a property of the neuron model rather than of the
-connectome. Direction selectivity requires a multiplicative interaction between
-the correlator arms, which in a conductance-based neuron must arise from
-inhibitory division. That division cancels itself: shunting divides the membrane
-by $g_{\mathrm{tot}}$ ($1.77\times$ at \cell{T4a}) while the hyperpolarisation
-it causes raises the excitatory driving force by $1.85\times$, leaving an
-interaction below 11\% and of the wrong sign. The cell sums, and summation
-cannot be direction selective at any wiring. Making inhibition purely divisive
-abolishes what selectivity remains rather than restoring it: the residue is a
-threshold conjunction, not a product.
+The obstacle is a property of the neuron model. A product requires a
+multiplicative interaction between the correlator arms, which in a
+conductance-based neuron must arise from inhibitory division, and that division
+cancels itself: shunting divides the membrane by $1.77\times$ at \cell{T4a}
+while the accompanying hyperpolarisation raises the excitatory driving force by
+$1.85\times$, leaving an interaction below 11\% and of the wrong sign. Making
+inhibition purely divisive abolishes the residue rather than restoring it, so
+what survives is a threshold conjunction and not a product.
 
-Increasing the inhibitory-to-excitatory ratio restores the interaction.
-Applied globally it inverts the gustatory result, driving the proboscis pool to
+Raising the inhibitory-to-excitatory ratio restores the interaction but no
+single value serves the brain: applied globally it drives the proboscis pool to
 168\,Hz under bitter, because 51\% of inhibitory synapses terminate on
-inhibitory neurons. Restricted to the visual populations the same factor leaves
-the gustatory circuit numerically unchanged, preserves olfaction, and raises
-direction selectivity sevenfold. It does
-not, however, produce closed-loop behaviour. On thirty held-out environment
-seeds the regionally scaled model separates from a command-matched control on
-six of eighteen measures, the same number as the frozen model, and the two are
-not distinguishable by that criterion. Only locomotion statistics change: against the frozen model on identical
-seeds, collisions fall by $3.95\pm3.79$ per 1{,}000 tics and net displacement
-rises by $131\pm102$, while health collected, the task objective, does not.
+inhibitory neurons. Restricted to the visual populations it leaves the
+chemosensory results intact and raises selectivity sevenfold. Published
+per-receptor ratios under the same restriction, which fit nothing, recover most
+of that gain, isolating scope rather than the values as the operative variable.
 
-The published ratios under that same regional restriction, which fits nothing,
-recover most of the gain and preserve both chemosensory results, isolating
-scope rather than the values. Over all parameters that do not entail
-per-cell-type fitting the largest selectivity found was $0.0792$.
+Recording site proves more consequential than any of these parameters. Read at
+the horizontal system, the optomotor output stage in the animal, the frozen
+model carries a directional signal of 17 to 26\,Hz that ablating
+\cell{T4}/\cell{T5} abolishes, an order of magnitude above anything resolvable
+at the single descending pair used as the steering readout. The regional scale
+that maximises per-cell selectivity drives that signal to zero or below: the
+two measures move against each other, and the parameter search optimised the
+one behaviour cannot use. Crossing the neuron transfer function with the scale
+over thirty held-out seeds separates them completely, conditions differing by
+an order of magnitude and in sign at the output stage returning four and six of
+eighteen measures against a command-matched control. The signal exists and does
+not reach the readout. We withdraw the vision--steering correlation as evidence
+of vision, since it tracks the inhibitory scale in both transfer functions
+rather than the directional signal that scale abolishes.
 
-A single global synaptic gain is therefore not merely incomplete but
-inconsistent: the optic lobe requires a conductance ratio the subesophageal zone
-does not tolerate. Published physiology places the optic lobe requirement in the
-same range. We additionally report that degree-preserving shuffle controls are
-invalid in closed loop, because the two arms sample different stimulus
-distributions.
+Two methodological results generalise beyond this model: degree-preserving
+shuffles are invalid as controls in closed loop, because the arms sample
+different stimulus distributions; and episode-level behavioural measures in a
+stochastic environment failed to resolve a population signal varying by an
+order of magnitude across conditions, which bounds what any closed-loop
+connectome study can claim from them.
 \end{abstract}
 
 \vspace{0.4em}
@@ -191,6 +193,13 @@ inhibition cancels itself, so the neuron sums its inputs where the computation
 requires a product. Separating the two components of inhibition shows the
 residue is a threshold conjunction rather than a division, and that the
 measured reversal potential is already at the optimum.
+
+\item A demonstration that the standard single-cell measure of direction
+selectivity and the population signal at the optomotor output stage move
+against each other under the same parameter, so that a search maximising the
+former removes the latter. With the recording site corrected, the frozen model
+carries a directional signal that survives ablation of the motion detectors
+and that the reported parameterisation destroys.
 
 \item A parameterisation carrying no fitted quantity. Published per-receptor
 conductances restricted to the visual populations preserve both chemosensory
@@ -802,8 +811,9 @@ gain $\times1$--$32$; gain targeted onto \cell{T4}/\cell{T5} $\times2$--$20$;
 operating point, where the isolated correlator's monotonic
 DSI-versus-rate curve does not reproduce in the network; the competing-input
 hypothesis, by in-network ablation; and dendritic compartmentalization. The geometry, the
-delays, the phase offset and the modulation are all present and measured; the
-selectivity is not. Each of these interventions addresses a component that is
+delays, the phase offset and the modulation are all present and measured;
+per-cell selectivity is not, though a population signal is
+(Sec.~\ref{sec:hs}). Each of these interventions addresses a component that is
 not defective, which is why none of them helps. The operative cause lies in how
 the components are combined, and is identified in Sec.~\ref{sec:shunt}.
 
@@ -1045,15 +1055,92 @@ studies classify a terminal as direction-tuned, which makes the shortfall a
 measured property of the accessible space rather than a consequence of the
 particular values we report.
 
+\subsection{Where the directional signal is read}
+\label{sec:hs}
+
+Direction selectivity above is reported per cell, which is what the
+experimental literature reports for single terminals. Behaviour does not run
+on a single terminal. It runs on whatever the steering pathway reads, and the
+choice of recording site turns out to matter more than any parameter examined
+so far.
+
+The steering readout used throughout is \cell{DNa02}, which the connectome
+contains as one cell per hemisphere. That pair carries a standing left--right
+difference of 20 to 45\,Hz, an asymmetry of this particular brain rather than
+a response, on which the directional modulation is 0.5 to 2.5\,Hz and does not
+hold its sign across temporal frequency. The instrument cannot resolve the
+quantity.
+
+The horizontal system is the optomotor output stage in the animal:
+\cell{HSE}, \cell{HSN}, \cell{HSS} and \cell{H2}, four cells per hemisphere
+whose function is to pool thousands of \cell{T4}/\cell{T5} terminals across
+the eye, and where the optomotor literature records. Reading there is an
+electrode placement and changes nothing in the model. To separate a genuine
+motion response from an asymmetry of the sampling lattice, every input onto
+\cell{T4}/\cell{T5} is zeroed in a control condition, which removes the motion
+detectors while leaving the stimulus and the rest of the brain untouched.
+Mirroring the retina is not a control here: for a drifting grating it is
+algebraically the reversal of drift that the measurement already compares.
+
+\begin{center}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+drift (Hz) & 0.5 & 1 & 2 & 3 & 4 & 6 & 8\\
+\midrule
+intact & 29.5 & 19.6 & 25.0 & 17.3 & 16.4 & 13.4 & 11.8\\
+\cell{T4}/\cell{T5} ablated & 3.4 & 16.1 & 0.9 & 0.4 & 5.0 & 7.0 & 0.6\\
+difference & \textbf{26.1} & 3.5 & \textbf{24.1} & \textbf{16.9} & 11.4 & 6.4 &
+\textbf{11.1}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At five of seven frequencies the control lies between 0.4 and 3.4\,Hz against
+an intact response of 12 to 30\,Hz, so the frozen model carries a directional
+signal at the optomotor output stage that is mediated by \cell{T4}/\cell{T5}
+and is an order of magnitude larger than anything \cell{DNa02} resolves. Two
+qualifications belong with it. The control is not a constant that can be
+subtracted, reaching 16.1\,Hz at 1\,Hz drift and 7.0 at 6\,Hz. And the
+directional term rides on a standing offset of 70 to 100\,Hz rather than
+crossing zero, where an animal's would swing symmetrically about it.
+
+\emph{The selected parameter is the worst at this site.} Measured as intact
+minus ablated at the horizontal system, the frozen model gives $+26.1$,
+$+24.1$ and $+16.9$\,Hz at 0.5, 2 and 3\,Hz drift. The regional scale of 2,
+which raises per-cell selectivity sevenfold and which the 137-point search
+selected, gives $-9.5$, $-1.5$ and $-0.25$ at the same frequencies. The two
+quantities are not merely different; across the scale from 1 to 3 they move
+against each other. The search maximised per-cell selectivity because that is
+the published quantity, and in doing so removed the population signal that a
+steering pathway would read.
+
+\emph{Selectivity and behaviour were measured on different models.} A graded
+unit in this simulator is a clamped linear ramp and has no threshold. The
+reversal-potential sweep of Sec.~\ref{sec:shunt} showed the residual
+selectivity here to be threshold-derived, so a model without thresholds should
+have none, and it does not: the \cell{T4}/\cell{T5}-dependent signal at the
+horizontal system is $+24.1$\,Hz with spiking \cell{T4}/\cell{T5} and
+$-0.12$\,Hz with graded. The closed-loop agent runs graded by default and
+every behavioural run used it, while every selectivity measurement, including
+the search, exempted \cell{T4}/\cell{T5} from the graded mask. At the same
+regional scale projected DSI is $-0.0716$ spiking against $-0.0336$ graded, so
+the reported figure describes a configuration that never ran in the loop. The
+behavioural battery below therefore repeats every condition in both transfer
+functions.
+
 \subsection{Closed-loop behaviour: a negative result}
 \label{sec:behaviour}
 
-All four parameterisations were run through the identical protocol on the same
-thirty environment seeds (40--69), none of which was used while selecting
-parameters. Each is compared against its own command-matched AR(1) control,
-paired by seed, because seed-to-seed variance in this environment is far larger
-than the differences under test. A metric counts as separating when the paired
-difference has a 95\% confidence interval excluding zero.
+Every condition was run through the identical protocol on the same thirty
+environment seeds (40--69), none used while selecting parameters, each against
+its own command-matched AR(1) control and paired by seed, because seed-to-seed
+variance here is far larger than the differences under test. A metric counts
+as separating when the paired difference has a 95\% confidence interval
+excluding zero. The second column counts only metrics with a defined better
+direction: three of the eighteen (path length, and mean yaw and forward
+magnitude) describe what the agent did rather than how well, and are excluded
+rather than assigned a sign.
 
 \begin{center}
 \small
@@ -1070,23 +1157,45 @@ parameterisation & separating & in the model's favour & vision--steering $r$\\
 \end{center}
 
 No parameterisation separates from its control by more than the frozen model
-does. The second column counts only metrics with a defined better direction:
-three of the eighteen (path length, and mean yaw and forward magnitude)
-describe what the agent did rather than how well, and are excluded rather than
-assigned a sign. Restoring the multiplicative interaction therefore raises
+does. Restoring the multiplicative interaction therefore raises per-cell
 direction selectivity sevenfold without producing task-level behaviour.
 
-The direct comparison is more sensitive than either against a control, since
-the regional and frozen models see identical seeds. Two of nine task metrics
-move: collisions fall by $3.95\pm3.79$ per 1{,}000 tics and net displacement
-rises by $131\pm102$ units, both favouring the regional model. Health
-collected, which is the objective in this scenario, does not improve
-($-6.53\pm7.81$), and against its own control the regional model collects
-\emph{less} than the control does ($-7.73\pm8.86$). The vision--steering
-correlation separates the two models ($+0.25\pm0.16$) but moves in the
-direction opposite to optomotor steering, from $-0.090$ frozen to $+0.161$
-regional. The defensible reading is that the manipulation changes how the model
-moves without changing how well it does the task.
+\emph{The signal does not reach the readout.} Because the directional signal
+at the horizontal system varies by an order of magnitude and by sign across
+these configurations (Sec.~\ref{sec:hs}), the transfer function and the
+regional scale were crossed and all four cells run on the same thirty seeds.
+
+\begin{center}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\cell{T4}/\cell{T5} & scale & HS signal (Hz) & separating & vision--steering $r$\\
+\midrule
+graded  & 1 & $-0.12$ & 6/18 & $-0.090$\\
+graded  & 2 & --      & 6/18 & $+0.161$\\
+spiking & 1 & $\mathbf{+24.1}$ & 4/18 & $-0.066$\\
+spiking & 2 & $\mathbf{-1.5}$  & 6/18 & $+0.144$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The two spiking conditions differ by an order of magnitude and in sign at the
+optomotor output stage and return 4/18 and 6/18. Compared directly against the
+graded model on identical seeds, the spiking model covers more ground
+($+4.63\pm3.07$ tiles), collides less ($-3.48\pm3.08$ per 1{,}000 tics) and
+displaces further ($+108\pm106$), but the vision--steering correlation moves
+$+0.02\pm0.10$. The regional parameterisation produced the same signature
+against the frozen model. Two mechanically unrelated interventions leaving one
+fingerprint, in metrics of locomotion and not of vision, is more consistent
+with altered motor statistics than with sensory control.
+
+\emph{A retraction that follows from the grid.} The vision--steering
+correlation tracks the inhibitory scale in both transfer functions, near
+$-0.07$ at 1 and $+0.15$ at 2, and does not track the directional signal,
+which the scale of 2 abolishes. It is therefore not measuring optic flow
+reaching the steering readout, and we withdraw it as behavioural evidence of
+vision. It is retained in the tables as a measured quantity whose
+interpretation we can no longer support.
 
 This is the outcome the power analysis in Sec.~\ref{sec:stats} predicts.
 Health collected carries a standard deviation of roughly 13 units across seeds,
@@ -1135,8 +1244,10 @@ not.
 
 This result is easily over-read as a claim about connectomics, and we state its
 scope precisely. The connectome contains the correlator: the geometry, the
-mirrored axes, the phase offset and the travelling wave that drives them are all
-present and measured. What the frozen model fails to supply is the arithmetic
+mirrored axes, the phase offset and the travelling wave that drives them are
+all present and measured, and read at the population stage the assembled
+circuit does produce a directional signal that ablating its motion detectors
+removes. What the frozen model fails to supply is the arithmetic
 that combines them. A product requires a nonlinear interaction between the arms,
 which in a conductance-based neuron can only come from inhibitory division, and
 that division is cancelled by the hyperpolarisation it produces
@@ -1186,14 +1297,24 @@ model at six of eighteen measures. Restoring the arithmetic that direction
 selectivity requires is therefore not sufficient to produce the behaviour that
 selectivity supports, at least not measurably through this environment.
 
-Two readings of that are available and we cannot presently separate them. The
-manipulation may be too small: selectivity after the fix remains an order of
-magnitude below the experimental selection threshold, and a system that far
-from the animal's operating point need not steer. Or the measurement may be
-too coarse: health collected varies by roughly 13 units across seeds against
-an effect of a few units, which is why the power analysis puts the required
-sample near $n\approx106$ and why two runs of one configuration returned 3.2
-and 11.2. The second is not a dismissal of the first. What can be said is
+We initially read this as ambiguous between a manipulation too small and a
+measurement too coarse. The population readout resolves it, and not in favour
+of either. At the optomotor output stage the directional signal varies by an
+order of magnitude and by sign across these configurations, from $+24.1$\,Hz
+to $-1.5$; behaviour does not follow, and the same two configurations return
+four and six of eighteen. The manipulation was not too small at that site, and
+the quantity that fails to appear is not selectivity but its transmission to
+the readout. Two mechanically unrelated interventions, the regional scale and
+the transfer function, produce one behavioural fingerprint in metrics of
+locomotion with the vision--steering correlation flat, which is what altered
+motor statistics look like rather than sensory control.
+
+The measurement is nonetheless implicated. Health collected varies by roughly
+13 units across seeds against an effect of a few units, the power analysis
+puts the required sample near $n\approx106$, and two runs of one configuration
+returned 3.2 and 11.2. An instrument that cannot resolve a population signal
+differing by an order of magnitude between conditions is not the instrument
+for this question. What can be said is
 that episode-level behavioural measures in a stochastic environment are a weak
 instrument for this question, and that a closed-loop connectome study should
 establish their power before resting a claim on them.
@@ -1351,7 +1472,10 @@ claim. Health collected per episode has a standard deviation of roughly 13
 units across environment seeds, so at $n=5$ only differences of about 20 units
 are resolvable; two executions of one identical configuration returned means of
 3.2 and 11.2. Detecting a 5-unit difference at 80\% power would require
-$n\approx106$. We therefore report no behavioural effect from fewer than 30
+$n\approx106$. The grid of Sec.~\ref{sec:behaviour} shows this is not a conservative
+bound but a binding one: a population signal differing by an order of
+magnitude and by sign between conditions produced no separation in these
+measures. We therefore report no behavioural effect from fewer than 30
 seeds, quote 95\% confidence intervals rather than standard deviations for
 these measures, and treat the interval rather than the point estimate as the
 result. Rate-level measurements, which are paired and open loop, are not
