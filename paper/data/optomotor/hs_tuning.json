@@ -1,0 +1,11 @@
+{
+ "readout": "HS_L - HS_R over HSE, HSN, HSS, H2 (4 cells per side)",
+ "config": "frozen model; --bias 0 --spiking-t4 --optic-gain 16 --period 15",
+ "control": "--ablate-target T4a,T4b,T5a,T5b --keep-inputs __NONE__ (every input onto T4/T5 zeroed)",
+ "note": "runs are deterministic; repeated identical configurations agree to the digit",
+ "standing_offset_hz": "HS_L - HS_R is ~+70..+100 Hz in both directions; the directional term rides on it rather than crossing zero",
+ "tf_hz":      [0.5,  1.0,  2.0,  3.0,  4.0,  6.0,  8.0],
+ "intact_hz":  [29.5, 19.6, 25.0, 17.3, 16.4, 13.4, 11.8],
+ "ablated_hz": [3.375, 16.125, 0.875, 0.375, 5.0, 7.0, 0.625],
+ "dependent_hz": [26.1, 3.5, 24.1, 16.9, 11.4, 6.4, 11.1]
+}
