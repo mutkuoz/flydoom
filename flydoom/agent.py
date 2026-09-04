@@ -37,6 +37,7 @@ from .graph import ConnectomeGraph
 from .interocept import Interoception, InteroceptConfig
 from .lif import LIFNetwork, LIFParams
 from .olfaction import Olfaction, OlfactionConfig
+from .mechanosensation import Antennae, MechanoConfig
 from .motor import MotorConfig, MotorDecoder
 from .registry import by_name
 from .retina import Retina
@@ -48,6 +49,17 @@ class AgentConfig:
     motor: MotorConfig = field(default_factory=MotorConfig)
     intero: InteroceptConfig = field(default_factory=InteroceptConfig)
     olfaction: OlfactionConfig = field(default_factory=OlfactionConfig)
+    touch: bool = False
+    """Antennal mechanosensation. Walking into a wall otherwise produces no
+    afferent activity anywhere in the brain, which makes collisions a
+    consequence the agent cannot sense. Same argument as the smell channel:
+    the engine knows about contact, the animal has a sensor for it, and the
+    connectome carries 486 antennal afferents that go unused without this.
+    Targets the antennae rather than the bristles because head bristles drive
+    the DNg grooming group, not steering. See mechanosensation.py."""
+
+    mechano: MechanoConfig = field(default_factory=MechanoConfig)
+
     smell: bool = False
     """Enable the odour channel. OFF by default, and deliberately so.
 
@@ -204,6 +216,16 @@ class FlyDoomAgent:
                 self.net.n, config.DT, c.olfaction, c.device, c.seed,
             )
 
+        self.touch = None
+        if c.touch:
+            self.touch = Antennae(
+                self._sub_class_idx("wind_gravity", "left"),
+                self._sub_class_idx("wind_gravity", "right"),
+                self.net.n, config.DT, c.mechano, c.device,
+            )
+
+        self._last_fwd = 0.0
+
         self.gext = None
         if c.bias_mv:
             import polars as pl
@@ -231,6 +253,20 @@ class FlyDoomAgent:
         if not res.root_ids:
             return np.zeros(0, np.int32)
         return self.graph.index_of(res.root_ids)
+
+    def _sub_class_idx(self, sub_class: str, side: str) -> np.ndarray:
+        """Graph indices for one side of a sensory sub_class.
+
+        Resolved from classification.csv rather than the handle registry:
+        these afferents are identified by sub_class and side, and no handle
+        names them.
+        """
+        import polars as pl
+        cls = pl.read_csv(config.RAW_DIR / "classification.csv.gz",
+                          infer_schema_length=50_000)
+        ids = cls.filter((pl.col("sub_class") == sub_class)
+                         & (pl.col("side") == side))["root_id"].to_list()
+        return self.graph.index_of([int(r) for r in ids])
 
     def _motor_populations(self) -> dict[str, np.ndarray]:
         pops = {
@@ -263,6 +299,9 @@ class FlyDoomAgent:
         self.intero.reset()
         if self.smell is not None:
             self.smell.reset()
+        if self.touch is not None:
+            self.touch.reset()
+            self._last_fwd = 0.0
         self.history.clear()
 
     def tic(self, tic_index: int) -> TicRecord | None:
@@ -289,6 +328,12 @@ class FlyDoomAgent:
             # olfaction.py for why that is the point
             self.smell.on_tic(self.doom.threats())
 
+        if self.touch is not None:
+            # contact is derived from motion against the command, so it needs
+            # the position NOW against the command issued last tic
+            x, y, ang = self.doom.pose()
+            self.touch.on_tic(x, y, ang, self._last_fwd)
+
         # ---- 57 substeps; the frame ramps across them unless held ----
         for sub in range(self.substeps):
             if interp:
@@ -300,8 +345,12 @@ class FlyDoomAgent:
             drive = taste
             if self.smell is not None:
                 drive = drive + self.smell.substep()
+            if self.touch is not None:
+                drive = drive + self.touch.substep()
             forced = None
-            if self.intero.active or (self.smell is not None and self.smell.active):
+            if (self.intero.active
+                    or (self.smell is not None and self.smell.active)
+                    or (self.touch is not None and self.touch.active)):
                 forced = (torch.rand(self.net.n, generator=self.net.gen,
                                      device=self.net.device)
                           < (drive * config.DT).clamp(0, 1))
@@ -312,6 +361,7 @@ class FlyDoomAgent:
 
         rates = self.motor.sample()
         action = self.motor.decode()
+        self._last_fwd = float(action.get("MOVE_FORWARD_BACKWARD_DELTA", 0.0))
         result = self.doom.step(
             [action.get(b, 0.0) for b in DoomSession.BUTTONS],
             self.cfg.doom.frame_skip,
@@ -352,6 +402,8 @@ class FlyDoomAgent:
             self.intero.summary(),
             self.smell.summary() if self.smell is not None
             else "smell:    off (M6/M7 valid)",
+            self.touch.summary() if self.touch is not None
+            else "touch:    off",
             f"synapses: {self.net.conductance_summary}",
             f"delays:   {self.net.delay_summary}",
             f"graded:   {int(self.net.graded.sum()):,} non-spiking neurons"

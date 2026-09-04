@@ -508,6 +508,13 @@ class DoomSession:
     """Doom map units. Monster radii cluster around this; it only sets the
     absolute scale of the angular-size numbers, not their ordering."""
 
+    def pose(self) -> tuple[float, float, float]:
+        """Player position and heading: (x, y, angle in degrees)."""
+        vz = self.vzd
+        return (float(self.game.get_game_variable(vz.GameVariable.POSITION_X)),
+                float(self.game.get_game_variable(vz.GameVariable.POSITION_Y)),
+                float(self.game.get_game_variable(vz.GameVariable.ANGLE)))
+
     def threats(self) -> list[dict]:
         """Enemies visible this tic, with true distance and angular size.
 
