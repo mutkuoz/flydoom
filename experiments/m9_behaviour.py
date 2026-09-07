@@ -245,6 +245,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               tau_baseline: float | None = None,
               optic_gain: float = 1.0,
               spiking_t4: bool = False,
+              touch: bool = False,
               motor_kw: dict | None = None,
               mirror: bool = False,
               blind: bool = False) -> tuple[dict, dict]:
@@ -265,6 +266,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         bias_mv=bias_mv,
         optic_gain=optic_gain,
         spiking_t4=spiking_t4,
+        touch=touch,
         device=device,
     ))
     # ---- controls that should DESTROY a vision-driven effect ----------
@@ -435,6 +437,9 @@ def main() -> int:
                     help="CONTROL: freeze the first frame. The retina sees a "
                          "constant scene; anything that survives is not "
                          "visual.")
+    ap.add_argument("--touch", action="store_true",
+                    help="antennal mechanosensation: wall contact drives the "
+                         "wind/gravity afferents. See mechanosensation.py.")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"],
                     help="which bilateral descending pair supplies yaw. "
@@ -494,6 +499,7 @@ def main() -> int:
     record["optic_gain"] = args.optic_gain
     record["spiking_t4"] = args.spiking_t4
     record["yaw_source"] = args.yaw_source
+    record["touch"] = args.touch
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
     record["blind"] = args.blind
@@ -508,13 +514,14 @@ def main() -> int:
             m_int, dist = run_agent(scen, seed, args.tics, False, args.device,
                                     args.bias, args.smell, args.tau_baseline,
                                     args.optic_gain, args.spiking_t4,
+                                    args.touch,
                                     motor_kw, args.mirror, args.blind)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
                                       args.bias, args.smell,
                                       args.tau_baseline, args.optic_gain,
-                                      args.spiking_t4, motor_kw,
+                                      args.spiking_t4, args.touch, motor_kw,
                                       args.mirror, args.blind)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)

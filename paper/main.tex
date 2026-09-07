@@ -1181,12 +1181,56 @@ and 6\,Hz that the same ablation control shows to be artifact-dominated
 frequencies. The visual pathway therefore delivers a directional signal to a
 descending neuron. The decoder reads a different one.
 
-We stop short of calling this a repair. That a directional signal arrives at
-\cell{DNp15} does not establish that \cell{DNp15} drives turning in the
-animal, which is a functional claim no wiring diagram settles, and rewiring
-the decoder to whichever cell carries the signal we are looking for would
-fit the readout to the result. It is reported as a measurement of the
-pathway.
+The published characterisations of both neurons agree with these numbers, and
+they identify the mismatch as a category error rather than a tuning problem.
+\cell{DNa02} steers goal-directed walking: it is targeted directly by
+central-complex output and lies two synapses from the head-direction system,
+being recruited when a heading is compared against an internal goal
+\citep{rayshubskiy2025}. That is what a neuron drawing $97.7\%$ of its input
+from the central brain should be. \cell{DNp15}, also called \cell{DNHS1}, is
+the optomotor neuron: it receives strong input from the horizontal system and
+projects to the neck motor neuropil, and it is one of the descending cells
+encoding self-motion from optic flow
+\citep{suver2016,namiki2018}. The model has been delivering optic flow to the
+navigation pathway and asking whether vision steers.
+
+Because this environment's yaw control rotates the viewpoint, and
+\cell{DNp15} rotates gaze through the neck, the correspondence is if anything
+closer than the incumbent's. We therefore tested the readout rather than
+assuming it, selecting it on published function and on connectivity rather
+than on which cell carried the signal we were looking for.
+
+\emph{Changing only the readout.} With spiking \cell{T4}/\cell{T5}, an optic
+gain of 16 and the same thirty held-out seeds, the two readouts differ in
+their coupling to the retina and not in task performance:
+
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+\toprule
+yaw from & separating & in the model's favour & vision--steering $r$\\
+\midrule
+\cell{DNa02} (navigation) & 5/18 & 1/15 & $-0.043$\\
+\cell{DNp15} (optomotor)  & 7/18 & 4/15 & $\mathbf{-0.158}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Paired by seed, the vision--steering correlation moves $-0.12\pm0.10$ and mean
+yaw magnitude falls $0.43\pm0.19$; no task metric moves significantly, and
+7/18 against 5/18 is not a separation. Mirroring the retina, which reverses
+every horizontal optic-flow signal while leaving rates, contrast statistics
+and wiring untouched, abolishes the difference: $-0.158$ returns to $-0.034$,
+a paired change of $+0.124\pm0.102$, against the \cell{DNa02} baseline of
+$-0.043$. The coupling is therefore retinotopy-dependent, which an artifact of
+wiring or of motor statistics would not be.
+
+It does not reverse. A clean optic-flow relationship should change sign under
+a mirrored retina rather than fall to zero, so what is established is
+dependence on vision and not the sign structure of an optomotor response. Two
+of the three mismatches, the transfer function and the optic gain, are null in
+isolation over the same seeds (6/18, 4/18 and 5/18); the third moves the
+sensorimotor coupling and not the behaviour.
 
 \emph{The output stage as a whole.} Of 1{,}305 descending neurons, 1{,}041
 ($79.8\%$) never fire during closed-loop operation, 134 sit in the
@@ -1298,10 +1342,16 @@ with altered motor statistics than with sensory control.
 \emph{A retraction that follows from the grid.} The vision--steering
 correlation tracks the inhibitory scale in both transfer functions, near
 $-0.07$ at 1 and $+0.15$ at 2, and does not track the directional signal,
-which the scale of 2 abolishes. It is therefore not measuring optic flow
-reaching the steering readout, and we withdraw it as behavioural evidence of
-vision. It is retained in the tables as a measured quantity whose
-interpretation we can no longer support.
+which the scale of 2 abolishes. It is therefore not a clean index of optic
+flow reaching the steering readout, and we withdraw it as behavioural evidence
+of vision on its own. It is retained in the tables as a measured quantity.
+
+Sec.~\ref{sec:readout} qualifies rather than reverses this. Holding the
+inhibitory scale fixed and varying only the readout, the same measure is
+abolished by mirroring the retina, which makes it retinotopy-dependent in that
+comparison. Both results stand: the measure is sensitive to the inhibitory
+scale and to retinal organisation, and reporting it as evidence of vision
+requires the mirrored control beside it rather than the number alone.
 
 This is the outcome the power analysis in Sec.~\ref{sec:stats} predicts.
 Health collected carries a standard deviation of roughly 13 units across seeds,
@@ -1433,12 +1483,17 @@ arrives at \cell{DNp15}, the horizontal system's actual descending target, at
 pointed at, chosen from the literature, and the cell this wiring diagram
 routes the computation to.
 
-We resisted the obvious response, which is to decode \cell{DNp15} instead.
-Selecting the readout that carries the signal one is looking for fits the
-instrument to the result, and nothing in the connectome establishes that
-\cell{DNp15} drives turning in the animal. The more useful statement is
-methodological: in a frozen model the readout is a parameter like any other,
-and it was the least examined one here. The same applies at the population
+The published characterisations settle which cell should have been read.
+\cell{DNa02} steers goal-directed walking under central-complex control
+\citep{rayshubskiy2025}; \cell{DNp15} is the optomotor descending neuron
+driven by the horizontal system \citep{suver2016,namiki2018}. Decoding the
+latter, with everything else fixed, quadruples the coupling between steering
+and retinal luminance, and mirroring the retina abolishes that gain rather
+than reversing it. The coupling is vision-dependent without the sign structure
+of an optomotor response, and task performance is unchanged. The more useful
+statement is methodological: in a frozen model the readout is a parameter like
+any other, and it was the least examined one here, chosen from the literature
+for a different pathway than the stimulus being delivered. The same applies at the population
 level, where $79.8\%$ of descending neurons never fire and the decoded pair
 runs near saturation, so the motor stage constrains behavioural claims
 independently of anything the sensory side computes. What can be said is
