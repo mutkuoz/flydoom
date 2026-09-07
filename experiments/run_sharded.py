@@ -80,6 +80,8 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
+    ap.add_argument("--yaw-max", type=float, default=None)
+    ap.add_argument("--forward-max", type=float, default=None)
     ap.add_argument("--yaw-gain", type=float, default=None)
     ap.add_argument("--deadzone-hz", type=float, default=None)
     ap.add_argument("--mirror", action="store_true")
@@ -110,6 +112,10 @@ def main() -> int:
         base.append("--spiking-t4")
     if args.touch:
         base.append("--touch")
+    if args.yaw_max is not None:
+        base += ["--yaw-max", str(args.yaw_max)]
+    if args.forward_max is not None:
+        base += ["--forward-max", str(args.forward_max)]
     if args.yaw_source != "DNa02":
         base += ["--yaw-source", args.yaw_source]
     if args.yaw_gain is not None:
@@ -207,6 +213,7 @@ def main() -> int:
         "device": args.device, "git_sha": _sha(),
         "seed_base": args.seed_base, "optic_gain": args.optic_gain,
         "spiking_t4": args.spiking_t4, "yaw_source": args.yaw_source, "touch": args.touch,
+        "yaw_max": args.yaw_max, "forward_max": args.forward_max,
         "yaw_gain": args.yaw_gain,
         "mirror": args.mirror, "blind": args.blind,
         "deadzone_hz": args.deadzone_hz,

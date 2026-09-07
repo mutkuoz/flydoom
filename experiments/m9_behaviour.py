@@ -446,6 +446,16 @@ def main() -> int:
                          "DNa02 is the goal-directed walking steering neuron, "
                          "2.3%% visual input here; DNp15 (DNHS1) is the "
                          "optomotor one the horizontal system drives.")
+    ap.add_argument("--yaw-max", type=float, default=None,
+                    help="max yaw in deg per tic. The default 12 deg/tic is "
+                         "420 deg/s at 35 tics/s, which sweeps 6.7 ommatidial "
+                         "columns per 80 ms delay; a correlator responds near "
+                         "ONE column per delay, i.e. about 1.8 deg/tic. This "
+                         "is an arena parameter, the speed of the drum, not a "
+                         "property of the brain.")
+    ap.add_argument("--forward-max", type=float, default=None,
+                    help="max forward command per tic; translational optic "
+                         "flow scales with it.")
     ap.add_argument("--yaw-gain", type=float, default=None)
     ap.add_argument("--forward-gain", type=float, default=None)
     ap.add_argument("--lateral-gain", type=float, default=None)
@@ -490,6 +500,8 @@ def main() -> int:
     if "connectome" not in arms:
         arms = ["connectome"] + arms
     motor_kw = {k: v for k, v in (("yaw_source", args.yaw_source),
+                                  ("yaw_max_deg", args.yaw_max),
+                                  ("forward_max", args.forward_max),
                                   ("yaw_gain", args.yaw_gain),
                                   ("forward_gain", args.forward_gain),
                                   ("lateral_gain", args.lateral_gain),
