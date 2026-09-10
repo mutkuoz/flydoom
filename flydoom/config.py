@@ -13,6 +13,7 @@ working sim and a silent one."
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 # ==========================================================================
@@ -619,3 +620,13 @@ T_DLY_SLOW = 80e-3   # s   [OURS -- FITTED, see below]
 
 DOOM_TICRATE = 35              # [PUBLISHED] Doom runs at 35 tics/s
 SUBSTEPS_PER_TIC = round((1.0 / DOOM_TICRATE) / DT)   # 57
+_sub = os.environ.get("FLYDOOM_SUBSTEPS", "")
+if _sub:
+    # Neural time per Doom tic. At 57 the brain gets 28.5 ms per 28.6 ms world
+    # tic, i.e. real time, and gameplay sweeps 6.7 ommatidial columns per 80 ms
+    # correlator delay when the pathway responds near one. Raising this slows
+    # the WORLD relative to the brain without touching the agent's command
+    # range. Capping yaw was a bad proxy for it: throttling the turn also
+    # removes the self-generated optic flow the turn is supposed to respond to,
+    # which broke the closed loop rather than retuning it.
+    SUBSTEPS_PER_TIC = int(_sub)
