@@ -1,0 +1,28 @@
+Each modality has its own descending pathway, and they are not the same one.
+
+Odour on against odour off, all-applied visual configuration, single seed,
+130 scored tics:
+
+  readout        odour off   odour on     change in L-R
+  DNa02 L-R        -27.89      -5.70          +22.19
+  DNp15 L-R        -40.54     -39.79           +0.75
+  DNp01 L-R        -72.70     -72.99           -0.29
+
+Smell moves the steering asymmetry of DNa02 by 22 Hz and leaves DNp15
+untouched. Vision is the other way round: the T4/T5-dependent directional
+signal reaches DNp15 at 32 Hz while DNa02 draws 2.3% of its input from visual
+populations and 0.34% from the horizontal system.
+
+This matches the published characterisations rather than cutting against them.
+DNa02 steers goal-directed walking under central-complex control, and
+odour-guided navigation IS goal-directed steering. DNp15 (DNHS1) is the
+optomotor neuron the horizontal system drives. The model has been reading one
+descending pathway while delivering the other modality's stimulus.
+
+Consequence for klinotaxis: it must be measured with the DNa02 readout, not
+DNp15. Smell carries how close and never which way, since the antennae are
+0.3 mm apart and receive identical drive, so an animal finds a source by
+moving and comparing concentration against its own recent past, turning when
+it falls. The existing run gives connectome r = +0.058 +- 0.117 against
+shuffled r = -0.095 +- 0.074 on six episodes, which is the wrong sign and
+under-powered, and it predates the corrected visual configuration.
