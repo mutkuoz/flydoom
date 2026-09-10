@@ -68,3 +68,22 @@ sensorimotor TRANSFORMATIONS.
 The obvious candidate for what is missing is the structure that converts
 descending commands into coordinated action, the ventral nerve cord, which
 FAFB does not contain and no environmental change can supply.
+
+PREDICTION RECORDED BEFORE READING THE SMELL ON/OFF BEHAVIOUR RUN
+
+A 21 Hz shift in DNa02 L-R clears the 1.5 Hz deadzone and would command
+21 * 0.44 = 9.2 deg/tic of yaw against a cap of 12, so on magnitude alone it
+should dominate behaviour. But smell is on for the WHOLE episode, so the shift
+is a sustained DC offset, and the yaw channel is baseline-centred with
+tau = 3 s. A constant is precisely what that filter removes.
+
+So the prediction is that smell on against smell off shows little or no
+behavioural difference, for the same instrumental reason the drum would have
+nulled before it was made to alternate, and NOT because the coupling is
+absent.
+
+The test that separates those: alternate the odour within an episode, as a
+square wave well inside the filter's passband, and ask whether turning is
+modulated in phase with it. That is the olfactory analogue of the alternating
+drum, and if the coupling is real but DC-blocked it should appear there and
+only there.
