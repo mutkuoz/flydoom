@@ -1,0 +1,32 @@
+OPTOMOTOR DRUM, closed loop, defend_the_center (bare circular room)
+5 seeds per drum speed, 350 tics, square wave reversing every 70 tics (4 s),
+all-applied configuration with yaw decoded from DNp15.
+
+  arm         slope        modulation by drum speed (deg/tic)
+                             0       2       4       8
+  intact    -0.052+-0.038  +0.23   +1.28   +0.18   +0.18
+  mirrored  -0.073+-0.043  +0.25   +1.49   +0.53   +0.06
+  blind     -0.004+-0.010  +0.05   +0.26   +0.04   +0.09
+
+NO OPTOMOTOR RESPONSE. The intact slope is not significant (0.052 against
+2 SE = 0.077) and mirroring the retina does not reverse it; the mirrored slope
+has the same sign and a slightly larger magnitude. A directional counter-turn
+would have to reverse under a mirrored retina, and it does not.
+
+THE MODULATION IS NEVERTHELESS VISUAL. Freezing the retina drops the peak
+from +1.28 to +0.26 and flattens every level, so what modulation exists
+requires a live retinal image.
+
+AND IT IS SPEED-TUNED, AT THE PREDICTED SPEED. The response peaks sharply at
+2 deg/tic, which is 70 deg/s, against the 62 deg/s that 5 degree ommatidial
+spacing and an 80 ms slow arm predict for one column swept per delay. Nothing
+at 0, 4 or 8.
+
+Read together: the model detects visual motion, at the speed its own wiring
+predicts, and cannot recover its direction. That is what a projected DSI near
+0.08 means, reached here through behaviour rather than through cell
+recordings, and it is consistent with every other measurement in this project.
+
+Caveat: 5 seeds per point. The peak at 2 deg/tic is large relative to the
+other levels but the slope statistics are weak, and the non-monotonic profile
+means a slope was the wrong summary for this data in the first place.
