@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""M12 — the optomotor drum, run in closed loop.
+
+WHY THIS EXPERIMENT AND NOT THE OTHERS
+--------------------------------------
+Every behavioural measurement in this project so far scores the model on
+collecting medkits in a corridor shooter, a task the animal has no circuitry
+for, with a seed-to-seed standard deviation that swamps the effects being
+tested. The canonical experiment for the pathway we care about is the
+opposite in every respect: impose a rotation on the visual world and measure
+whether the animal turns to cancel it. A fly in a rotating striped drum does
+this reflexively; it is about as universal as insect behaviour gets.
+
+The imposition is added to the agent's action AFTER the brain has committed
+its own command, so the brain never sees the perturbation as an efference
+copy. It sees only its consequence: the world rotating past the eyes. The
+measurable is the brain's own yaw command, which for a working optomotor
+response should OPPOSE the imposed rotation and grow with it.
+
+    imposed +4 deg/tic (world sweeps left)  ->  brain should command right
+    imposed -4 deg/tic                      ->  brain should command left
+    imposed  0                              ->  baseline
+
+Sign and slope, not magnitude. The regression of commanded yaw on imposed
+rotation should have a NEGATIVE slope. That is the whole test.
+
+CONTROLS
+--------
+mirror  flips the retinal sampling grid, reversing every horizontal optic-flow
+        signal while leaving rates, contrast and wiring untouched. A genuine
+        optomotor slope must reverse sign.
+blind   freezes the retina on one frame. The slope must go to zero: with no
+        visual consequence there is nothing to stabilise against.
+
+Neither control changes the imposed rotation, so any residual slope under them
+is the motor system responding to its own dynamics rather than to vision.
+
+    python experiments/m12_optomotor_drum.py --device cpu --seeds 6
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import numpy as np  # noqa: E402
+
+
+def run_one(imposed: float, seed: int, tics: int, device: str,
+            mirror: bool = False, blind: bool = False,
+            yaw_source: str = "DNp15", optic_gain: float = 16.0,
+            scenario: str = "defend_the_center") -> dict:
+    """One episode with a constant rotation added to the agent's action."""
+    from flydoom.agent import FlyDoomAgent, AgentConfig
+    from flydoom.doom import DoomConfig
+    from flydoom.motor import MotorConfig
+
+    cfg = AgentConfig(
+        device=device, seed=seed, spiking_t4=True, optic_gain=optic_gain,
+        motor=MotorConfig(yaw_source=yaw_source),
+        doom=DoomConfig(labels=True, seed=seed, scenario=scenario),
+    )
+    agent = FlyDoomAgent(cfg)
+    if mirror:
+        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
+    agent.reset()
+
+    if blind:
+        first = {}
+        raw = agent.doom.frame
+
+        def frozen():
+            if "f" not in first:
+                f = raw()
+                first["f"] = None if f is None else np.array(f, copy=True)
+            return first["f"]
+        agent.doom.frame = frozen
+
+    # The imposition is applied to the action the brain has already decided,
+    # so the brain sees the rotation as a visual consequence and not as a
+    # command it issued.
+    orig_step = agent.doom.step
+    commanded = []
+
+    def step(actions, skip):
+        # actions is ordered by DoomSession.BUTTONS; index 0 is yaw delta
+        commanded.append(float(actions[0]))
+        actions = list(actions)
+        actions[0] = actions[0] + imposed
+        return orig_step(actions, skip)
+    agent.doom.step = step
+
+    for t in range(tics):
+        if agent.tic(t) is None:
+            break
+    warm = min(40, len(commanded) // 4)
+    own = commanded[warm:]
+    return {"imposed": imposed, "seed": seed,
+            "own_yaw_mean": float(np.mean(own)) if own else 0.0,
+            "own_yaw_sd": float(np.std(own)) if own else 0.0,
+            "n": len(own)}
+
+
+def slope(xs, ys):
+    """Least-squares slope of y on x, and its standard error."""
+    x, y = np.asarray(xs, float), np.asarray(ys, float)
+    if len(x) < 3 or x.std() == 0:
+        return float("nan"), float("nan")
+    b, a = np.polyfit(x, y, 1)
+    resid = y - (b * x + a)
+    se = float(np.sqrt((resid ** 2).sum() / max(len(x) - 2, 1)
+                       / max(((x - x.mean()) ** 2).sum(), 1e-9)))
+    return float(b), se
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--imposed", default="-6,-3,0,3,6",
+                    help="comma-separated imposed rotations, deg per tic")
+    ap.add_argument("--seeds", type=int, default=6)
+    ap.add_argument("--tics", type=int, default=300)
+    ap.add_argument("--scenario", default="defend_the_center",
+                    help="defend_the_center is a bare circular room, which is "
+                         "the closest thing the installed scenarios have to an "
+                         "optomotor drum.")
+    ap.add_argument("--yaw-source", default="DNp15",
+                    choices=["DNa02", "DNp15"])
+    ap.add_argument("--optic-gain", type=float, default=16.0)
+    ap.add_argument("--controls", action="store_true",
+                    help="also run mirrored and blind arms")
+    ap.add_argument("--json", type=Path)
+    ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
+                                         or "cuda"))
+    args = ap.parse_args()
+
+    imposed = [float(x) for x in args.imposed.split(",") if x.strip()]
+    arms = [("intact", False, False)]
+    if args.controls:
+        arms += [("mirrored", True, False), ("blind", False, True)]
+
+    out = {}
+    for name, mir, bl in arms:
+        xs, ys, rows = [], [], []
+        print(f"\n=== {name} ===")
+        for imp in imposed:
+            per = []
+            for s in range(args.seeds):
+                r = run_one(imp, s, args.tics, args.device, mir, bl,
+                            args.yaw_source, args.optic_gain, args.scenario)
+                per.append(r["own_yaw_mean"])
+                xs.append(imp)
+                ys.append(r["own_yaw_mean"])
+                rows.append(r)
+            print(f"  imposed {imp:+6.1f} deg/tic -> own yaw "
+                  f"{np.mean(per):+8.4f} +- {np.std(per):.4f}")
+        b, se = slope(xs, ys)
+        out[name] = {"slope": b, "se": se, "rows": rows}
+        verdict = ("OPPOSES (optomotor sign)" if b < -2 * se
+                   else "follows" if b > 2 * se else "no slope")
+        print(f"  slope {b:+.4f} +- {se:.4f}   {verdict}")
+
+    if "intact" in out and "mirrored" in out:
+        bi, bm = out["intact"]["slope"], out["mirrored"]["slope"]
+        print(f"\n  mirror reverses the slope? "
+              f"{'YES' if bi * bm < 0 else 'NO'}  ({bi:+.4f} -> {bm:+.4f})")
+    if "intact" in out and "blind" in out:
+        print(f"  blind abolishes the slope?  "
+              f"{'YES' if abs(out['blind']['slope']) < abs(out['intact']['slope'])/3 else 'NO'}"
+              f"  ({out['intact']['slope']:+.4f} -> {out['blind']['slope']:+.4f})")
+
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(out, indent=1))
+        print(f"\n  wrote {args.json}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
