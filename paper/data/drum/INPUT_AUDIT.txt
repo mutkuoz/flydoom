@@ -1,0 +1,34 @@
+Is the arena presenting the fly a stimulus its motion pathway can use?
+Three dimensions, all measured in live gameplay, all adequate.
+
+CONTRAST      RMS 55.6%, Michelson 99.4% (96.3% robust, 1st-99th pct).
+              A laboratory optomotor drum runs at 50-100% Michelson, so the
+              retina is not contrast-starved and repainting surfaces to differ
+              from each other would add nothing.
+
+SPEED         The drum response peaks sharply at 2 deg/tic = 70 deg/s, against
+              the 62 deg/s predicted by 5 degree correlator arm separation and
+              an 80 ms slow arm (one column swept per delay), with nothing at
+              0, 4 or 8. Within 13% of prediction.
+
+SPATIAL       On a single-elevation azimuth transect, peak spatial period
+              25.6 deg, with 21.5% of power in 10-20 deg and 19.3% in 20-40,
+              so 41% inside the correlator's working band. The grating tests
+              used 15 deg.
+
+              Note the retina oversamples: azimuth step 1.19 deg, Nyquist
+              period 2.4 deg. The 5 degree figure used in the speed prediction
+              is the correlator's ARM SEPARATION, set by the connectome, not
+              the retinal sampling interval.
+
+              (A first version of this measurement pooled +-10 degrees of
+              elevation, which interleaves rows in the azimuth ordering and
+              manufactured a spurious 3.6 degree peak. Single row only.)
+
+CONCLUSION    The input is adequate on every axis we can measure. Combined
+              with the drum result -- modulation is abolished by freezing the
+              retina, peaks at the predicted speed, and does NOT reverse under
+              a mirrored retina -- the model receives a usable motion stimulus,
+              detects it, and fails to recover its direction. The failure is in
+              the computation, which is where the shunt-cancellation result
+              already placed it, and not in what the arena delivers.
