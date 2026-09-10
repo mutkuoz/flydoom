@@ -26,3 +26,20 @@ moving and comparing concentration against its own recent past, turning when
 it falls. The existing run gives connectome r = +0.058 +- 0.117 against
 shuffled r = -0.095 +- 0.074 on six episodes, which is the wrong sign and
 under-powered, and it predates the corrected visual configuration.
+
+VERIFIED ACROSS SEEDS (6 seeds, odour on minus odour off, change in L-R):
+
+  DNa02   +20.62 +- 1.83   *   per seed: 22.2 20.1 20.1 21.4 16.7 23.2
+  DNp15    -0.12 +- 1.12       per seed:  0.8 -1.6 -0.4  2.2 -0.5 -1.1
+  DNp01    +0.55 +- 1.12       per seed: -0.3 -1.1  0.1  2.9  0.5  1.2
+
+Every seed moves DNa02 in the same direction, and the effect is an order of
+magnitude larger than its own between-seed spread. Neither of the other two
+readouts moves at all. This is the largest and most consistent sensorimotor
+coupling measured anywhere in this project, larger than any produced by
+vision, and it sits on the descending neuron the literature assigns to
+goal-directed steering, which is the pathway odour navigation should use.
+
+Still to establish: whether it produces behaviour. A 21 Hz modulation of the
+steering command is a coupling, not a turn toward an odour source, and the
+klinotaxis measurement is the test.
