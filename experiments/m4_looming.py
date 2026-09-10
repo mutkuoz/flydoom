@@ -142,7 +142,18 @@ def radius_schedule(kind, n_steps, dt, l_over_v, t_c, start_deg, cap_deg):
     if kind == "looming":
         return loom
     if kind == "static":
+        # The expansion's FINAL radius held for the whole window. This is not
+        # a matched control: the sweep starts at start_deg and ends at cap_deg,
+        # so holding the end point delivers far more total drive than the
+        # stimulus it controls for, and "looming beats static" cannot pass
+        # however well the looming detectors work. Kept for continuity with
+        # earlier runs; use static_matched.
         return [loom[-1]] * n_steps
+    if kind == "static_matched":
+        # Same MEAN angular size as the looming sweep, so total drive is
+        # matched and the only difference is that one expands and one does
+        # not. This is the control the comparison actually needs.
+        return [sum(loom) / len(loom)] * n_steps
     if kind == "receding":
         return loom[::-1]
     if kind == "blank":
@@ -327,7 +338,7 @@ def main() -> int:
     print(f"  {'condition':<12} {'L1':>7} {'LC4':>7} {'LPLC2':>7} {'LC11':>7}"
           f" {'DNp01':>7}")
     results = {}
-    for kind in ("looming", "static", "receding", "blank"):
+    for kind in ("looming", "static", "static_matched", "receding", "blank"):
         radii = radius_schedule(kind, n_steps, net.p.dt, lv, t_c,
                                 args.start_deg, args.cap_deg)
         counts, trace = run_condition(net, rig, radii, gext, mon_t, dash,
