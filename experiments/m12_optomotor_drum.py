@@ -19,10 +19,20 @@ response should OPPOSE the imposed rotation and grow with it.
 
     imposed +4 deg/tic (world sweeps left)  ->  brain should command right
     imposed -4 deg/tic                      ->  brain should command left
-    imposed  0                              ->  baseline
 
-Sign and slope, not magnitude. The regression of commanded yaw on imposed
-rotation should have a NEGATIVE slope. That is the whole test.
+WHY THE DRUM ALTERNATES
+-----------------------
+The motor decoder subtracts a tau = 3 s baseline from the yaw channel, which
+makes the readout a high-pass with a corner near 0.05 Hz. A CONSTANT imposed
+rotation therefore produces a sustained counter-turn that is exactly the DC
+component the filter removes: the experiment would return a null for a reason
+that has nothing to do with vision. The drum reverses on a square wave instead,
+at a period well inside the passband, and the measurable is the modulation
+locked to that reversal.
+
+Sign and depth, not magnitude. Commanded yaw during the +imposed half minus
+commanded yaw during the -imposed half should be NEGATIVE, and grow with drum
+speed. That is the whole test.
 
 CONTROLS
 --------
@@ -54,8 +64,13 @@ import numpy as np  # noqa: E402
 def run_one(imposed: float, seed: int, tics: int, device: str,
             mirror: bool = False, blind: bool = False,
             yaw_source: str = "DNp15", optic_gain: float = 16.0,
-            scenario: str = "defend_the_center") -> dict:
-    """One episode with a constant rotation added to the agent's action."""
+            scenario: str = "defend_the_center",
+            half_period: int = 70) -> dict:
+    """One episode with a SQUARE-WAVE rotation added to the agent's action.
+
+    `half_period` is in tics; 70 at 35 tics/s is a 4 s cycle, 0.25 Hz, which
+    clears the decoder's 0.05 Hz high-pass corner with room to spare.
+    """
     from flydoom.agent import FlyDoomAgent, AgentConfig
     from flydoom.doom import DoomConfig
     from flydoom.motor import MotorConfig
@@ -85,25 +100,35 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
     # so the brain sees the rotation as a visual consequence and not as a
     # command it issued.
     orig_step = agent.doom.step
-    commanded = []
+    commanded, phase = [], []
+    tick = {"t": 0}
 
     def step(actions, skip):
         # actions is ordered by DoomSession.BUTTONS; index 0 is yaw delta
+        sign = 1.0 if (tick["t"] // half_period) % 2 == 0 else -1.0
         commanded.append(float(actions[0]))
+        phase.append(sign)
         actions = list(actions)
-        actions[0] = actions[0] + imposed
+        actions[0] = actions[0] + imposed * sign
+        tick["t"] += 1
         return orig_step(actions, skip)
     agent.doom.step = step
 
     for t in range(tics):
         if agent.tic(t) is None:
             break
-    warm = min(40, len(commanded) // 4)
-    own = commanded[warm:]
+    warm = min(70, len(commanded) // 4)      # drop the first cycle
+    c = np.asarray(commanded[warm:], float)
+    ph = np.asarray(phase[warm:], float)
+    pos = c[ph > 0]
+    neg = c[ph < 0]
+    depth = (float(pos.mean()) - float(neg.mean())
+             if len(pos) and len(neg) else 0.0)
     return {"imposed": imposed, "seed": seed,
-            "own_yaw_mean": float(np.mean(own)) if own else 0.0,
-            "own_yaw_sd": float(np.std(own)) if own else 0.0,
-            "n": len(own)}
+            "modulation": depth,
+            "yaw_pos": float(pos.mean()) if len(pos) else 0.0,
+            "yaw_neg": float(neg.mean()) if len(neg) else 0.0,
+            "n": len(c)}
 
 
 def slope(xs, ys):
@@ -120,10 +145,12 @@ def slope(xs, ys):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--imposed", default="-6,-3,0,3,6",
-                    help="comma-separated imposed rotations, deg per tic")
+    ap.add_argument("--imposed", default="0,2,4,8",
+                    help="drum speeds, deg per tic (amplitude of the square wave)")
     ap.add_argument("--seeds", type=int, default=6)
-    ap.add_argument("--tics", type=int, default=300)
+    ap.add_argument("--tics", type=int, default=350)
+    ap.add_argument("--half-period", type=int, default=70,
+                    help="tics per half cycle; 70 = 4 s at 35 tics/s")
     ap.add_argument("--scenario", default="defend_the_center",
                     help="defend_the_center is a bare circular room, which is "
                          "the closest thing the installed scenarios have to an "
@@ -151,12 +178,13 @@ def main() -> int:
             per = []
             for s in range(args.seeds):
                 r = run_one(imp, s, args.tics, args.device, mir, bl,
-                            args.yaw_source, args.optic_gain, args.scenario)
-                per.append(r["own_yaw_mean"])
+                            args.yaw_source, args.optic_gain,
+                            args.scenario, args.half_period)
+                per.append(r["modulation"])
                 xs.append(imp)
-                ys.append(r["own_yaw_mean"])
+                ys.append(r["modulation"])
                 rows.append(r)
-            print(f"  imposed {imp:+6.1f} deg/tic -> own yaw "
+            print(f"  drum {imp:+6.1f} deg/tic -> yaw modulation "
                   f"{np.mean(per):+8.4f} +- {np.std(per):.4f}")
         b, se = slope(xs, ys)
         out[name] = {"slope": b, "se": se, "rows": rows}
