@@ -1,0 +1,29 @@
+Untested gaps, in the order they look worth doing.
+
+1. SPATIAL frequency of the arena. We tested the temporal band twice and
+   refuted it both ways, but a correlator is tuned in SPACE as well as time and
+   that has never been checked. The grating tests use a 15 degree period; what
+   Doom's wall textures subtend at the eye during play is unmeasured. If the
+   scene's power sits mostly outside the correlator's spatial passband, no
+   amount of contrast or speed adjustment helps. Measure the spatial power
+   spectrum of retinal luminance during play against the m3k tuning, then, if
+   it is off, build a WAD whose walls are striped at the preferred period.
+   This is the version of the "dye the walls" idea that survives the contrast
+   measurement: not more contrast, contrast at the right SIZE.
+
+2. No efference copy. A real fly suppresses its own optomotor reflex during
+   voluntary turns via corollary discharge, so it does not fight itself. This
+   model has none: every turn it makes generates flow that drives a
+   counter-turn. That is a negative feedback loop with no gate, and it may be
+   why the closed-loop measures behave so differently from the open-loop ones.
+   The drum experiment sidesteps it by imposing rotation the brain did not
+   command, which is why it is the cleaner measurement.
+
+3. Moving objects rather than self-motion. LC4 and LPLC2 are looming
+   detectors and the arena can be populated with approaching objects at
+   controlled speed, which tests a pathway that does not depend on the
+   correlator at all.
+
+4. Arena geometry. defend_the_center is a bare circular room, which is the
+   closest installed scenario to a drum. A purpose-built cylinder with
+   controlled wall period would be better and is a WAD away.
