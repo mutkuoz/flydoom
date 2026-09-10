@@ -43,3 +43,28 @@ goal-directed steering, which is the pathway odour navigation should use.
 Still to establish: whether it produces behaviour. A 21 Hz modulation of the
 steering command is a coupling, not a turn toward an odour source, and the
 klinotaxis measurement is the test.
+
+KLINOTAXIS: NEGATIVE (18 episodes per arm, up from 6)
+
+  connectome   r = +0.026 +- 0.062   7/18 episodes negative
+  shuffled     r = -0.103 +- 0.050  15/18 episodes negative
+
+The prediction was a negative r: smell falling should mean turn and search.
+The intact brain shows no coupling; the degree-preserving shuffle shows the
+predicted one significantly. A coupling the shuffle also produces is not from
+the wiring, and this replicates the earlier six-episode run with better power.
+
+So the 21 Hz modulation of the steering command does not become a turn toward
+a source. That is now the pattern in every modality tested:
+
+  vision  32 Hz directional signal at DNp15   no directional behaviour
+  smell   21 Hz steering modulation at DNa02  no klinotaxis
+  touch    3 Hz at DNa02                      not lateralised
+
+In each case a sensory signal demonstrably reaches a descending neuron and
+does not become behaviour. The model has sensorimotor COUPLINGS without
+sensorimotor TRANSFORMATIONS.
+
+The obvious candidate for what is missing is the structure that converts
+descending commands into coordinated action, the ventral nerve cord, which
+FAFB does not contain and no environmental change can supply.
