@@ -160,15 +160,23 @@ def main() -> int:
     ap.add_argument("--optic-gain", type=float, default=16.0)
     ap.add_argument("--controls", action="store_true",
                     help="also run mirrored and blind arms")
+    ap.add_argument("--arm", default=None,
+                    choices=["intact", "mirrored", "blind"],
+                    help="run a single arm, so the three can go in parallel")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
                                          or "cuda"))
     args = ap.parse_args()
 
     imposed = [float(x) for x in args.imposed.split(",") if x.strip()]
-    arms = [("intact", False, False)]
-    if args.controls:
-        arms += [("mirrored", True, False), ("blind", False, True)]
+    allarms = {"intact": (False, False), "mirrored": (True, False),
+               "blind": (False, True)}
+    if args.arm:
+        arms = [(args.arm, *allarms[args.arm])]
+    else:
+        arms = [("intact", False, False)]
+        if args.controls:
+            arms += [("mirrored", True, False), ("blind", False, True)]
 
     out = {}
     for name, mir, bl in arms:
