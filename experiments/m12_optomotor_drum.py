@@ -114,9 +114,12 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
         return orig_step(actions, skip)
     agent.doom.step = step
 
-    for t in range(tics):
-        if agent.tic(t) is None:
-            break
+    try:
+        for t in range(tics):
+            if agent.tic(t) is None:
+                break
+    finally:
+        agent.close()          # one ViZDoom process per agent; see m13
     warm = min(70, len(commanded) // 4)      # drop the first cycle
     c = np.asarray(commanded[warm:], float)
     ph = np.asarray(phase[warm:], float)

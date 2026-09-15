@@ -81,15 +81,18 @@ def run_forced(side: str | None, tics: int, seed: int, device: str,
     agent.touch.on_tic = clamp
 
     acc, n = {}, 0
-    for t in range(tics):
-        rec = agent.tic(t)
-        if rec is None:
-            break
-        if t < 20:                      # let the rate filter settle
-            continue
-        for k, v in rec.rates.items():
-            acc[k] = acc.get(k, 0.0) + float(v)
-        n += 1
+    try:
+        for t in range(tics):
+            rec = agent.tic(t)
+            if rec is None:
+                break
+            if t < 20:                  # let the rate filter settle
+                continue
+            for k, v in rec.rates.items():
+                acc[k] = acc.get(k, 0.0) + float(v)
+            n += 1
+    finally:
+        agent.close()          # one ViZDoom process per agent; see m13
     out = {k: v / max(n, 1) for k, v in acc.items()}
     out["DNa02_LmR"] = out.get("DNa02_L", 0.0) - out.get("DNa02_R", 0.0)
     out["_tics"] = n

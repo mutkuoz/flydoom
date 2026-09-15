@@ -93,11 +93,17 @@ def run_one(seed: int, tics: int, device: str, half_period: int = 70,
         return orig_step(actions, skip)
     agent.doom.step = step
 
-    for t in range(tics):
-        state["t"] = t
-        state["on"] = (t // half_period) % 2 == 0
-        if agent.tic(t) is None:
-            break
+    try:
+        for t in range(tics):
+            state["t"] = t
+            state["on"] = (t // half_period) % 2 == 0
+            if agent.tic(t) is None:
+                break
+    finally:
+        # One ViZDoom process is spawned per agent and does not exit on its
+        # own. A run that builds an agent per episode leaks one per episode,
+        # about 80 MB each, so this has to be in a finally.
+        agent.close()
 
     warm = min(half_period, len(yaws) // 4)
     y = np.asarray(yaws[warm:], float)
