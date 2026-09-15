@@ -145,3 +145,37 @@ behaviour changes its own stimulus.
 
 The bookkeeping arms, identical square-wave schedule with the odour never
 enabled, are what settle whether any of this is odour at all.
+
+RETINA-FROZEN CONTROL: THE NEURAL EFFECT IS REAL, THE BEHAVIOURAL ONE IS NOT
+ESTABLISHED
+
+Odour on against odour off with the retina frozen on one frame, so both arms
+receive identical visual input and the agent cannot have gone somewhere
+different because it smelled something:
+
+  DNa02   +17.32 +- 1.57  *   per seed: 15.0 17.3 17.0 20.8 16.2 17.6
+  DNp15    -0.32 +- 0.58      per seed: -1.3 -1.0 -0.2 0.1 0.6 -0.0
+  DNp01    -0.87 +- 1.29      per seed: -2.8 0.3 -1.5 -2.5 0.1 1.2
+
+Against +20.62 +- 1.83 closed loop, so 84% of the effect survives removing
+vision entirely, on every seed, and the specificity holds: the visual and
+escape readouts do not move.
+
+This separates two questions that the earlier measurements had merged.
+
+  NEURAL      Odour specifically modulates the descending neuron the
+              literature assigns to goal-directed steering, by about 17 Hz,
+              independently of vision. Established.
+
+  BEHAVIOURAL Whether that modulation produces a turn is NOT established. The
+              m13 alternating-odour test shows the same phase-locked yaw
+              modulation through DNa02 (+0.311 +- 0.237) and through DNp15
+              (+0.314 +- 0.123), which cannot both be olfactory given the rate
+              measurements above. Gating the odour changes the trajectory,
+              which changes what the eyes see, which perturbs every readout.
+
+The tension is structural rather than fixable. Holding vision constant makes
+the measurement clean and removes the behaviour; letting the agent move
+restores the behaviour and reintroduces the confound. It is the same result
+the paper already records for shuffle controls, arriving again by a different
+route: in closed loop, an arm that changes behaviour changes its own stimulus.

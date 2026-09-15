@@ -1,0 +1,5 @@
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:299: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:816.)
+  m = torch.sparse_coo_tensor(
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  mats.append(m.to_sparse_csr())
+{"seed": 40, "pairs": {"DNa02": {"off": -19.315538846529478, "on": -4.326760629507248, "change": 14.98877821702223}, "DNp15": {"off": -37.645974261944104, "on": -38.94891005295975, "change": -1.302935791015642}, "DNp01": {"off": -66.82522289569562, "on": -69.6149638249324, "change": -2.7897409292367854}}}
