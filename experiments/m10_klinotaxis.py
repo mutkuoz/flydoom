@@ -76,21 +76,40 @@ def episode(seed, tics, shuffled, device, scenario):
     return np.asarray(conc), np.asarray(yaw), np.asarray(fwd)
 
 
-def analyse(conc, yaw, max_lag):
-    """Correlate |turn| against dC/dt over a scan of lags."""
-    d = np.gradient(conc)
-    turn = np.abs(yaw)
+def _scan(signal, turn, max_lag):
+    """Best lagged Pearson r between `signal` and `turn`."""
     best = (0.0, 0)
     curve = []
     for lag in range(0, max_lag + 1):
-        # the turn happens `lag` tics AFTER the concentration change
-        a = d[:len(d) - lag] if lag else d
+        a = signal[:len(signal) - lag] if lag else signal
         b = turn[lag:] if lag else turn
         r = pearson(a, b)
         curve.append((lag, r))
         if abs(r) > abs(best[0]):
             best = (r, lag)
-    return best, curve, d
+    return best, curve
+
+
+def analyse(conc, yaw, max_lag):
+    """Correlate |turn| against dC/dt, and separately against C itself.
+
+    TWO STRATEGIES, NOT ONE. Correlating turn with dC/dt tests klinotaxis:
+    turn when the smell is getting worse, which is what E. coli does. But an
+    animal can also bias a random walk on the LEVEL rather than its
+    derivative, turning less where the concentration is high, so that it
+    lingers near a source without ever knowing which way it lies. Insects show
+    that too, as reduced turning inside a plume.
+
+    The whole-episode measurement here found that odour reduces turn magnitude
+    by about a third, which is a statement about the level and not about the
+    derivative, so the level correlation is the one that matches the observed
+    effect. Only the derivative was ever computed.
+    """
+    d = np.gradient(conc)
+    turn = np.abs(yaw)
+    best, curve = _scan(d, turn, max_lag)
+    best_c, curve_c = _scan(conc, turn, max_lag)
+    return best, curve, d, best_c, curve_c
 
 
 def main() -> int:
@@ -113,6 +132,7 @@ def main() -> int:
     out = {"seeds": a.seeds, "tics": a.tics, "arms": {}}
     for arm, shuf in (("connectome", False), ("shuffled", True)):
         rs, lags, dyn = [], [], []
+        rcs, lagcs = [], []
         for s in range(a.seeds):
             conc, yaw, fwd = episode(s, a.tics, shuf, a.device, a.scenario)
             if conc.std() < 1e-9:
@@ -122,8 +142,9 @@ def main() -> int:
                 print(f"  {arm} seed {s}: TURN command is constant "
                       f"({yaw[0]:+.4f}); a constant cannot correlate. skipped")
                 continue
-            (r, lag), curve, d = analyse(conc, yaw, a.max_lag)
+            (r, lag), curve, d, (rc, lagc), _ = analyse(conc, yaw, a.max_lag)
             rs.append(r); lags.append(lag)
+            rcs.append(rc); lagcs.append(lagc)
             dyn.append((float(conc.mean()), float(conc.std()),
                         float(np.abs(d).mean())))
         if not rs:
@@ -134,10 +155,22 @@ def main() -> int:
         print(f"  \033[1m{arm}\033[0m  n={len(rs)} episodes")
         print(f"     best r(dC/dt, |turn|) = {m:+.4f} +/- {1.96*sem:.4f}   "
               f"negative in {neg}/{len(rs)}")
+        if rcs:
+            mc = float(np.mean(rcs))
+            sdc = float(np.std(rcs, ddof=1)) if len(rcs) > 1 else 0.0
+            semc = sdc / math.sqrt(len(rcs)) if len(rcs) > 1 else float("inf")
+            negc = sum(1 for x in rcs if x < 0)
+            print(f"     best r(C, |turn|)     = {mc:+.4f} +/- {1.96*semc:.4f}   "
+                  f"negative in {negc}/{len(rcs)}   "
+                  f"(turn less where the smell is strong)")
         print(f"     best lag {np.mean(lags):.1f} tics    "
               f"odour mean {np.mean([x[0] for x in dyn]):.4f}, "
               f"|dC/dt| {np.mean([x[2] for x in dyn]):.5f}")
         out["arms"][arm] = {"r_mean": m, "ci95": 1.96 * sem, "n": len(rs),
+                            "r_level_mean": float(np.mean(rcs)) if rcs else None,
+                            "r_level_ci95": (1.96 * float(np.std(rcs, ddof=1))
+                                             / math.sqrt(len(rcs))) if len(rcs) > 1 else None,
+                            "r_level_per_episode": rcs,
                             "n_negative": neg, "per_episode": rs,
                             "mean_lag": float(np.mean(lags))}
     c, s_ = out["arms"].get("connectome"), out["arms"].get("shuffled")
