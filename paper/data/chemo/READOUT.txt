@@ -87,3 +87,28 @@ square wave well inside the filter's passband, and ask whether turning is
 modulated in phase with it. That is the olfactory analogue of the alternating
 drum, and if the coupling is real but DC-blocked it should appear there and
 only there.
+
+SMELL ON AGAINST SMELL OFF, 20 PAIRED SEEDS -- THE PREDICTION WAS WRONG
+
+  tiles_visited   -7.20 +- 4.41  *
+  yaw_abs_mean    -0.98 +- 0.27  *
+  (healed, health_end, collisions, stuck, displacement, tics, spin: n.s.)
+
+Odour DOES change behaviour: it reduces turn magnitude by about a third
+(2.85 to 1.45 deg/tic on the first seeds) and reduces exploration. The
+prediction recorded beforehand, that the sustained shift would be removed by
+the tau = 3 s baseline filter and show nothing, is refuted. The DC of the
+differential is removed, but odour also shrinks the MAGNITUDE of the
+differential, and magnitude survives a high-pass.
+
+THE SHUFFLE DOES NOT VALIDATE IT. The shuffled arm returns bit-identical
+behaviour with odour on and off, which looks like a perfect control until the
+yaw channel is examined: it takes only 7 distinct values across 20 seeds
+against 20 distinct for the connectome, so it is quantised into a handful of
+states and cannot register a shift of this size. It is uninformative here
+rather than confirmatory. The random arm is matched to the connectome's own
+command statistics per seed, so it inherits the effect by construction and is
+not a control either.
+
+The proper test is m13: gate the odour as a square wave and compare against a
+bookkeeping arm that runs the identical schedule with the odour never enabled.
