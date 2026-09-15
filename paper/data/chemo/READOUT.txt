@@ -126,3 +126,22 @@ wave with the odour never enabled, does not. But the control's interval is
 established at this sample size even though the odour arm alone is
 significant. Raised to 26 seeds, and adding DNp15 as a specificity readout:
 odour lands on DNa02, so the visual readout should show nothing.
+
+ALTERNATING ODOUR AT 26 SEEDS -- THE SPECIFICITY CONTROL IS FAILING
+
+  DNa02 readout (where odour lands)   odour arm  +0.311 +- 0.237  *
+  DNp15 readout (visual, control)     odour arm  +0.314 +- 0.123  *
+
+The two are indistinguishable. Odour moves DNa02's left-right asymmetry by
+21 Hz and DNp15's by 0.75, so at the RATE level the effect is specific to
+DNa02; if the yaw modulation were driven by that asymmetry it would be far
+weaker through DNp15, and it is not.
+
+The likely explanation is a closed-loop confound: gating the odour changes the
+trajectory, which changes what the eyes see, which perturbs every descending
+readout whether or not odour reaches it. That is the same class of problem as
+the shuffle-validity result already in the paper, where an arm that changes
+behaviour changes its own stimulus.
+
+The bookkeeping arms, identical square-wave schedule with the odour never
+enabled, are what settle whether any of this is odour at all.
