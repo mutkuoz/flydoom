@@ -112,3 +112,17 @@ not a control either.
 
 The proper test is m13: gate the odour as a square wave and compare against a
 bookkeeping arm that runs the identical schedule with the odour never enabled.
+
+ALTERNATING ODOUR (m13), 10 seeds per arm, DNa02 readout
+
+  odour   yaw(on) - yaw(off)  +0.504 +- 0.375  *
+  none    yaw(on) - yaw(off)  -0.216 +- 0.827
+  difference                  +0.719 deg/tic
+
+The odour arm shows a phase-locked modulation of the steering command that
+clears its own error bar; the bookkeeping arm, running the identical square
+wave with the odour never enabled, does not. But the control's interval is
++-0.827, wider than the effect itself, so the DIFFERENCE between arms is not
+established at this sample size even though the odour arm alone is
+significant. Raised to 26 seeds, and adding DNp15 as a specificity readout:
+odour lands on DNa02, so the visual readout should show nothing.
