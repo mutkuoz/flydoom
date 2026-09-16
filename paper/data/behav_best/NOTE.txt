@@ -75,3 +75,30 @@ its absolute performance falls is not established at this sample size.
 One oddity recorded rather than explained: collisions per 1k tics is the one
 metric that becomes favourable under mirroring, -3.62 +- 3.01, having been
 +0.05 +- 2.87 normally.
+
+ABSOLUTE VALUES: THE DISSOCIATION IS TWO-SIDED
+
+                        normal          mirrored
+  healed  connectome    24.80 +- 10.26  16.80 +- 6.34
+          random        12.13 +-  5.28  17.33 +- 7.46
+  tics    connectome   460.27 +- 33.89 430.57 +- 25.56
+          random       422.37 +- 22.80 436.03 +- 33.39
+  tiles   connectome    21.63 +-  2.99  19.80 +- 2.40
+          random        17.70 +-  2.59  20.37 +- 2.96
+
+Under mirroring the model gets worse on all three metrics AND the
+command-matched control gets better on all three. The advantage therefore
+closes from both ends, and the model's own decline is not individually
+significant at this sample (healed -8.00 +- 10.84).
+
+Why the control improves is itself informative rather than a nuisance: it is
+matched per seed to the model's own command statistics, so it improving means
+that under a mirrored retina the model's commands become ones a random agent
+does BETTER with. The command structure stops being advantageous.
+
+So the defensible claim is about command structure rather than raw
+performance: with an intact retina the model issues commands that beat a
+statistically matched random agent, and with a mirrored retina it does not.
+That is vision-dependent, since mirroring changes only the retinal sampling
+order, but it is a weaker statement than "performance depends on vision" and
+should not be written as the stronger one.
