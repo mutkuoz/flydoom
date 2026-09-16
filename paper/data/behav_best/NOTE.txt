@@ -22,3 +22,22 @@ chained in front of it, and never re-run. Mirroring reverses every horizontal
 optic-flow signal while leaving firing rates, contrast statistics and the
 wiring untouched, so an advantage that survives it is not coming from optic
 flow. Queued now.
+
+PARTIAL MIRROR RESULT (16 of 30 seeds; NOT a result yet)
+
+  metric           normal              mirrored
+  healed           +17.00 +- 16.97 *   +1.50 +- 7.90
+  tics             +45.06 +- 55.74     +12.00 +- 39.20
+  tiles_visited     +4.06 +-  4.64     -0.88 +- 6.09
+  stuck_frac        -0.06 +-  0.08     +0.03 +- 0.13
+
+Every metric collapses toward zero under a mirrored retina, which is what a
+vision-dependent advantage predicts and what an advantage from motor
+statistics would not do, since mirroring leaves rates, contrast and wiring
+untouched.
+
+Recorded as partial and not claimed. The normal-condition intervals are wide,
+healed at +17.00 +- 16.97 only just clears zero, and the run is at 16 of 30
+seeds. Five separate times in this project a promising number has failed on
+its own control or at fuller sample, so this waits for n=30 before it is
+called anything.
