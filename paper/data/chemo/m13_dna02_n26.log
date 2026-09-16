@@ -3,3 +3,7 @@
 /home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
   mats.append(m.to_sparse_csr())
   odour      yaw(on)-yaw(off)  +0.311 +-0.237 *   |yaw|  -0.111 +-0.127     n=26
+  none       yaw(on)-yaw(off)  -0.041 +-0.440     |yaw|  +0.002 +-0.152     n=26
+
+  odour minus bookkeeping control: +0.351 deg/tic
+  wrote paper/data/chemo/m13_dna02_n26.json
