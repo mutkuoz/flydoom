@@ -1,0 +1,24 @@
+THE ONE BEHAVIOURAL COMPARISON THE ODOUR CONFOUND DOES NOT TOUCH
+
+Connectome against its own command-matched AR(1) control, 30 held-out seeds,
+all-applied configuration. Both arms run with odour on, so the trajectory
+divergence that invalidates the odour on/off comparison does not apply here:
+the manipulation is the command source, not the stimulus.
+
+  healed           +12.67 +- 10.80  *
+  tics             +37.90 +- 36.60  *
+  tiles_visited     +3.93 +-  3.05  *
+  stuck_frac        -0.07 +-  0.06  *
+  damage           +10.87 +-  8.51  *   (worse)
+
+The model collects more health, survives longer, explores more and gets stuck
+less than a control with matched command statistics, while taking more damage.
+That is a genuine behavioural advantage and it is the strongest such result in
+the project.
+
+What it does NOT establish is that the advantage is visual. The mirrored-retina
+arm for this configuration was killed mid-run when the speed-matched test was
+chained in front of it, and never re-run. Mirroring reverses every horizontal
+optic-flow signal while leaving firing rates, contrast statistics and the
+wiring untouched, so an advantage that survives it is not coming from optic
+flow. Queued now.
