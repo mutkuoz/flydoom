@@ -224,3 +224,19 @@ Conclusion: m13 finds no odour-specific behavioural effect. Combined with the
 retina-frozen result, odour drives DNa02 by about 17 Hz under identical vision
 and that modulation has not been shown to reach behaviour by any measurement
 that survives its own controls.
+
+M14 TRAJECTORY-MATCHED REPLAY: UNDERPOWERED, NOT NEGATIVE
+
+Forcing the second pass along the first pass's exact action sequence, so the
+visual stream is identical by construction and only the odour differs:
+
+  DNa02   +0.6970 +- 0.8286   (n.s.)
+  DNp15   -0.1094 +- 0.1157   (n.s.)
+
+The DNa02 mean is six times the DNp15 mean and in the direction odour
+predicts, but the interval is wider than the effect. With two passes per seed,
+twelve seeds is too few; halving the interval needs about 48.
+
+Reported as underpowered rather than null. The method is sound and the
+direction is right; the sample is not enough to say anything, and saying so is
+better than reading a non-significant mean as either support or refutation.

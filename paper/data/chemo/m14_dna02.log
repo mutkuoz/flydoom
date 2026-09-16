@@ -3,3 +3,18 @@
 /home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
   mats.append(m.to_sparse_csr())
   seed 0: yaw command  odour +0.1692   no odour -0.0354   diff +0.2046   n=300
+  seed 1: yaw command  odour -0.9374   no odour -0.6692   diff -0.2681   n=300
+  seed 2: yaw command  odour +1.7817   no odour -0.8694   diff +2.6510   n=300
+  seed 3: yaw command  odour +0.1397   no odour -2.0296   diff +2.1693   n=300
+  seed 4: yaw command  odour -0.6045   no odour -1.3225   diff +0.7180   n=300
+  seed 5: yaw command  odour -0.5259   no odour +0.2063   diff -0.7322   n=300
+  seed 6: yaw command  odour +0.7801   no odour -1.0952   diff +1.8753   n=300
+  seed 7: yaw command  odour -0.5505   no odour +0.5886   diff -1.1392   n=300
+  seed 8: yaw command  odour +0.3444   no odour +0.6844   diff -0.3400   n=300
+  seed 9: yaw command  odour +0.0096   no odour -0.8675   diff +0.8772   n=300
+  seed 10: yaw command  odour +0.4112   no odour +1.2453   diff -0.8341   n=300
+  seed 11: yaw command  odour +2.6193   no odour -0.5635   diff +3.1828   n=275
+
+  odour minus no-odour, identical trajectory: +0.6970 +- 0.8286 
+  readout DNa02; vision identical by construction
+  wrote paper/data/chemo/m14_dna02.json
