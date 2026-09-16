@@ -41,3 +41,37 @@ healed at +17.00 +- 16.97 only just clears zero, and the run is at 16 of 30
 seeds. Five separate times in this project a promising number has failed on
 its own control or at fuller sample, so this waits for n=30 before it is
 called anything.
+
+FULL MIRROR CONTROL, 30 PAIRED SEEDS
+
+Connectome minus its own command-matched AR(1) control, in each condition:
+
+  metric              normal retina        mirrored retina
+  healed              +12.67 +- 10.80 *    -0.53 +- 7.37
+  tics                +37.90 +- 36.60 *    -5.47 +- 31.88
+  tiles_visited        +3.93 +-  3.05 *    -0.57 +- 3.71
+  stuck_frac           -0.07 +-  0.06 *    +0.01 +- 0.08
+  damage              +10.87 +-  8.51 *    -0.87 +- 7.73
+
+Every advantage present under a normal retina is absent under a mirrored one.
+Mirroring flips the retinal sampling grid horizontally, reversing every
+horizontal optic-flow signal while leaving firing rates, contrast statistics
+and the wiring untouched, so an advantage arising from motor command
+statistics would survive it. None does.
+
+THE QUALIFICATION THAT MUST TRAVEL WITH THIS. The direct connectome-against-
+connectome comparison between conditions is directionally consistent but NOT
+significant: healed -8.00 +- 10.84, tics -29.70 +- 37.59, tiles -1.83 +- 3.61.
+The dissociation is therefore in the difference-of-differences, the advantage
+over control, rather than in the model's absolute performance, and the
+command-matched control itself changes under mirroring because it is matched
+to the mirrored model's own command statistics.
+
+The defensible claim is: under an intact retina the model outperforms a
+command-matched control on health collected, survival, exploration and
+stuck-fraction, and under a mirrored retina it outperforms it on none. Whether
+its absolute performance falls is not established at this sample size.
+
+One oddity recorded rather than explained: collisions per 1k tics is the one
+metric that becomes favourable under mirroring, -3.62 +- 3.01, having been
++0.05 +- 2.87 normally.
