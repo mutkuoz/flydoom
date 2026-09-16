@@ -105,9 +105,19 @@ def run_one(seed: int, tics: int, device: str, half_period: int = 70,
         # about 80 MB each, so this has to be in a finally.
         agent.close()
 
+    # Drop the first cycle, then truncate to a WHOLE NUMBER OF FULL CYCLES.
+    # Without this the analysed window can hold an odd number of half-cycles
+    # -- 420 tics at 70 leaves 5 after warmup, 140 on against 210 off -- and
+    # any drift in yaw across an episode then biases the on-minus-off
+    # difference. That is not hypothetical: the bookkeeping arm, which never
+    # enables the odour, came out significantly modulated because of it.
     warm = min(half_period, len(yaws) // 4)
-    y = np.asarray(yaws[warm:], float)
-    ph = np.asarray(phase[warm:], float)
+    usable = len(yaws) - warm
+    keep = (usable // (2 * half_period)) * (2 * half_period)
+    if keep <= 0:
+        keep = usable
+    y = np.asarray(yaws[warm:warm + keep], float)
+    ph = np.asarray(phase[warm:warm + keep], float)
     on_y, off_y = y[ph > 0], y[ph < 0]
     if not len(on_y) or not len(off_y):
         return {"seed": seed, "modulation": 0.0, "abs_modulation": 0.0, "n": 0}
