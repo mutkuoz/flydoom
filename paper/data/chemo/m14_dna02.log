@@ -2,8 +2,4 @@
   m = torch.sparse_coo_tensor(
 /home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
   mats.append(m.to_sparse_csr())
-  odour      yaw(on)-yaw(off)  +0.557 +-0.146 *   |yaw|  -0.292 +-0.108 *   n=26
-  none       yaw(on)-yaw(off)  +0.416 +-0.161 *   |yaw|  -0.196 +-0.097 *   n=26
-
-  odour minus bookkeeping control: +0.141 deg/tic
-  wrote paper/data/chemo/m13_dnp15_fix.json
+  seed 0: yaw command  odour +0.1692   no odour -0.0354   diff +0.2046   n=300

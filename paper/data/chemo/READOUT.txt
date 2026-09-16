@@ -202,3 +202,25 @@ behavioural modulation is visual and driven by the agent's own displacement.
 m14 replay is the test that can separate them properly, by forcing the second
 pass along the first pass's exact trajectory so vision is identical while the
 odour differs.
+
+M13 FINAL, BALANCED: NO ODOUR-SPECIFIC BEHAVIOURAL EFFECT
+
+  readout   odour arm          bookkeeping arm    difference
+  DNa02     +0.253 +- 0.266    +0.106 +- 0.476    +0.146
+  DNp15     +0.557 +- 0.146 *  +0.416 +- 0.161 *  +0.141
+
+The two differences are the same to within 0.005, so whatever the odour adds
+is not specific to the readout it reaches. And the bookkeeping arm, which
+never enables the odour, remains significantly modulated through DNp15.
+
+The residue is a property of the square wave itself rather than a coding
+error. With halves running off, on, off, on, off, on after warmup, the on
+samples sit one half-period LATER than the off samples on average, so any
+drift across an episode maps onto the phase difference no matter how equal the
+counts are. Balancing the count was necessary and not sufficient; detrending
+each episode before the comparison would be the fix.
+
+Conclusion: m13 finds no odour-specific behavioural effect. Combined with the
+retina-frozen result, odour drives DNa02 by about 17 Hz under identical vision
+and that modulation has not been shown to reach behaviour by any measurement
+that survives its own controls.
