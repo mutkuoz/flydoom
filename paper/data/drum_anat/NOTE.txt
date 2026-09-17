@@ -1,0 +1,71 @@
+THE OPTOMOTOR REFLEX AFTER THE TWO INTERFACE FIXES
+
+What changed (both opt-in, neither touches the brain):
+  anatomical eye map  120-degree hex axes, eyes mirrored, placed on the head
+                      as measured (flydoom/retina.py, experiments/m16_eye_axes.py)
+  fixed turn sign     steer TOWARD the more active side; ViZDoom's turn delta
+                      is positive for a right turn, not a left one
+Both matter for this reflex specifically: with the eyes unmirrored a rotating
+world drives both eyes the same way, which is the one stimulus the optomotor
+response has to tell apart, and the reversed sign then applies whatever is left
+backwards.
+
+CLOSED LOOP (run.sh, 6 seeds, 350 tics, drum reversing every 70 tics)
+Modulation is commanded yaw during the right-turning half minus the left half,
+each seed against its own no-drum baseline. Optomotor = negative.
+
+  condition                          1 deg/tic      2            4
+  B  both fixes                      +0.18+-0.28   +0.06+-0.37  -0.01+-0.18
+  B  both fixes, eyes mirrored       +1.26+-0.29*  +1.02+-0.32* +0.69+-0.32*
+  B  both fixes, eyes frozen         +0.12+-0.11*  +0.00+-0.05  +0.06+-0.09
+  C  eye fix only (legacy turn sign) +0.68+-0.45*  +0.26+-0.13* -0.12+-0.18
+  D  turn fix only (lattice eye map)  -0.41+-1.01  +0.12+-0.32  +0.26+-0.56
+
+Flipping the chain in exactly one place (C, or B mirrored) gives a large
+speed-tuned response in the WRONG direction; flipping it in two places (B) or
+zero (D) gives nothing. That is what a directional pathway plus a sign error
+looks like -- but closed loop cannot establish the sign, because a correct
+counter-turn cancels its own stimulus while a wrong-way turn amplifies it.
+Hence the tethered test.
+
+TETHERED / OPEN LOOP (run_open.sh, 10 seeds, 350 tics) -- THE REAL TEST
+Commands are recorded and discarded, the body turns only as the drum dictates,
+and there is no walking, so the retinal image is the drum's alone. Both the
+command and the raw DNp15 left-right difference are recorded, the latter
+because the decoder's deadzone and 3 s baseline filter can remove a real
+signal before it reaches the command.
+
+  command modulation, minus each seed's own no-drum value
+    both fixes            1: +0.06+-0.18   2: +0.09+-0.18   4: +0.39+-0.19*  8: -0.05+-0.18
+    eyes mirrored         1: -0.04+-0.18   2: +0.09+-0.20   4: -0.01+-0.19   8: +0.08+-0.27
+    eyes frozen           1:  0.00+-0.00   2:  0.00+-0.00   4:  0.00+-0.00   8:  0.00+-0.00
+    lattice eye map       1: +0.11+-0.18   2: -0.01+-0.13   4: -0.02+-0.16   8: -0.04+-0.20
+
+  DNp15 L-R modulation (Hz), same subtraction
+    both fixes            1: +0.39+-0.50   2: +0.20+-0.52   4: -0.14+-0.46   8: +0.20+-0.57
+    eyes mirrored         1: +0.34+-0.47   2: +0.02+-0.59   4: +0.33+-0.58   8: +0.20+-0.74
+
+NEGATIVE. Nothing separates except one cell of sixteen (+0.39 at 4 deg/tic),
+which points the wrong way and does not reverse when the eyes are mirrored.
+The frozen arm returning exactly zero is the sanity check that the bookkeeping
+is sound: a frozen retina makes both half-cycles identical.
+
+WHY, from the grating test (m3_optomotor.py --eye-map ..., open loop, no Doom)
+Direction SEPARATION at the horizontal system, rightward minus leftward drift:
+
+                                     lattice map   anatomical map
+  all-applied (spiking T4, gain 16)     1.625 Hz       3.375 Hz
+  frozen model (graded T4, gain 1)      0.500 Hz       0.375 Hz
+
+The corrected eye map doubles the separation in the configuration behaviour
+uses, which is the fix doing exactly what it should. It is still 3 Hz against a
+STANDING left-right asymmetry of about 20 Hz, and it does not reverse sign with
+drift direction. Per-cell selectivity is unchanged (|DSI| ~0.007), as expected:
+the eye map fixes where each lens looks, not what a detector computes.
+
+READING
+The two bugs were real, and this is the honest size of their effect: the fly's
+picture of the world is now correct, the population direction signal doubles,
+and the reflex still does not appear. The limit is the one the paper already
+documents -- per-cell direction selectivity capped near 0.08 where a fly needs
+~0.5 -- and no interface fix reaches it.

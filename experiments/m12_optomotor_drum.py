@@ -128,10 +128,20 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
         return orig_step(actions, skip)
     agent.doom.step = step
 
+    # The command is what the body does; the left-right difference of the
+    # steering pair is what the brain says, before the decoder's deadzone and
+    # its 3 s baseline filter can remove it. A tethered fly's torque is the
+    # second, so record both.
+    yl, yr = (("DNp15_L", "DNp15_R") if yaw_source == "DNp15"
+              else ("DNa02_L", "DNa02_R"))
+    differential = []
     try:
         for t in range(tics):
-            if agent.tic(t) is None:
+            rec = agent.tic(t)
+            if rec is None:
                 break
+            differential.append(float(rec.rates.get(yl, 0.0)
+                                      - rec.rates.get(yr, 0.0)))
     finally:
         agent.close()          # one ViZDoom process per agent; see m13
     warm = min(70, len(commanded) // 4)      # drop the first cycle
@@ -141,11 +151,20 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
     neg = c[ph < 0]
     depth = (float(pos.mean()) - float(neg.mean())
              if len(pos) and len(neg) else 0.0)
+    dif = np.asarray(differential[warm:warm + len(ph)], float)
+    dph = ph[:len(dif)]
+    dep_hz = (float(dif[dph > 0].mean()) - float(dif[dph < 0].mean())
+              if len(dif) and (dph > 0).any() and (dph < 0).any() else 0.0)
     return {"imposed": imposed, "seed": seed,
             "modulation": depth,
+            "modulation_hz": dep_hz,
             "yaw_pos": float(pos.mean()) if len(pos) else 0.0,
             "yaw_neg": float(neg.mean()) if len(neg) else 0.0,
             "n": len(c)}
+
+
+def yaw_pair_label(src: str) -> str:
+    return "DNp15" if src == "DNp15" else "DNa02"
 
 
 def run_retry(*a, attempts: int = 3, **kw) -> dict:
@@ -243,7 +262,9 @@ def main() -> int:
                 ys.append(r["modulation"])
                 rows.append(r)
             print(f"  drum {imp:+6.1f} deg/tic -> yaw modulation "
-                  f"{np.mean(per):+8.4f} +- {np.std(per):.4f}")
+                  f"{np.mean(per):+8.4f} +- {np.std(per):.4f}"
+                  f"   {yaw_pair_label(args.yaw_source)} L-R "
+                  f"{np.mean([r['modulation_hz'] for r in rows[-args.seeds:]]):+8.3f} Hz")
         b, se = slope(xs, ys)
         out[name] = {"slope": b, "se": se, "rows": rows}
         verdict = ("OPPOSES (optomotor sign)" if b < -2 * se

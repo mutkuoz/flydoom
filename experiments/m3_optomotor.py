@@ -449,7 +449,8 @@ def per_cell_dsi(args) -> int:
         g.signed_syn = (g.signed_syn * gm).astype(np.float32)
         print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
                     f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
-    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")),
+                          eye_map=args.eye_map)
     graded = _apply_spiking_t4(g.graded_mask(ann), g, ann, args)
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
     net = _net_for(g, ann, args, edge_delay, graded)
@@ -571,7 +572,8 @@ def dsi_grid(args) -> int:
         g.signed_syn = (g.signed_syn * gm).astype(np.float32)
         print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
                     f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
-    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")),
+                          eye_map=args.eye_map)
     graded = _apply_spiking_t4(g.graded_mask(ann), g, ann, args)
     ceiling = config.GRADED_MAX_RATE
 
@@ -777,6 +779,12 @@ def main() -> int:
                     help="serialise the --dsi-grid measurement. The table and "
                          "figure in the write-up are generated from this file, "
                          "so they cannot drift from the run.")
+    ap.add_argument("--eye-map", default="lattice",
+                    choices=["lattice", "anatomical"],
+                    help="where each ommatidial column looks. 'anatomical' "
+                         "reads the lattice with the axes the wiring and the "
+                         "published eye map agree on, and mirrors the eyes; "
+                         "see flydoom/retina.py and m16_eye_axes.py.")
     ap.add_argument("--device", default=(os.environ.get("FLYDOOM_DEVICE")
                              or ("cuda" if torch.cuda.is_available()
                                  else "cpu")))
@@ -802,7 +810,8 @@ def main() -> int:
         g.signed_syn = (g.signed_syn * gm).astype(np.float32)
         print(paint(f"ABLATION: gain x{args.gain_onto_t4:g} onto T4/T5 only "
                     f"({int((gm != 1.0).sum()):,} edges)", "1;33"))
-    retina = Retina.build(g, ann, site=tuple(args.site.split("+")))
+    retina = Retina.build(g, ann, site=tuple(args.site.split("+")),
+                          eye_map=args.eye_map)
     edge_delay = g.edge_delay_steps(ann, config.DT, t_slow=args.slow_delay * 1e-3)
     graded = g.graded_mask(ann) if args.graded else None
     graded = _apply_spiking_t4(graded, g, ann, args)

@@ -1,0 +1,14 @@
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:299: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:816.)
+  m = torch.sparse_coo_tensor(
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  mats.append(m.to_sparse_csr())
+
+=== mirrored ===
+  drum   +0.0 deg/tic -> yaw modulation  -0.3900 +- 0.2589
+  drum   +1.0 deg/tic -> yaw modulation  +0.8664 +- 0.3053
+  drum   +2.0 deg/tic -> yaw modulation  +0.6286 +- 0.1659
+  drum   +4.0 deg/tic -> yaw modulation  +0.2964 +- 0.1747
+  drum   +8.0 deg/tic -> yaw modulation  -0.2121 +- 0.1748
+  slope -0.0489 +- 0.0341   no slope
+
+  wrote paper/data/drum_anat/B_mirrored.json

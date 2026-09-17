@@ -269,8 +269,15 @@ straight produces a fake one — and then the steering is applied backwards.
 Both fixes are **opt-in** (`eye_map="anatomical"`, `fixed_turn_sign=True`), so with the
 defaults every earlier result reproduces bit for bit — **including everything above**. That
 is the honest status of section 4: those numbers are real, and they were measured through an
-interface with one eye reversed. Re-measuring on the corrected interface is the work in
-progress, and the first pass is in [`paper/data/drum_anat/`](paper/data/drum_anat).
+interface with one eye reversed.
+
+**Did fixing them produce the reflex? No.** Tethered in a spinning drum — commands recorded
+but not executed, exactly how this is measured in real flies — the fly's steering is flat at
+both the command and the neuron level, and mirroring its eyes doesn't reverse anything. What
+the fix *does* do is double the direction signal at the horizontal system (1.6 → 3.4 Hz),
+which is still 3 Hz against a standing left-right imbalance of ~20 Hz. The limit is the one
+in §2, not the interface: per-cell selectivity capped near 0.08 where a fly needs ~0.5. Full
+numbers: [`paper/data/drum_anat/NOTE.txt`](paper/data/drum_anat/NOTE.txt).
 
 ---
 

@@ -1,0 +1,14 @@
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:299: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:816.)
+  m = torch.sparse_coo_tensor(
+/home/mutkuoz/Documents/flydoom/flydoom/lif.py:301: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  mats.append(m.to_sparse_csr())
+
+=== intact ===
+  drum   +0.0 deg/tic -> yaw modulation  -0.2012 +- 0.2128   DNp15 L-R   -0.144 Hz
+  drum   +1.0 deg/tic -> yaw modulation  -0.1381 +- 0.2016   DNp15 L-R   +0.244 Hz
+  drum   +2.0 deg/tic -> yaw modulation  -0.1117 +- 0.2010   DNp15 L-R   +0.058 Hz
+  drum   +4.0 deg/tic -> yaw modulation  +0.1898 +- 0.1808   DNp15 L-R   -0.282 Hz
+  drum   +8.0 deg/tic -> yaw modulation  -0.2498 +- 0.2051   DNp15 L-R   +0.053 Hz
+  slope -0.0017 +- 0.0129   no slope
+
+  wrote paper/data/drum_anat/OL_B_intact.json
