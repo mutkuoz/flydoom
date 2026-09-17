@@ -90,7 +90,7 @@ class Recorder:
     def __init__(self, retina, width: int, height: int, fps: int,
                  out: Path, history_s: float = 4.0,
                  screen_shape: tuple = (240, 320), cameras: tuple = (0.0,),
-                 steer: str = "DNa02"):
+                 steer: str = "DNa02", splay_deg: float = 40.0):
         self.fps = fps
         self.steer = steer
         # With side views the picture is a panorama, left to right, and gets
@@ -120,7 +120,7 @@ class Recorder:
                 hspace=0.24, wspace=0.34,
                 left=0.012, right=0.965, top=0.885, bottom=0.085,
             )
-            slot = {"screen": gs[0, :], "eyes": (gs[1, 0], gs[1, 1]),
+            slot = {"screen": gs[0, :], "eyes_span": gs[1, 0:2],
                     "pop": gs[1, 2], "steer": gs[1, 3], "smell": gs[1, 4],
                     "map": gs[1, 5]}
         else:
@@ -130,10 +130,8 @@ class Recorder:
                 hspace=0.42, wspace=0.34,
                 left=0.010, right=0.960, top=0.875, bottom=0.125,
             )
-            # The eyes share the whole top-right band rather than sitting in
-            # two of the three bottom-row columns, which left a hole.
-            eyes_gs = gs[0, 1:5].subgridspec(1, 2, wspace=0.10)
-            slot = {"screen": gs[:, 0], "eyes": (eyes_gs[0, 0], eyes_gs[0, 1]),
+            # The fly's view takes the whole top-right band.
+            slot = {"screen": gs[:, 0], "eyes_span": gs[0, 1:5],
                     "pop": gs[1, 1], "steer": gs[1, 2], "smell": gs[1, 3],
                     "map": gs[1, 4]}
 
@@ -167,31 +165,48 @@ class Recorder:
             ax.set_title("what Doom draws", loc="left", color=FG, pad=6)
 
         # --- what the fly sees ------------------------------------------
-        cols = retina.column_arrays()
+        # One panel for both eyes, each lens drawn where it points (azimuth
+        # right, elevation up), so the picture is the fly's view of the scene
+        # rather than the shape of its lattice.
+        a = self.fig.add_subplot(slot["eyes_span"])
+        a.set_xlim(-185, 185)
+        a.set_ylim(-92, 95)
+        a.set_aspect("equal")
+        self.fig.canvas.draw()
+        box = a.get_window_extent()
+        px_per_deg = min(box.width / 370.0, box.height / 187.0)
+        cmap = plt.get_cmap("magma").copy()
+        cmap.set_bad("#3a3a3a")          # no camera sees this lens
         self.eye_art = {}
-        for k, side in enumerate(("left", "right")):
-            a = self.fig.add_subplot(slot["eyes"][k])
-            p_, q_, _, _ = cols[side]
-            x = p_ + q_ / 2.0
-            y = q_ * SQRT3 / 2.0
-            # Column luminance lives in 0-0.42, not 0-1; scaling to the real
-            # range is the difference between visible structure and flat wash.
-            cmap = plt.get_cmap("magma").copy()
-            cmap.set_bad("#3a3a3a")          # behind the camera
+        n_cols = 0
+        for side, eye in retina.eyes.items():
+            x = eye.azimuth_deg + retina.gaze_deg(side, splay_deg)
+            y = eye.elevation_deg
+            # neighbour spacing sets the hexagon size, so they tile
+            d = np.hypot(x[:, None] - x[None, :], y[:, None] - y[None, :])
+            np.fill_diagonal(d, np.inf)
+            spacing = float(np.median(d.min(axis=1)))
+            size = (spacing * px_per_deg * 72.0 / dpi * 1.1) ** 2
             # Square-root scale, display only: under a daylight sky the ground
             # is a few percent of the sky's brightness and reads as black on a
             # linear scale, though the retina sees its structure fine.
             self.eye_art[side] = a.scatter(
                 x, y, c=np.full(len(x), 0.0), cmap=cmap, plotnonfinite=True,
-                norm=PowerNorm(0.5, vmin=0.0, vmax=1.0), s=7, marker="h",
+                norm=PowerNorm(0.5, vmin=0.0, vmax=1.0), s=size, marker="h",
                 linewidths=0,
             )
-            a.set_aspect("equal")
-            a.set_title(f"{side} eye \u00b7 {len(x)} columns", color=FG,
-                        fontsize=8.5, pad=4)
-            a.set_xticks([]); a.set_yticks([])
-            for sp in a.spines.values():
-                sp.set_visible(False)
+            n_cols += len(x)
+        for v in (0.0,):
+            a.axhline(v, color=EDGE, lw=0.5, zorder=0)
+        a.axvline(0.0, color=EDGE, lw=0.5, zorder=0)
+        a.set_title(f"what the fly sees \u00b7 both eyes, {n_cols} lenses, "
+                    f"each where it points", color=FG, fontsize=8.5, pad=4,
+                    loc="left")
+        a.set_xticks([-90, 0, 90]); a.set_xticklabels(["left", "ahead", "right"],
+                                                       fontsize=7)
+        a.set_yticks([])
+        for sp in a.spines.values():
+            sp.set_visible(False)
 
         # --- population rates -------------------------------------------
         a = self.fig.add_subplot(slot["pop"])
@@ -486,6 +501,12 @@ def main() -> int:
                     help="the full eye: 170 deg cameras facing front, left "
                          "and right, corrected lens geometry and per-lens "
                          "blur, so every lens of both eyes sees the world.")
+    ap.add_argument("--eye-map", default="lattice",
+                    choices=["lattice", "anatomical"],
+                    help="where each lens looks; see AgentConfig.eye_map")
+    ap.add_argument("--fixed-turn", action="store_true",
+                    help="steer toward the more active side; see "
+                         "MotorConfig.fixed_turn_sign")
     ap.add_argument("--no-gif", action="store_true")
     ap.add_argument("--gif-fps", type=int, default=10)
     ap.add_argument("--gif-width", type=int, default=640)
@@ -520,7 +541,9 @@ def main() -> int:
                    gnomonic=True, pyramid_blur=True, side_views=(90.0, -90.0))
     akw = dict(
         doom=DoomConfig(**dkw),
-        motor=MotorConfig(yaw_source=args.yaw_source),
+        motor=MotorConfig(yaw_source=args.yaw_source,
+                          fixed_turn_sign=args.fixed_turn),
+        eye_map=args.eye_map,
         smell=not args.no_smell,
         device=args.device,
         optic_gain=args.optic_gain,
@@ -542,7 +565,8 @@ def main() -> int:
                    args.height if not dc.side_views else max(args.height, 1000),
                    TICS_PER_SECOND, args.out,
                    screen_shape=(dc.height, dc.width),
-                   cameras=agent.vision.cameras, steer=args.yaw_source)
+                   cameras=agent.vision.cameras, steer=args.yaw_source,
+                   splay_deg=dc.splay_deg)
     print(f"canvas {rec.size[0]}x{rec.size[1]}")
 
     state = {"n": 0, "episode": 0}

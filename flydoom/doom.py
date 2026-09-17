@@ -314,7 +314,7 @@ class DoomVision:
         for side, eye in self.retina.eyes.items():
             if not eye.neuron_idx.size:
                 continue
-            gaze = -cfg.splay_deg if side == "left" else cfg.splay_deg
+            gaze = self.retina.gaze_deg(side, cfg.splay_deg)
             az = eye.azimuth_deg[eye.neuron_column] + gaze
             el = eye.elevation_deg[eye.neuron_column]
             if mirror:
@@ -394,6 +394,10 @@ class DoomVision:
 
     def _column_spacing_deg(self) -> float:
         eye = next(iter(self.retina.eyes.values()))
+        if self.retina.eye_map == "anatomical":
+            from .retina import EYE_AZ_BACK_DEG, EYE_AZ_FRONT_DEG, eye_hv
+            h, _ = eye_hv(eye.p, eye.q)
+            return (EYE_AZ_BACK_DEG - EYE_AZ_FRONT_DEG) / max(np.ptp(h), 1e-9)
         cx, cy = eye.cartesian()
         span_units = max(cx.max() - cx.min(), 1e-9)
         from .retina import EYE_FOV_AZIMUTH_DEG
@@ -561,8 +565,10 @@ class DoomVision:
             f"  {self.n_inside:,} of {self.n_total:,} columns fall inside the "
             f"viewport ({100 * self.n_inside / max(self.n_total, 1):.0f}%); "
             f"the rest see mean luminance\n"
-            f"  eyes splayed +/-{self.cfg.splay_deg:.0f} deg, so the two eyes "
-            f"see genuinely different views\n"
+            + (f"  anatomical eye map: eyes placed and mirrored as in the fly\n"
+               if self.retina.eye_map == "anatomical" else
+               f"  eyes splayed +/-{self.cfg.splay_deg:.0f} deg, so the two eyes "
+               f"see genuinely different views\n") +
             f"  {self.n_sustained:,} sustained (L3) and "
             f"{self.idx.numel() - self.n_sustained:,} transient (L1/L2) inputs"
         )

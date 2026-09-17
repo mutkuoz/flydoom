@@ -69,6 +69,41 @@ EYE_FOV_AZIMUTH_DEG = 170.0
 EYE_FOV_ELEVATION_DEG = 150.0
 INTEROMMATIDIAL_DEG = 5.0   # nominal, for reporting only
 
+# ---- the anatomical eye map (eye_map="anatomical") -------------------------
+#
+# The note above is right that FlyWire ships no eye map, but wrong about how
+# far the lattice can be trusted, and the "lattice" map below it has two
+# errors, both MEASURED (experiments/m16_eye_axes.py):
+#
+#   1. (p, q) are axial hex coordinates with axes 120 degrees apart, not 60.
+#      Read at 60 each eye is a 51 x 17 sliver; read at 120 it is 32 x 27,
+#      the shape of an eye, and the four T4/T5 preferred directions come out
+#      near-perpendicular (95 degrees) instead of 110. OpticLobe.jl, from the
+#      lab that made the coordinates, documents 120 ("+p anterodorsal, +q
+#      posterodorsal").
+#   2. Both hemispheres use the same anatomical convention, so one eye's map
+#      has to be mirrored. The lattice map mirrors neither: one eye saw the
+#      world backwards.
+#
+# The axes follow Zhao et al. 2025 ("Eye structure shapes neuron function in
+# Drosophila motion vision", Nature): +h = (q - p) sqrt(3)/2 points to
+# posterior MEDULLA, which "corresponds to anterior on the eye because of the
+# optic chiasm", and +v = (p + q)/2 points dorsal. The wiring agrees
+# independently: T4 and T5 preferred directions, estimated from where their
+# tip and base inputs sit, put front-to-back along -h and upward along +v in
+# both eyes, T4 and T5 within 1-13 degrees of each other; and the R7/R8
+# columns feeding the dorsal-rim DmDRA cells lie on the +v side.
+#
+# Extent, from the same paper (after Kemppainen et al. 2022): each eye reaches
+# less than 10 degrees into the opposite hemifield in front and about 155
+# behind, and from 70 below the horizon to directly above. The lattice is
+# scaled linearly onto that box; real spacing is finest at the front
+# equator, which this does not model.
+EYE_AZ_FRONT_DEG = -10.0   # frontal edge, measured toward the other side
+EYE_AZ_BACK_DEG = 155.0
+EYE_EL_MIN_DEG = -70.0
+EYE_EL_MAX_DEG = 90.0
+
 SQRT3_2 = math.sqrt(3.0) / 2.0
 
 # ---- Doom viewport geometry ------------------------------------------------
@@ -101,8 +136,35 @@ function rather than nearest-neighbour sampling, and this is that width."""
 
 
 def hex_to_cartesian(p: np.ndarray, q: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Axial hex coordinates to cartesian, in units of one ommatidium."""
+    """Axial hex coordinates to cartesian, in units of one ommatidium.
+
+    Reads the axes as 60 degrees apart, which the anatomical map shows is the
+    wrong convention for FlyWire's (p, q); kept for the lattice map, so
+    earlier results reproduce."""
     return p + q / 2.0, q * SQRT3_2
+
+
+def eye_hv(p: np.ndarray, q: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """FlyWire (p, q) to eye coordinates, in ommatidial spacings.
+
+    Axes 120 degrees apart. +h is anterior on the eye (posterior in the
+    medulla, across the chiasm), +v is dorsal. See the anatomical map note.
+    """
+    p = np.asarray(p, np.float64)
+    q = np.asarray(q, np.float64)
+    return (q - p) * SQRT3_2, (p + q) / 2.0
+
+
+def anatomical_directions(p, q, side: str) -> tuple[np.ndarray, np.ndarray]:
+    """Viewing direction of each column, head frame, positive azimuth right."""
+    h, v = eye_hv(p, q)
+    s_h = (EYE_AZ_BACK_DEG - EYE_AZ_FRONT_DEG) / max(np.ptp(h), 1e-9)
+    s_v = (EYE_EL_MAX_DEG - EYE_EL_MIN_DEG) / max(np.ptp(v), 1e-9)
+    # lateral angle: 0 at the back edge, growing toward the front
+    lateral = EYE_AZ_BACK_DEG - (h - h.min()) * s_h
+    az = -lateral if side == "left" else lateral
+    el = EYE_EL_MIN_DEG + (v - v.min()) * s_v
+    return az, el
 
 
 TAU_ADAPT = 0.25
@@ -182,7 +244,10 @@ class Eye:
     column_ids: np.ndarray          # int32[C]
     p: np.ndarray                   # int32[C]
     q: np.ndarray                   # int32[C]
-    azimuth_deg: np.ndarray         # float32[C]  negative = toward the midline
+    azimuth_deg: np.ndarray         # float32[C]
+    """lattice map: relative to the eye's own gaze, positive = right, the
+    same orientation for both eyes. anatomical map: absolute, in the head's
+    frame, positive = right, the left eye mirrored."""
     elevation_deg: np.ndarray       # float32[C]
 
     # neuron -> column mapping for the chosen injection site
@@ -224,11 +289,23 @@ class Retina:
     the optic flow that would un-wash it. Keeping L3 sustained means a static
     scene still produces spatially structured drive, so the loop can start."""
 
-    def __init__(self, eyes: dict[str, Eye], site: str, n_neurons: int) -> None:
+    def __init__(self, eyes: dict[str, Eye], site: str, n_neurons: int,
+                 eye_map: str = "lattice") -> None:
         self.eyes = eyes
         self.site = site
         self.n_neurons = n_neurons
         self.site_of: dict[int, str] = {}
+        self.eye_map = eye_map
+
+    def gaze_deg(self, side: str, splay_deg: float) -> float:
+        """Offset to add to an eye's azimuth to place it in the head.
+
+        The lattice map is relative to each eye's gaze, which the splay
+        supplies. The anatomical map is already absolute.
+        """
+        if self.eye_map == "anatomical":
+            return 0.0
+        return -splay_deg if side == "left" else splay_deg
 
     def sustained_mask(self, neuron_idx) -> np.ndarray:
         """True where a driven neuron belongs to a sustained line."""
@@ -263,7 +340,10 @@ class Retina:
         ann: AnnotationTable | None = None,
         raw_dir: Path | str = config.RAW_DIR,
         site: str | tuple[str, ...] = ("L1", "L2", "L3"),
+        eye_map: str = "lattice",
     ) -> Retina:
+        if eye_map not in ("lattice", "anatomical"):
+            raise ValueError(f"eye_map must be lattice or anatomical, not {eye_map!r}")
         raw = Path(raw_dir)
         ann = ann or AnnotationTable.load(raw)
 
@@ -289,14 +369,18 @@ class Retina:
             )
             p = sub["p"].to_numpy().astype(np.int32)
             q = sub["q"].to_numpy().astype(np.int32)
-            cx, cy = hex_to_cartesian(p.astype(np.float64), q.astype(np.float64))
-            # anisotropic scale, calibrated to the published eye FOV -- see the
-            # note at the top of this module
-            sx = EYE_FOV_AZIMUTH_DEG / max(cx.max() - cx.min(), 1e-9)
-            sy = EYE_FOV_ELEVATION_DEG / max(cy.max() - cy.min(), 1e-9)
-            # centre each eye on its own mean so azimuth is relative to gaze
-            az = (cx - cx.mean()) * sx
-            el = (cy - cy.mean()) * sy
+            if eye_map == "anatomical":
+                az, el = anatomical_directions(p, q, side)
+            else:
+                cx, cy = hex_to_cartesian(p.astype(np.float64),
+                                          q.astype(np.float64))
+                # anisotropic scale, calibrated to the published eye FOV --
+                # see the note at the top of this module
+                sx = EYE_FOV_AZIMUTH_DEG / max(cx.max() - cx.min(), 1e-9)
+                sy = EYE_FOV_ELEVATION_DEG / max(cy.max() - cy.min(), 1e-9)
+                # centre each eye on its own mean so azimuth is relative to gaze
+                az = (cx - cx.mean()) * sx
+                el = (cy - cy.mean()) * sy
             eyes[side] = Eye(
                 side=side,
                 column_ids=sub["column_id"].to_numpy().astype(np.int32),
@@ -340,7 +424,7 @@ class Retina:
             eye.neuron_idx = np.asarray(idx, dtype=np.int32)
             eye.neuron_column = np.asarray(col, dtype=np.int32)
 
-        obj = cls(eyes, "+".join(sites), graph.n_neurons)
+        obj = cls(eyes, "+".join(sites), graph.n_neurons, eye_map=eye_map)
         obj.site_of = site_of
         return obj
 
@@ -512,7 +596,7 @@ class Retina:
         for side, eye in self.eyes.items():
             if not eye.neuron_idx.size:
                 continue
-            gaze = -splay_deg if side == "left" else splay_deg
+            gaze = self.gaze_deg(side, splay_deg)
             idx.append(eye.neuron_idx)
             az.append(eye.azimuth_deg[eye.neuron_column] + gaze)
             el.append(eye.elevation_deg[eye.neuron_column])
@@ -545,8 +629,15 @@ class Retina:
                 f"{eye.neuron_idx.size:>5} neurons over {covered:>4} columns   "
                 f"FOV {az:.0f} x {el:.0f} deg"
             )
-        lines.append(
-            f"  FOV calibrated to {EYE_FOV_AZIMUTH_DEG:.0f} x "
-            f"{EYE_FOV_ELEVATION_DEG:.0f} deg per eye (anisotropic scale; "
-            f"absolute angles inherit this)")
+        if self.eye_map == "anatomical":
+            lines.append(
+                f"  anatomical eye map: 120 deg hex axes, +h front, +v up, "
+                f"eyes mirrored; each eye {EYE_AZ_FRONT_DEG:+.0f} to "
+                f"{EYE_AZ_BACK_DEG:.0f} deg azimuth, {EYE_EL_MIN_DEG:.0f} to "
+                f"{EYE_EL_MAX_DEG:+.0f} elevation")
+        else:
+            lines.append(
+                f"  FOV calibrated to {EYE_FOV_AZIMUTH_DEG:.0f} x "
+                f"{EYE_FOV_ELEVATION_DEG:.0f} deg per eye (anisotropic scale; "
+                f"absolute angles inherit this)")
         return "\n".join(lines)

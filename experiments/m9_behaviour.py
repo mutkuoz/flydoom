@@ -257,7 +257,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               motor_kw: dict | None = None,
               mirror: bool = False,
               blind: bool = False,
-              wide: bool = False) -> tuple[dict, dict]:
+              wide: bool = False,
+              eye_map: str = "lattice") -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -271,6 +272,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         motor=MotorConfig(**mk),
         smell=smell,
         shuffle_graph=shuffled,
+        eye_map=eye_map,
         seed=seed,
         bias_mv=bias_mv,
         optic_gain=optic_gain,
@@ -449,6 +451,12 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--eye-map", default="lattice",
+                    choices=["lattice", "anatomical"],
+                    help="where each lens looks; see AgentConfig.eye_map")
+    ap.add_argument("--fixed-turn", action="store_true",
+                    help="steer toward the more active side; see "
+                         "MotorConfig.fixed_turn_sign")
     ap.add_argument("--wide", action="store_true",
                     help="the full eye (WIDE_EYE). Rendering only: the "
                          "random arm plays the same level either way.")
@@ -519,12 +527,16 @@ def main() -> int:
                                   ("lateral_gain", args.lateral_gain),
                                   ("deadzone_hz", args.deadzone_hz))
                 if v is not None}
+    if args.fixed_turn:
+        motor_kw["fixed_turn_sign"] = True
     record["arms"] = arms
     record["optic_gain"] = args.optic_gain
     record["spiking_t4"] = args.spiking_t4
     record["yaw_source"] = args.yaw_source
     record["touch"] = args.touch
     record["wide"] = args.wide
+    record["eye_map"] = args.eye_map
+    record["fixed_turn"] = args.fixed_turn
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
     record["blind"] = args.blind
@@ -541,14 +553,15 @@ def main() -> int:
                                     args.optic_gain, args.spiking_t4,
                                     args.touch,
                                     motor_kw, args.mirror, args.blind,
-                                    args.wide)
+                                    args.wide, args.eye_map)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
                                       args.bias, args.smell,
                                       args.tau_baseline, args.optic_gain,
                                       args.spiking_t4, args.touch, motor_kw,
-                                      args.mirror, args.blind, args.wide)
+                                      args.mirror, args.blind, args.wide,
+                                      args.eye_map)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:

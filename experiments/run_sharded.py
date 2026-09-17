@@ -79,6 +79,8 @@ def main() -> int:
     ap.add_argument("--spiking-t4", action="store_true")
     ap.add_argument("--touch", action="store_true")
     ap.add_argument("--wide", action="store_true")
+    ap.add_argument("--eye-map", default="lattice")
+    ap.add_argument("--fixed-turn", action="store_true")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
     ap.add_argument("--yaw-max", type=float, default=None)
@@ -115,6 +117,10 @@ def main() -> int:
         base.append("--touch")
     if args.wide:
         base.append("--wide")
+    if args.eye_map != "lattice":
+        base += ["--eye-map", args.eye_map]
+    if args.fixed_turn:
+        base.append("--fixed-turn")
     if args.yaw_max is not None:
         base += ["--yaw-max", str(args.yaw_max)]
     if args.forward_max is not None:

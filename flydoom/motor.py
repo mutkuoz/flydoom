@@ -134,6 +134,17 @@ class MotorConfig:
     """Which bilateral descending pair supplies yaw: "DNa02" (the reported
     model) or "DNp15". See MotorDecoder.yaw_pair for why the choice matters."""
 
+    fixed_turn_sign: bool = False
+    """Turn toward the more active side, as intended. OFF reproduces every
+    earlier result, which turned AWAY from it.
+
+    decode() assumed ViZDoom's TURN_LEFT_RIGHT_DELTA is positive for a left
+    turn. MEASURED: +10 lowers the heading by 10 degrees and slides the
+    rendered scene 28 px to the left, which is a RIGHT turn. So left-minus-
+    right, sent straight through, turned the agent away from the side whose
+    steering neuron fired harder. DNa02 (Rayshubskiy et al.) and DNp15, the
+    HS-driven DNHS1, both steer toward their own side."""
+
     tau_baseline: float = 3.0
     """Seconds. Time constant for adapting out a CONSTANT command offset.
 
@@ -300,14 +311,17 @@ class MotorDecoder:
         r = self.rates
 
         # --- yaw: the L-R differential IS the steering command.
-        # Sign convention: ViZDoom's TURN_LEFT_RIGHT_DELTA is positive for a
-        # LEFT turn. A fly turns toward the side whose DNa02 is more active,
-        # so left-minus-right maps straight through.
+        # A fly turns toward the side whose steering neuron is more active.
+        # ViZDoom's TURN_LEFT_RIGHT_DELTA is positive for a RIGHT turn
+        # (measured; the original comment here said left), so the command is
+        # right-minus-left. Legacy runs send left-minus-right; see
+        # MotorConfig.fixed_turn_sign.
         self._seen_tics += 1
         warming = self._seen_tics <= c.warmup_tics
 
         yl, yr = self.yaw_pair()
-        raw = self._centre("yaw", r.get(yl, 0.0) - r.get(yr, 0.0), warming)
+        lr = r.get(yl, 0.0) - r.get(yr, 0.0)
+        raw = self._centre("yaw", -lr if c.fixed_turn_sign else lr, warming)
         diff = self._deadzone(raw)
         yaw = float(np.clip(diff * c.yaw_gain, -c.yaw_max_deg, c.yaw_max_deg))
 

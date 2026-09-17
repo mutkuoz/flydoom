@@ -52,11 +52,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np  # noqa: E402
 
@@ -65,7 +67,9 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
             mirror: bool = False, blind: bool = False,
             yaw_source: str = "DNp15", optic_gain: float = 16.0,
             scenario: str = "defend_the_center",
-            half_period: int = 70) -> dict:
+            half_period: int = 70, eye_map: str = "lattice",
+            wide: bool = False, fixed_turn: bool = False,
+            open_loop: bool = False) -> dict:
     """One episode with a SQUARE-WAVE rotation added to the agent's action.
 
     `half_period` is in tics; 70 at 35 tics/s is a 4 s cycle, 0.25 Hz, which
@@ -75,10 +79,13 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
     from flydoom.doom import DoomConfig
     from flydoom.motor import MotorConfig
 
+    from m9_behaviour import WIDE_EYE
     cfg = AgentConfig(
         device=device, seed=seed, spiking_t4=True, optic_gain=optic_gain,
-        motor=MotorConfig(yaw_source=yaw_source),
-        doom=DoomConfig(labels=True, seed=seed, scenario=scenario),
+        eye_map=eye_map,
+        motor=MotorConfig(yaw_source=yaw_source, fixed_turn_sign=fixed_turn),
+        doom=DoomConfig(labels=True, seed=seed, scenario=scenario,
+                        **(WIDE_EYE if wide else {})),
     )
     agent = FlyDoomAgent(cfg)
     if mirror:
@@ -109,7 +116,14 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
         commanded.append(float(actions[0]))
         phase.append(sign)
         actions = list(actions)
-        actions[0] = actions[0] + imposed * sign
+        if open_loop:
+            # Tethered: the brain's commands are recorded and discarded, and
+            # the body only turns as the drum dictates. No walking either,
+            # so the retinal image is the drum's alone.
+            actions = [0.0] * len(actions)
+            actions[0] = imposed * sign
+        else:
+            actions[0] = actions[0] + imposed * sign
         tick["t"] += 1
         return orig_step(actions, skip)
     agent.doom.step = step
@@ -132,6 +146,21 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
             "yaw_pos": float(pos.mean()) if len(pos) else 0.0,
             "yaw_neg": float(neg.mean()) if len(neg) else 0.0,
             "n": len(c)}
+
+
+def run_retry(*a, attempts: int = 3, **kw) -> dict:
+    """run_one, retried. Under load a ViZDoom engine occasionally exits on
+    new_episode and takes the whole sweep with it; the run is deterministic
+    per seed, so a retry costs one episode rather than the remaining hours."""
+    for k in range(attempts):
+        try:
+            return run_one(*a, **kw)
+        except Exception as e:                       # noqa: BLE001
+            if k == attempts - 1:
+                raise
+            print(f"    engine failed ({type(e).__name__}), retry {k + 1}",
+                  flush=True)
+            time.sleep(5)
 
 
 def slope(xs, ys):
@@ -161,6 +190,19 @@ def main() -> int:
     ap.add_argument("--yaw-source", default="DNp15",
                     choices=["DNa02", "DNp15"])
     ap.add_argument("--optic-gain", type=float, default=16.0)
+    ap.add_argument("--eye-map", default="lattice",
+                    choices=["lattice", "anatomical"])
+    ap.add_argument("--wide", action="store_true",
+                    help="the full eye; see m9_behaviour.WIDE_EYE")
+    ap.add_argument("--fixed-turn", action="store_true",
+                    help="steer toward the more active side; see "
+                         "MotorConfig.fixed_turn_sign")
+    ap.add_argument("--open-loop", action="store_true",
+                    help="tethered fly: the brain's commands are recorded "
+                         "but not executed, and it does not walk. Removes "
+                         "the closed-loop asymmetry in which a counter-turn "
+                         "cancels its own stimulus and a wrong-way turn "
+                         "amplifies it.")
     ap.add_argument("--controls", action="store_true",
                     help="also run mirrored and blind arms")
     ap.add_argument("--arm", default=None,
@@ -181,16 +223,21 @@ def main() -> int:
         if args.controls:
             arms += [("mirrored", True, False), ("blind", False, True)]
 
-    out = {}
+    out = {"eye_map": args.eye_map, "wide": args.wide,
+           "fixed_turn": args.fixed_turn, "yaw_source": args.yaw_source,
+           "open_loop": args.open_loop,
+           "seeds": args.seeds, "tics": args.tics, "argv": sys.argv[1:]}
     for name, mir, bl in arms:
         xs, ys, rows = [], [], []
         print(f"\n=== {name} ===")
         for imp in imposed:
             per = []
             for s in range(args.seeds):
-                r = run_one(imp, s, args.tics, args.device, mir, bl,
+                r = run_retry(imp, s, args.tics, args.device, mir, bl,
                             args.yaw_source, args.optic_gain,
-                            args.scenario, args.half_period)
+                            args.scenario, args.half_period,
+                            args.eye_map, args.wide, args.fixed_turn,
+                            args.open_loop)
                 per.append(r["modulation"])
                 xs.append(imp)
                 ys.append(r["modulation"])

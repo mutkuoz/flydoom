@@ -71,6 +71,11 @@ class AgentConfig:
     an agent reacting to enemies here is not evidence the connectome detects
     enemies. M6 and M7 are only valid with this off."""
     site: tuple[str, ...] = ("L1", "L2", "L3")
+    eye_map: str = "lattice"
+    """Where each ommatidial column looks. "lattice" is the original stretch of
+    the lattice, kept so earlier results reproduce; "anatomical" reads the
+    lattice with the correct axes, mirrors the eyes and places them where a
+    real fly's eyes point. See retina.py."""
     graded: bool = True
 
     compartments: bool = False
@@ -141,7 +146,8 @@ class FlyDoomAgent:
         c = self.cfg
         self.graph = ConnectomeGraph.load()
         self.ann = AnnotationTable.load(config.RAW_DIR)
-        self.retina = Retina.build(self.graph, self.ann, site=c.site)
+        self.retina = Retina.build(self.graph, self.ann, site=c.site,
+                                   eye_map=c.eye_map)
 
         if c.shuffle_graph:
             rng = np.random.default_rng(c.shuffle_seed)
