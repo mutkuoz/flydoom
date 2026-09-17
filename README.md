@@ -311,6 +311,27 @@ Three senses, three different failures: **vision** computes a signal that lands 
 don't read, **touch** lands on the right neuron but can't tell left from right, and **smell**
 lands on the right neuron *and* knows its side — which is why smell is the one that works.
 
+### Watch the best version
+
+[`media/best_comparison.mp4`](media/best_comparison.mp4) — three brains on **the same level**, stacked:
+
+| row | what it is |
+|---|---|
+| top | best version, eyes working |
+| middle | the original model |
+| bottom | best version, eyes mirrored left-to-right |
+
+Look at the honeycomb "eye" panels. In the original model they're dim — its visual system was
+barely firing. In the best version they're lit up. The mirrored fly sees the same picture as
+the top one; only the wiring from its eyes into its brain is flipped.
+
+In this particular 30 seconds the mirrored fly loses 3 lives (first at 9.3 s) against 2 for
+the other two (first at 14.8 s for the best version). That's one level, so treat it as an
+illustration — the 30-level numbers below are the evidence.
+
+Separate clips: [`best_eyes.mp4`](media/best_eyes.mp4) ·
+[`original.mp4`](media/original.mp4) · [`best_mirrored.mp4`](media/best_mirrored.mp4)
+
 **And then, finally, something that survived its controls.** With every fix applied —
 spiking motion detectors, the optic lobe actually switched on, and steering read from the
 optomotor neuron instead of the navigation one — the fly's commands beat a random agent with

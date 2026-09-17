@@ -414,6 +414,17 @@ def main() -> int:
     ap.add_argument("--label", default=None,
                     help="caption burned into the frame, to identify which "
                          "parameterisation a recording shows.")
+    ap.add_argument("--yaw-source", default="DNa02",
+                    choices=["DNa02", "DNp15"],
+                    help="descending pair that steers. DNp15 is the optomotor "
+                         "neuron and the one the vision-dependent result uses.")
+    ap.add_argument("--seed", type=int, default=None,
+                    help="environment seed, so two recordings share a level")
+    ap.add_argument("--mirror", action="store_true",
+                    help="flip the fly's retinal sampling left-to-right. The "
+                         "picture shown is unchanged; what the brain receives "
+                         "is reversed. This is the control that abolishes the "
+                         "behavioural advantage.")
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
@@ -442,16 +453,25 @@ def main() -> int:
     # Smell ON. It is off by default because M6/M7 are only valid without it,
     # but a clip recorded without it shows a fly with no nose, and the odour
     # channel drives the descending neurons harder than vision does.
-    agent = FlyDoomAgent(AgentConfig(
-        doom=DoomConfig(scenario=args.scenario, window=False,
-                        labels=not args.no_smell),
+    from flydoom.motor import MotorConfig
+    dkw = dict(scenario=args.scenario, window=False, labels=not args.no_smell)
+    if args.seed is not None:
+        dkw["seed"] = args.seed
+    akw = dict(
+        doom=DoomConfig(**dkw),
+        motor=MotorConfig(yaw_source=args.yaw_source),
         smell=not args.no_smell,
         device=args.device,
         optic_gain=args.optic_gain,
         spiking_t4=args.spiking_t4,
         bias_mv=args.bias,
         touch=args.touch,
-    ))
+    )
+    if args.seed is not None:
+        akw["seed"] = args.seed
+    agent = FlyDoomAgent(AgentConfig(**akw))
+    if args.mirror:
+        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
     print(agent.summary())
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
           f"after {args.warmup} warmup tics -> {args.out}")
