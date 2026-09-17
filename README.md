@@ -18,7 +18,9 @@ number in the project.
 </p>
 
 **Top:** three Doom cameras — left, ahead, right — covering the fly's whole field of view.
-**Bottom left:** what the fly actually receives, both eyes, each lens drawn where it points.
+**Bottom left:** what the fly actually receives — both eyes, each lens drawn where it points,
+showing contrast after adaptation, which is the quantity the eye sends on. (On raw
+brightness the same picture is two flat blobs: in this arena the sky reads 30× the ground.)
 **Then:** firing rates of the nerves that drive its body, the left-minus-right steering
 signal, the two odour channels, and a heading-up map of where it walked.
 

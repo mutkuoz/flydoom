@@ -27,7 +27,6 @@ import matplotlib  # noqa: E402
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.colors import PowerNorm  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import vizdoom as vzd  # noqa: E402
@@ -48,16 +47,6 @@ MUTED = "#8a9180"
 GREEN = "#7fa650"
 RUST = "#e0703f"
 TEAL = "#56aaae"
-
-LUM_WARMUP = 20
-"""Frames used to calibrate the eye colour scale before recording starts.
-
-The absolute luminance range depends on the whole input configuration --
-linearising gamma alone drops the mean from 0.196 to 0.048 -- so a hardcoded
-ceiling silently goes wrong whenever that changes and the eyes render as flat
-black. We take a percentile over a short warmup and then FREEZE it, because a
-scale that keeps re-fitting per frame makes the panels flicker and hides the
-very contrast changes they exist to show."""
 
 POPULATIONS = ["LC4", "LPLC2", "LC11", "BPN", "MDN",
                "DNa02_L", "DNa02_R", "DNp15_L", "DNp15_R",
@@ -187,21 +176,20 @@ class Recorder:
             np.fill_diagonal(d, np.inf)
             spacing = float(np.median(d.min(axis=1)))
             size = (spacing * px_per_deg * 72.0 / dpi * 1.1) ** 2
-            # Square-root scale, display only: under a daylight sky the ground
-            # is a few percent of the sky's brightness and reads as black on a
-            # linear scale, though the retina sees its structure fine.
+            # The drawn quantity is contrast after adaptation, which is
+            # already centred on 0.5, so it wants a linear scale rather than
+            # the square root a raw-brightness panel needed.
             self.eye_art[side] = a.scatter(
-                x, y, c=np.full(len(x), 0.0), cmap=cmap, plotnonfinite=True,
-                norm=PowerNorm(0.5, vmin=0.0, vmax=1.0), s=size, marker="h",
-                linewidths=0,
+                x, y, c=np.full(len(x), 0.5), cmap=cmap, plotnonfinite=True,
+                vmin=0.0, vmax=1.0, s=size, marker="h", linewidths=0,
             )
             n_cols += len(x)
         for v in (0.0,):
             a.axhline(v, color=EDGE, lw=0.5, zorder=0)
         a.axvline(0.0, color=EDGE, lw=0.5, zorder=0)
-        a.set_title(f"what the fly sees \u00b7 both eyes, {n_cols} lenses, "
-                    f"each where it points", color=FG, fontsize=8.5, pad=4,
-                    loc="left")
+        a.set_title(f"what the fly sees \u00b7 {n_cols} lenses, each where it "
+                    f"points \u00b7 contrast after adaptation", color=FG,
+                    fontsize=8.5, pad=4, loc="left")
         a.set_xticks([-90, 0, 90]); a.set_xticklabels(["left", "ahead", "right"],
                                                        fontsize=7)
         a.set_yticks([])
@@ -304,8 +292,6 @@ class Recorder:
             "139,255 neurons \u00b7 2.7M edges \u00b7 nothing trained",
             fontsize=7.5, color=MUTED, family="monospace", ha="right")
 
-        self.lum_scale = None
-        self._warm: list[float] = []
 
         self.fig.canvas.draw()
         h, w = np.asarray(self.fig.canvas.buffer_rgba()).shape[:2]
@@ -326,14 +312,9 @@ class Recorder:
                 frame = np.concatenate([frame[i, ::2, ::2] for i in self.order],
                                        axis=1)
             self.screen.set_data(frame)
-        if self.lum_scale is None:
-            self._warm.append(float(np.percentile(
-                np.concatenate([np.asarray(v, float)[np.isfinite(v)]
-                                for v in luminance.values()]), 99)))
-            if len(self._warm) >= LUM_WARMUP:
-                self.lum_scale = max(float(np.mean(self._warm)), 1e-3)
-                for art in self.eye_art.values():
-                    art.set_clim(0.0, self.lum_scale)
+        # No scale fitting: the adapted signal is contrast about 0.5 and the
+        # panel is drawn on a fixed 0-1 scale, so a lens's colour means the
+        # same thing in every frame and in every clip.
         for side, art in self.eye_art.items():
             if side in luminance:
                 art.set_array(np.asarray(luminance[side], float))
@@ -421,8 +402,26 @@ class Recorder:
         plt.close(self.fig)
 
 
-def per_column_luminance(agent):
-    lum = agent.last_luminance.detach().cpu().numpy()
+def per_column_luminance(agent, adapted: bool = True):
+    """What each ommatidial column sends on, per eye.
+
+    `adapted` gives the signal the lamina actually transmits: contrast against
+    each column's own running mean, which is what the network receives and what
+    a photoreceptor reports. Raw luminance is the wrong quantity to draw. In
+    this arena the sky reads 0.71 and the ground 0.023, a 30:1 ratio, so on a
+    brightness scale the whole ventral field collapses to one flat dark blob
+    (measured: ground s.d. 0.007). The same lenses carry an adapted s.d. of
+    0.281 across the full range, because adaptation is local: 77% of lenses
+    report more than 10% contrast. Pass adapted=False for raw brightness.
+    """
+    v = agent.vision
+    if adapted and v.lum_prev is not None:
+        import torch
+        ad = v.adapt_mean.clamp(min=1e-3)
+        c = ((v.lum_prev - ad) / ad * v.adapt_gain).clamp(-1.0, 1.0)
+        lum = (0.5 + 0.5 * c).detach().cpu().numpy()
+    else:
+        lum = agent.last_luminance.detach().cpu().numpy()
     # Lenses the camera cannot see are fed the scene mean. Showing that as a
     # colour makes them look like dark scenery; NaN draws them grey instead.
     seen = agent.vision.inside.detach().cpu().numpy()

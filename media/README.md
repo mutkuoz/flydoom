@@ -34,6 +34,16 @@ so sky sits above the horizon line and the ground below. Then: firing rates of
 the nerves that drive the body, the left-minus-right steering signal off
 `DNp15`, the two odour channels, and a heading-up map of where it walked.
 
+The eye panel draws **contrast after adaptation** — each lens against its own
+running mean — because that is the signal the eye sends on, and raw brightness
+is the wrong quantity to look at. Measured in this arena: the sky reads 0.71
+and the ground 0.023, so on a brightness scale the entire ventral field
+collapses into one flat blob (ground s.d. 0.007). The same lenses carry an
+adapted s.d. of 0.281 over the full range, and 77% of all lenses report more
+than 10% contrast. What looks like an empty dark half is a full field of
+structure once adaptation is applied, which is exactly why a photoreceptor
+adapts.
+
 ## archive/
 
 Superseded, kept because results elsewhere refer to them. Each was current when
