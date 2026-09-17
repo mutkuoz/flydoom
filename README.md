@@ -14,7 +14,7 @@ global synaptic gain is calibrated — on a *non-visual* reflex — and that is 
 number in the project.
 
 <p align="center">
-  <img src="media/full_eye.gif" width="760" alt="the connectome playing Doom, with its whole visual field">
+  <img src="media/flydoom.gif" width="760" alt="the connectome playing Doom, with its whole visual field">
 </p>
 
 **Top:** three Doom cameras — left, ahead, right — covering the fly's whole field of view.
@@ -25,7 +25,7 @@ signal, the two odour channels, and a heading-up map of where it walked.
 | | |
 |---|---|
 | 📄 **The paper** | [`paper/main.pdf`](paper/main.pdf) — 26 pages, every result with its controls |
-| 🎬 **Full clip** | [`media/best_full_eye.mp4`](media/best_full_eye.mp4) — 30 s of game time, played back at speed |
+| 🎬 **Full clip** | [`media/flydoom.mp4`](media/flydoom.mp4) — 30 s of game time, and [every other recording](media/) |
 | 🔬 **Deep dive** | [TECHNICAL.md](TECHNICAL.md) · [RESULTS.md](RESULTS.md) — *written in August; where they disagree with the paper, the paper is current* |
 | 📊 **Raw data** | [`paper/data/`](paper/data) — every run, with the scripts that made it |
 
