@@ -82,7 +82,7 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
     )
     agent = FlyDoomAgent(cfg)
     if mirror:
-        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
+        agent.vision.mirror()
     agent.reset()
 
     if blind:

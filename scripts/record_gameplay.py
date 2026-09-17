@@ -27,6 +27,7 @@ import matplotlib  # noqa: E402
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.colors import PowerNorm  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import vizdoom as vzd  # noqa: E402
@@ -59,7 +60,8 @@ scale that keeps re-fitting per frame makes the panels flicker and hides the
 very contrast changes they exist to show."""
 
 POPULATIONS = ["LC4", "LPLC2", "LC11", "BPN", "MDN",
-               "DNa02_L", "DNa02_R", "DNp01_L", "DNp01_R"]
+               "DNa02_L", "DNa02_R", "DNp15_L", "DNp15_R",
+               "DNp01_L", "DNp01_R"]
 
 
 def _encoder_args() -> list[str]:
@@ -86,8 +88,15 @@ class Recorder:
     """One matplotlib figure, redrawn per tic and pushed to ffmpeg as raw RGB."""
 
     def __init__(self, retina, width: int, height: int, fps: int,
-                 out: Path, history_s: float = 4.0):
+                 out: Path, history_s: float = 4.0,
+                 screen_shape: tuple = (240, 320), cameras: tuple = (0.0,),
+                 steer: str = "DNa02"):
         self.fps = fps
+        self.steer = steer
+        # With side views the picture is a panorama, left to right, and gets
+        # the whole top row; the panels move underneath it.
+        self.pano = len(cameras) > 1
+        self.order = [int(i) for i in np.argsort(cameras)]
         self.n_hist = int(history_s * fps)
         self.t_hist: list[float] = []
         self.d_hist: list[float] = []
@@ -105,40 +114,77 @@ class Recorder:
         # 3.35/1/1/1/1 against a 1760x640 canvas leaves the Doom cell at
         # almost exactly 4:3, so the frame fills it rather than floating in
         # letterbox.
-        gs = self.fig.add_gridspec(
-            2, 5, width_ratios=[3.35, 1.0, 1.0, 1.0, 1.0],
-            height_ratios=[1.0, 0.70],
-            hspace=0.42, wspace=0.34,
-            left=0.010, right=0.960, top=0.875, bottom=0.125,
-        )
+        if self.pano:
+            gs = self.fig.add_gridspec(
+                2, 6, height_ratios=[1.0, 0.72],
+                hspace=0.24, wspace=0.34,
+                left=0.012, right=0.965, top=0.885, bottom=0.085,
+            )
+            slot = {"screen": gs[0, :], "eyes": (gs[1, 0], gs[1, 1]),
+                    "pop": gs[1, 2], "steer": gs[1, 3], "smell": gs[1, 4],
+                    "map": gs[1, 5]}
+        else:
+            gs = self.fig.add_gridspec(
+                2, 5, width_ratios=[3.35, 1.0, 1.0, 1.0, 1.0],
+                height_ratios=[1.0, 0.70],
+                hspace=0.42, wspace=0.34,
+                left=0.010, right=0.960, top=0.875, bottom=0.125,
+            )
+            # The eyes share the whole top-right band rather than sitting in
+            # two of the three bottom-row columns, which left a hole.
+            eyes_gs = gs[0, 1:5].subgridspec(1, 2, wspace=0.10)
+            slot = {"screen": gs[:, 0], "eyes": (eyes_gs[0, 0], eyes_gs[0, 1]),
+                    "pop": gs[1, 1], "steer": gs[1, 2], "smell": gs[1, 3],
+                    "map": gs[1, 4]}
 
         # --- what Doom draws -------------------------------------------
-        ax = self.fig.add_subplot(gs[:, 0])
-        # Doom renders at 320x240 because that is what the retina samples;
-        # upscaling here is display only and changes nothing the fly sees.
-        self.screen = ax.imshow(np.zeros((240, 320, 3), np.uint8),
+        ax = self.fig.add_subplot(slot["screen"])
+        # Display only; upscaling or shrinking here changes nothing the fly
+        # sees. The image is created at the real frame shape: matplotlib keeps
+        # the first shape's extent, so a placeholder of another shape would
+        # stretch every later frame to it.
+        h0, w0 = screen_shape
+        if self.pano:
+            h0, w0 = h0 // 2, (w0 // 2) * len(cameras)
+        self.screen = ax.imshow(np.zeros((h0, w0, 3), np.uint8),
                                 interpolation="bilinear", aspect="equal")
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_edgecolor(EDGE)
-        ax.set_title("what Doom draws", loc="left", color=FG, pad=6)
+        if self.pano:
+            names = {0.0: "front"}
+            for j, i in enumerate(self.order):
+                c = cameras[i]
+                label = names.get(c, f"{abs(c):.0f}\u00b0 {'right' if c > 0 else 'left'}")
+                ax.text((j + 0.5) * w0 / len(cameras), h0 * 0.985, label,
+                        color=FG, fontsize=8, ha="center", va="bottom",
+                        family="monospace", alpha=0.85)
+                if j:
+                    ax.axvline(j * w0 / len(cameras) - 0.5, color=BG, lw=1.2)
+            ax.set_title("what Doom draws \u00b7 three cameras, one world",
+                         loc="left", color=FG, pad=6)
+        else:
+            ax.set_title("what Doom draws", loc="left", color=FG, pad=6)
 
         # --- what the fly sees ------------------------------------------
         cols = retina.column_arrays()
         self.eye_art = {}
-        # The eyes share the whole top-right band rather than sitting in two
-        # of the three bottom-row columns, which left a hole between them.
-        eyes_gs = gs[0, 1:5].subgridspec(1, 2, wspace=0.10)
         for k, side in enumerate(("left", "right")):
-            a = self.fig.add_subplot(eyes_gs[0, k])
+            a = self.fig.add_subplot(slot["eyes"][k])
             p_, q_, _, _ = cols[side]
             x = p_ + q_ / 2.0
             y = q_ * SQRT3 / 2.0
             # Column luminance lives in 0-0.42, not 0-1; scaling to the real
             # range is the difference between visible structure and flat wash.
+            cmap = plt.get_cmap("magma").copy()
+            cmap.set_bad("#3a3a3a")          # behind the camera
+            # Square-root scale, display only: under a daylight sky the ground
+            # is a few percent of the sky's brightness and reads as black on a
+            # linear scale, though the retina sees its structure fine.
             self.eye_art[side] = a.scatter(
-                x, y, c=np.full(len(x), 0.0), cmap="magma",
-                vmin=0.0, vmax=1.0, s=7, marker="h", linewidths=0,
+                x, y, c=np.full(len(x), 0.0), cmap=cmap, plotnonfinite=True,
+                norm=PowerNorm(0.5, vmin=0.0, vmax=1.0), s=7, marker="h",
+                linewidths=0,
             )
             a.set_aspect("equal")
             a.set_title(f"{side} eye \u00b7 {len(x)} columns", color=FG,
@@ -148,7 +194,7 @@ class Recorder:
                 sp.set_visible(False)
 
         # --- population rates -------------------------------------------
-        a = self.fig.add_subplot(gs[1, 1])
+        a = self.fig.add_subplot(slot["pop"])
         self.bars = a.bar(range(len(POPULATIONS)), [0] * len(POPULATIONS),
                           color=GREEN, edgecolor="none")
         a.set_xticks(range(len(POPULATIONS)))
@@ -162,10 +208,10 @@ class Recorder:
         self.pop_ax = a
 
         # --- steering ----------------------------------------------------
-        a = self.fig.add_subplot(gs[1, 2])
+        a = self.fig.add_subplot(slot["steer"])
         (self.diff_line,) = a.plot([], [], color=RUST, lw=1.5)
         a.set_xlabel("time (s)", fontsize=8)
-        a.set_ylabel("DNa02 L\u2212R (Hz)", fontsize=7.5, color=RUST)
+        a.set_ylabel(f"{steer} L\u2212R (Hz)", fontsize=7.5, color=RUST)
         a.tick_params(axis="y", colors=RUST, labelsize=7)
         a.tick_params(axis="x", labelsize=7)
         a.set_title("steering", loc="left", color=FG, fontsize=8.5, pad=4)
@@ -186,7 +232,7 @@ class Recorder:
         # Doom renders no odour, so without this panel the channel is
         # invisible in the clip even when it is driving the descending
         # neurons harder than vision is.
-        a = self.fig.add_subplot(gs[1, 3])
+        a = self.fig.add_subplot(slot["smell"])
         (self.food_line,) = a.plot([], [], color=GREEN, lw=1.5, label="food")
         (self.threat_line,) = a.plot([], [], color=RUST, lw=1.5, ls="--",
                                      label="rival")
@@ -206,7 +252,7 @@ class Recorder:
         # The panel the first cut of this clip was missing. Rates and a
         # steering trace show the decoder working; only a map shows whether
         # any of it adds up to going somewhere.
-        a = self.fig.add_subplot(gs[1, 4])
+        a = self.fig.add_subplot(slot["map"])
         # Drawn in the fly's own frame, rotated so it always faces up. A path
         # in world coordinates is just a squiggle; heading-up turns it into
         # something you can read against what the Doom panel is showing.
@@ -261,10 +307,13 @@ class Recorder:
     def draw(self, frame, luminance, rates, diff, turn, t, banner,
              pos=None, angle=None, objects=(), smell=None):
         if frame is not None:
+            if frame.ndim == 4:
+                frame = np.concatenate([frame[i, ::2, ::2] for i in self.order],
+                                       axis=1)
             self.screen.set_data(frame)
         if self.lum_scale is None:
             self._warm.append(float(np.percentile(
-                np.concatenate([np.asarray(v, float)
+                np.concatenate([np.asarray(v, float)[np.isfinite(v)]
                                 for v in luminance.values()]), 99)))
             if len(self._warm) >= LUM_WARMUP:
                 self.lum_scale = max(float(np.mean(self._warm)), 1e-3)
@@ -359,12 +408,17 @@ class Recorder:
 
 def per_column_luminance(agent):
     lum = agent.last_luminance.detach().cpu().numpy()
+    # Lenses the camera cannot see are fed the scene mean. Showing that as a
+    # colour makes them look like dark scenery; NaN draws them grey instead.
+    seen = agent.vision.inside.detach().cpu().numpy()
     out, off = {}, 0
     for side, eye in agent.retina.eyes.items():
         n = eye.neuron_idx.size
-        col = np.full(eye.n_columns, 0.5)
+        col = np.full(eye.n_columns, np.nan)
         if n:
-            col[eye.neuron_column] = lum[off:off + n]
+            v = lum[off:off + n].astype(float)
+            v[~seen[off:off + n]] = np.nan
+            col[eye.neuron_column] = v
             off += n
         out[side] = col
     return out
@@ -428,6 +482,10 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--wide", action="store_true",
+                    help="the full eye: 170 deg cameras facing front, left "
+                         "and right, corrected lens geometry and per-lens "
+                         "blur, so every lens of both eyes sees the world.")
     ap.add_argument("--no-gif", action="store_true")
     ap.add_argument("--gif-fps", type=int, default=10)
     ap.add_argument("--gif-width", type=int, default=640)
@@ -457,6 +515,9 @@ def main() -> int:
     dkw = dict(scenario=args.scenario, window=False, labels=not args.no_smell)
     if args.seed is not None:
         dkw["seed"] = args.seed
+    if args.wide:
+        dkw.update(fov_deg=170.0, width=1280, height=1024,
+                   gnomonic=True, pyramid_blur=True, side_views=(90.0, -90.0))
     akw = dict(
         doom=DoomConfig(**dkw),
         motor=MotorConfig(yaw_source=args.yaw_source),
@@ -471,13 +532,17 @@ def main() -> int:
         akw["seed"] = args.seed
     agent = FlyDoomAgent(AgentConfig(**akw))
     if args.mirror:
-        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
+        agent.vision.mirror()
     print(agent.summary())
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
           f"after {args.warmup} warmup tics -> {args.out}")
 
-    rec = Recorder(agent.retina, args.width, args.height, TICS_PER_SECOND,
-                   args.out)
+    dc = agent.cfg.doom
+    rec = Recorder(agent.retina, args.width,
+                   args.height if not dc.side_views else max(args.height, 1000),
+                   TICS_PER_SECOND, args.out,
+                   screen_shape=(dc.height, dc.width),
+                   cameras=agent.vision.cameras, steer=args.yaw_source)
     print(f"canvas {rec.size[0]}x{rec.size[1]}")
 
     state = {"n": 0, "episode": 0}
@@ -485,7 +550,8 @@ def main() -> int:
     def on_tic(ag, r):
         if r.tic < args.warmup:
             return True
-        d = r.rates.get("DNa02_L", 0.0) - r.rates.get("DNa02_R", 0.0)
+        d = (r.rates.get(f"{args.yaw_source}_L", 0.0)
+             - r.rates.get(f"{args.yaw_source}_R", 0.0))
         t = state["n"] / TICS_PER_SECOND
         g = ag.doom.game
         pos = (g.get_game_variable(vzd.GameVariable.POSITION_X),

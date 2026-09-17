@@ -232,6 +232,14 @@ def _eye_bias(agent) -> float:
     return out[0] - out[1] if len(out) == 2 else 0.0
 
 
+# The full eye: 170 deg cameras facing front, right and left, so every lens
+# of both eyes reads the world. gnomonic fixes the lens placement,
+# pyramid_blur keeps the acceptance angle constant across a view whose edge is
+# magnified up to 130 fold. See DoomConfig.side_views.
+WIDE_EYE = dict(fov_deg=170.0, width=1280, height=1024,
+                gnomonic=True, pyramid_blur=True, side_views=(90.0, -90.0))
+
+
 def _chatter(x) -> float:
     x = np.asarray(x)
     if len(x) < 2:
@@ -248,7 +256,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               touch: bool = False,
               motor_kw: dict | None = None,
               mirror: bool = False,
-              blind: bool = False) -> tuple[dict, dict]:
+              blind: bool = False,
+              wide: bool = False) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -258,7 +267,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         mk["tau_baseline"] = tau_baseline
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
-                        labels=smell),
+                        labels=smell, **(WIDE_EYE if wide else {})),
         motor=MotorConfig(**mk),
         smell=smell,
         shuffle_graph=shuffled,
@@ -283,7 +292,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
     # the whole episode. Any behavioural advantage that survives this is not
     # coming from the visual input at all.
     if mirror:
-        agent.vision.grid[..., 0] = -agent.vision.grid[..., 0]
+        agent.vision.mirror()
     if blind:
         _first = {}
 
@@ -440,6 +449,9 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--wide", action="store_true",
+                    help="the full eye (WIDE_EYE). Rendering only: the "
+                         "random arm plays the same level either way.")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"],
                     help="which bilateral descending pair supplies yaw. "
@@ -512,6 +524,7 @@ def main() -> int:
     record["spiking_t4"] = args.spiking_t4
     record["yaw_source"] = args.yaw_source
     record["touch"] = args.touch
+    record["wide"] = args.wide
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
     record["blind"] = args.blind
@@ -527,14 +540,15 @@ def main() -> int:
                                     args.bias, args.smell, args.tau_baseline,
                                     args.optic_gain, args.spiking_t4,
                                     args.touch,
-                                    motor_kw, args.mirror, args.blind)
+                                    motor_kw, args.mirror, args.blind,
+                                    args.wide)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
                                       args.bias, args.smell,
                                       args.tau_baseline, args.optic_gain,
                                       args.spiking_t4, args.touch, motor_kw,
-                                      args.mirror, args.blind)
+                                      args.mirror, args.blind, args.wide)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:

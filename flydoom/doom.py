@@ -121,6 +121,53 @@ class DoomConfig:
     """Weight Doom's RGB by R1-6 spectral sensitivity instead of human luma.
     See LUMA_FLY. Set False for Rec.601."""
 
+    gnomonic: bool = False
+    """Map each lens into the picture with the correct flat-camera formula.
+
+    A flat (rectilinear) camera projects a direction at azimuth a and
+    elevation e to x = tan(a), y = tan(e) / cos(a). The original mapping used
+    y = tan(e) everywhere, which is right on the vertical midline and wrong
+    everywhere else. MEASURED at the default 130 degree view: a lens reads an
+    elevation off by a median 1.8 degrees (0.4 lens spacings), 8.0 beyond 40
+    degrees of azimuth, 22.7 at worst, and 148 lenses it classed as on-screen
+    were in fact off it, reading smeared border pixels. Off by default so
+    earlier results reproduce exactly; on for any new work.
+    """
+
+    pyramid_blur: bool = False
+    """Let each lens's acceptance blur follow its position in the picture.
+
+    One separable blur cannot vary across the image, so it was sized for the
+    centre. In a flat projection a pixel covers LESS angle toward the edges,
+    by a factor of 1/(1 + r^2) radially, so a centre-sized blur is too narrow
+    at the edges and edge lenses sample a pinprick rather than their true
+    acceptance angle. At 170 degrees that factor reaches about 130. This builds
+    a blur pyramid and gives each lens the level matching its local scale.
+    """
+
+    view_bob: float = 0.25
+    """Doom's walking head-bob (the `movebob` CVar), set explicitly.
+
+    ViZDoom reads CVars from _vizdoom.ini in the working directory and writes
+    them back on exit, so a value set once in any session silently becomes
+    every later run's default. That happened: a probe set it to 0 and the ini
+    kept it. 0.25 is Doom's default and what every earlier result ran with.
+    """
+
+    side_views: tuple = ()
+    """Extra cameras, as yaw offsets in degrees (positive = right), each a
+    multiple of 90. (90.0, -90.0) gives every lens a camera within 45 degrees
+    of its own direction, so each eye's full 170 x 150 field is seen.
+
+    One flat camera cannot see past about 85 degrees, and the eyes point 40
+    degrees outward, so without this the outer 40 degrees of each eye -- 18%
+    of the lenses -- look at nothing. Doom draws one view per tic, so each
+    side view is rendered by a separate engine that is loaded from the main
+    game's save every tic and stepped once with the fly's own action turned
+    by the offset. It renders the same world, not a lookalike: at offset 0
+    the frames match the main game pixel for pixel. Requires gnomonic.
+    """
+
     linearise_gamma: bool = True
     """Undo Doom's sRGB gamma before sampling.
 
@@ -191,37 +238,30 @@ class DoomVision:
         # across the field. Rigid motion of the world then sweeps the retina at
         # a speed that depends on where you look, which is exactly the input a
         # delay-and-correlate detector tuned to a FIXED spacing cannot use.
-        idx, gx, gy, inside = [], [], [], []
         half_h, half_v = cfg.fov_deg / 2.0, cfg.vfov_deg / 2.0
         tan_h = math.tan(math.radians(half_h))
         tan_v = math.tan(math.radians(half_v))
-        for side, eye in retina.eyes.items():
-            if not eye.neuron_idx.size:
-                continue
-            gaze = -cfg.splay_deg if side == "left" else cfg.splay_deg
-            az = eye.azimuth_deg[eye.neuron_column] + gaze
-            el = eye.elevation_deg[eye.neuron_column]
-            idx.append(eye.neuron_idx)
-            gx.append(np.tan(np.radians(az)) / tan_h)
-            gy.append(-np.tan(np.radians(el)) / tan_v)  # screen y grows down
-            inside.append((np.abs(az) <= half_h) & (np.abs(el) <= half_v))
+        self.tan_h, self.tan_v = tan_h, tan_v
+        self.cameras = (0.0, *[float(o) for o in cfg.side_views])
+        if len(self.cameras) > 1:
+            if not cfg.gnomonic:
+                raise ValueError("side_views needs gnomonic=True")
+            if any(o % 90 for o in self.cameras):
+                raise ValueError("side_views offsets must be multiples of 90")
+        idx = [eye.neuron_idx for eye in retina.eyes.values()
+               if eye.neuron_idx.size]
         self.idx = torch.as_tensor(np.concatenate(idx).astype(np.int64),
                                    device=device)
-        x = np.concatenate(gx).astype(np.float32)
-        y = np.concatenate(gy).astype(np.float32)
-        self.inside = torch.as_tensor(np.concatenate(inside), device=device)
-        # grid_sample wants [N, H_out, W_out, 2]; one row of samples is enough
-        self.grid = torch.as_tensor(
-            np.stack([x, y], axis=-1)[None, None], dtype=torch.float32,
-            device=device,
-        ).clamp(-1.0, 1.0)
+        self.mirrored = False
+        self._build_geometry(mirror=False)
 
         # --- Gaussian acceptance, expressed in pixels ---
         # Under a perspective projection the angular size of a pixel is not
-        # uniform: it is finest at the centre and coarsest at the edge. The
-        # flat fov/width figure used before understates the centre by about
-        # 1.9x, so the acceptance kernel was roughly twice as wide as intended
-        # and blurred away the fine spatial structure the correlator needs.
+        # uniform: each pixel spans the most angle at the centre and the least
+        # at the edge. The flat fov/width figure used before understates the
+        # centre by about 1.9x, so the acceptance kernel was roughly twice as
+        # wide as intended and blurred away the fine spatial structure the
+        # correlator needs.
         # One separable pre-blur cannot vary across the image, so we scale it
         # to the centre, where the resolution actually matters.
         deg_per_px = math.degrees(2.0 * tan_h) / cfg.width
@@ -232,8 +272,6 @@ class DoomVision:
         self.sigma_px = max(0.6, accept_deg / 2.355 / deg_per_px)
         self.kernel = self._gaussian_kernel(self.sigma_px)
 
-        self.n_inside = int(self.inside.sum())
-        self.n_total = int(self.inside.numel())
         self.spacing_deg = spacing
         self.accept_deg = accept_deg
         self.deg_per_px = deg_per_px
@@ -261,6 +299,99 @@ class DoomVision:
         self.sustained = torch.as_tensor(sus, device=device)
         self.n_sustained = int(sus.sum())
 
+    def _build_geometry(self, mirror: bool) -> None:
+        """Where each lens looks: camera, picture coordinates, blur level.
+
+        `mirror` negates every lens azimuth, so each lens reads the direction
+        its mirror image would. With one camera that is exactly a flip of the
+        picture x coordinate; with side cameras a lens can change camera.
+        """
+        torch, cfg, device = self.torch, self.cfg, self.device
+        tan_h, tan_v = self.tan_h, self.tan_v
+        half_h, half_v = cfg.fov_deg / 2.0, cfg.vfov_deg / 2.0
+        cams = np.asarray(self.cameras)
+        gx, gy, inside, rr, cam = [], [], [], [], []
+        for side, eye in self.retina.eyes.items():
+            if not eye.neuron_idx.size:
+                continue
+            gaze = -cfg.splay_deg if side == "left" else cfg.splay_deg
+            az = eye.azimuth_deg[eye.neuron_column] + gaze
+            el = eye.elevation_deg[eye.neuron_column]
+            if mirror:
+                az = -az
+            # each lens reads the camera nearest its own direction; the main
+            # camera wins ties, so a single camera reproduces the old mapping
+            off = (az[:, None] - cams[None, :] + 180.0) % 360.0 - 180.0
+            k = np.argmin(np.abs(off) + 1e-6 * (cams[None, :] != 0), axis=1)
+            # a lone front camera keeps the raw azimuth, so the legacy
+            # mapping stays bit-identical
+            az_l = off[np.arange(len(az)), k] if np.any(cams != 0) else az
+            cam.append(k)
+            if cfg.gnomonic:
+                front = np.abs(az_l) < 89.9
+                azc = np.clip(az_l, -89.9, 89.9)
+                u = np.tan(np.radians(azc))
+                v = np.tan(np.radians(el)) / np.cos(np.radians(azc))
+                gx.append(u / tan_h)
+                gy.append(-v / tan_v)                   # screen y grows down
+                inside.append(front & (np.abs(u) <= tan_h)
+                              & (np.abs(v) <= tan_v))
+                rr.append(u * u + v * v)
+            else:
+                gx.append(np.tan(np.radians(az)) / tan_h)
+                gy.append(-np.tan(np.radians(el)) / tan_v)
+                inside.append((np.abs(az) <= half_h) & (np.abs(el) <= half_v))
+                rr.append(np.zeros_like(az))
+        x = np.concatenate(gx).astype(np.float32)
+        y = np.concatenate(gy).astype(np.float32)
+        cam = np.concatenate(cam).astype(np.int64)
+        self.inside = torch.as_tensor(np.concatenate(inside), device=device)
+        self.cam = torch.as_tensor(cam, device=device)
+        # grid_sample wants [N, H_out, W_out, 2]; one row per camera, holding
+        # every lens, so a lens is read from its own camera's row
+        xy = np.stack([x, y], axis=-1)[None, None]
+        self.grid = torch.as_tensor(
+            np.repeat(xy, len(self.cameras), axis=0), dtype=torch.float32,
+            device=device,
+        ).clamp(-1.0, 1.0)
+        self.n_inside = int(self.inside.sum())
+        self.n_total = int(self.inside.numel())
+        self.per_camera = np.bincount(cam, minlength=len(self.cameras))
+
+        # Per-lens blur scale. With r^2 = u^2 + v^2 in focal units, the
+        # rectilinear projection magnifies angle by (1 + r^2) radially and
+        # sqrt(1 + r^2) tangentially, so the geometric-mean blur a lens needs
+        # grows as (1 + r^2)^(3/4) relative to the centre. Level k of the
+        # pyramid carries an effective blur of sigma_px * 2^k.
+        self.pyr_levels = 1
+        if cfg.pyramid_blur:
+            r2 = np.concatenate(rr).astype(np.float64)
+            # Lenses outside the view read the mean fill, so they must not set
+            # the pyramid depth: a lens at 89.9 deg azimuth would ask for 18.
+            r2 = np.where(np.concatenate(inside), r2, 0.0)
+            need = np.log2((1.0 + r2) ** 0.75)          # in pyramid levels
+            top = max(1, int(np.ceil(need.max())) + 1)
+            lo = np.clip(np.floor(need), 0, top - 1).astype(np.int64)
+            hi = np.clip(lo + 1, 0, top - 1)
+            frac = np.clip(need - lo, 0.0, 1.0).astype(np.float32)
+            self.pyr_levels = top
+            self.pyr_lo = torch.as_tensor(lo, device=device)
+            self.pyr_hi = torch.as_tensor(hi, device=device)
+            self.pyr_frac = torch.as_tensor(frac, device=device)
+
+    def mirror(self) -> None:
+        """CONTROL: every lens reads its mirror-image direction.
+
+        Reverses the sign of all horizontal optic flow while leaving rates,
+        contrast statistics and wiring untouched. With a single camera this is
+        the old flip of the sampling grid, bit for bit.
+        """
+        if len(self.cameras) == 1:
+            self.grid[..., 0] = -self.grid[..., 0]
+        else:
+            self._build_geometry(mirror=not self.mirrored)
+        self.mirrored = not self.mirrored
+
     def _column_spacing_deg(self) -> float:
         eye = next(iter(self.retina.eyes.values()))
         cx, cy = eye.cartesian()
@@ -284,7 +415,11 @@ class DoomVision:
                                            device=self.device)).sum(-1)
 
     def sample(self, frame: np.ndarray):
-        """RGB frame -> per-column luminance in [0, 1], mean-filled outside."""
+        """RGB frame -> per-column luminance in [0, 1], mean-filled outside.
+
+        `frame` is one picture [H, W, 3], or one per camera [K, H, W, 3] in
+        the order of `self.cameras` when side views are on.
+        """
         torch = self.torch
         import torch.nn.functional as F
 
@@ -306,7 +441,8 @@ class DoomVision:
             w = torch.as_tensor(FLYBAND_MIX, device=self.device)
             img = (y * w / float((FLYBAND_MIX * LUMA_FLY).sum())).clamp(0.0, 1.0)
         lum = self._weight(img)
-        lum = lum[None, None]                          # [1,1,H,W]
+        # [K,1,H,W]: one picture per camera
+        lum = lum[None, None] if lum.ndim == 2 else lum[:, None]
 
         # separable Gaussian = the acceptance function
         k = self.kernel
@@ -316,9 +452,39 @@ class DoomVision:
         lum = F.conv2d(F.pad(lum, (0, 0, pad, pad), mode="replicate"),
                        k.view(1, 1, -1, 1))
 
-        sampled = F.grid_sample(lum, self.grid, mode="bilinear",
-                                padding_mode="border", align_corners=False)
-        sampled = sampled.view(-1)
+        if self.pyr_levels > 1:
+            # Level 0 is the centre-sized blur above. Each further level
+            # halves resolution after a mild blur, doubling the effective
+            # acceptance width. grid_sample takes normalised coordinates, so
+            # the same lens grid reads every level.
+            levels = [lum]
+            cur = lum
+            k1 = self._gaussian_kernel(1.0)
+            p1 = k1.shape[-1] // 2
+            for _ in range(self.pyr_levels - 1):
+                cur = F.conv2d(F.pad(cur, (p1, p1, 0, 0), mode="replicate"),
+                               k1.view(1, 1, 1, -1))
+                cur = F.conv2d(F.pad(cur, (0, 0, p1, p1), mode="replicate"),
+                               k1.view(1, 1, -1, 1))
+                cur = F.avg_pool2d(cur, 2, ceil_mode=True)
+                levels.append(cur)
+            ar = torch.arange(self.cam.numel(), device=self.device)
+            per = torch.stack([
+                F.grid_sample(L, self.grid, mode="bilinear",
+                              padding_mode="border", align_corners=False)
+                .view(len(levels[0]), -1)[self.cam, ar]
+                for L in levels])                      # [levels, lenses]
+            a = per[self.pyr_lo, ar]
+            b = per[self.pyr_hi, ar]
+            sampled = a + (b - a) * self.pyr_frac
+        else:
+            sampled = F.grid_sample(lum, self.grid, mode="bilinear",
+                                    padding_mode="border", align_corners=False)
+            if len(self.cameras) == 1:
+                sampled = sampled.view(-1)
+            else:
+                ar = torch.arange(self.cam.numel(), device=self.device)
+                sampled = sampled.view(len(self.cameras), -1)[self.cam, ar]
 
         # Columns outside Doom's viewport see the frame's MEAN, not black. A
         # dark surround is a permanent high-contrast edge at a fixed
@@ -421,6 +587,12 @@ class DoomSession:
         g = vzd.DoomGame()
         scen_dir = os.path.join(os.path.dirname(vzd.__file__), "scenarios")
         path = os.path.join(scen_dir, f"{cfg.scenario}.cfg")
+        # Arena variants built by this project (see flydoom/wads) take
+        # precedence, so a modified map is selected by name like any other.
+        local = os.path.join(os.path.dirname(__file__), "wads",
+                             f"{cfg.scenario}.cfg")
+        if os.path.exists(local):
+            path = local
         if not os.path.exists(path):
             raise FileNotFoundError(
                 f"no scenario {cfg.scenario!r} in {scen_dir}; "
@@ -464,6 +636,7 @@ class DoomSession:
         self._apply_fov()
         self._last_health = 100.0
         self._last_damage = 0.0
+        self.sides = SideCameras(cfg) if cfg.side_views else None
 
     @staticmethod
     def _resolution(vzd, w: int, h: int):
@@ -477,14 +650,18 @@ class DoomSession:
     # -- episode ---------------------------------------------------------
 
     def _apply_fov(self) -> None:
-        """Set the horizontal FOV. Must follow every new_episode()."""
+        """Set the horizontal FOV and the head-bob. Must follow every
+        new_episode()."""
         self.game.send_game_command(f"fov {self.cfg.fov_deg:.0f}")
+        self.game.send_game_command(f"movebob {self.cfg.view_bob:g}")
 
     def new_episode(self) -> None:
         self.game.new_episode()
         self._apply_fov()
         self._last_health = self.health
         self._last_damage = 0.0
+        if self.sides is not None:
+            self.sides.new_episode()
 
     @property
     def finished(self) -> bool:
@@ -499,8 +676,14 @@ class DoomSession:
         return float(self.game.get_game_variable(self.vzd.GameVariable.KILLCOUNT))
 
     def frame(self) -> np.ndarray | None:
+        """The picture, [H, W, 3]; with side views, [K, H, W, 3] with the
+        main view first and the rest in DoomConfig.side_views order."""
         s = self.game.get_state()
-        return None if s is None else s.screen_buffer
+        if s is None:
+            return None
+        if self.sides is None:
+            return s.screen_buffer
+        return np.stack([s.screen_buffer, *self.sides.frames(s.screen_buffer)])
 
     # -- ground truth, for MEASUREMENT ONLY ------------------------------
 
@@ -553,7 +736,10 @@ class DoomSession:
 
     def step(self, action: list[float], tics: int = 1) -> dict:
         """Apply one action and report what changed."""
-        self.game.make_action(action, tics)
+        if self.sides is not None:
+            self.sides.step(self, action, tics)
+        else:
+            self.game.make_action(action, tics)
         done = self.finished
         health = self._last_health if done else self.health
         delta_health = health - self._last_health
@@ -566,7 +752,179 @@ class DoomSession:
         }
 
     def close(self) -> None:
+        if self.sides is not None:
+            self.sides.close()
         try:
             self.game.close()
         except Exception:
             pass
+
+
+class SideCameras:
+    """Side views of the main game's world. See DoomConfig.side_views.
+
+    HOW, since Doom draws one view per tic and the camera is the heading:
+    every tic the main game writes a save, and each side engine loads it and
+    takes one step with the fly's action turned by its offset. What it draws
+    is therefore the main world one tic on, seen sideways. Three engine
+    behaviours, each measured, shape the bookkeeping:
+
+      * The console `save` lands late, only every other tic, and holds the
+        world as it was one tic before the step that wrote it. So the side
+        engine replays the fly's last one or two actions before its own.
+      * `load()` runs one tic itself, with whatever action was set last.
+        Setting the next action first turns that tic into a useful one.
+      * Movement commands are floored to whole units, so the quarter turn is
+        done as an exact swap of whole numbers, never with trigonometry.
+        Turns are exact at any value.
+
+    With all three handled, an offset of 0 reproduces the main game pixel for
+    pixel over a whole episode.
+    """
+
+    def __init__(self, cfg: DoomConfig) -> None:
+        import tempfile
+        import uuid
+        from dataclasses import replace
+
+        self.offsets = [float(o) for o in cfg.side_views]
+        sub = replace(cfg, side_views=(), labels=False, window=False)
+        self.cams = [DoomSession(sub) for _ in self.offsets]
+        base = "/dev/shm" if os.path.isdir("/dev/shm") else tempfile.gettempdir()
+        self.stem = os.path.join(base, f"flydoom_{os.getpid()}_"
+                                       f"{uuid.uuid4().hex[:8]}")
+        B = DoomSession.BUTTONS
+        self.iy = B.index("TURN_LEFT_RIGHT_DELTA")
+        self.ifw = B.index("MOVE_FORWARD_BACKWARD_DELTA")
+        self.ilat = B.index("MOVE_LEFT_RIGHT_DELTA")
+        self.iact = [B.index("ATTACK"), B.index("USE")]
+        self.episode = 0
+        self.loads = self.relabels = self.misses = 0
+        self._reset()
+
+    def _reset(self) -> None:
+        # A save still queued from the previous episode would land after the
+        # reset and carry the old world, so each episode writes its own file.
+        self.path = f"{self.stem}_{self.episode}.zds"
+        self.hist: dict[int, list] = {}     # time label -> action that made it
+        self.saved = None                   # which world state the file holds
+        self.sig = None
+        self.turned = [False] * len(self.cams)
+        self.broken = [False] * len(self.cams)
+        self.last = [None] * len(self.cams)
+
+    def new_episode(self) -> None:
+        for c in self.cams:
+            c.new_episode()
+        self._remove(self.path)
+        self.episode += 1
+        self._reset()
+
+    def _rotate(self, a: list, deg: float) -> list:
+        """The same push on the world, from a body turned `deg` to the right."""
+        b = list(a)
+        f, s = a[self.ifw], a[self.ilat]
+        q = int(round(deg / 90.0)) % 4
+        # a quarter turn right leaves the old forward pointing left
+        b[self.ifw], b[self.ilat] = [(f, s), (s, -f), (-f, -s), (-s, f)][q]
+        b[self.iy] = a[self.iy] + deg
+        for i in self.iact:      # a shot or a door opened sideways is not ours
+            b[i] = 0.0
+        return b
+
+    def _load(self, cam, first: list) -> int:
+        cam.game.set_action(first)
+        cam.game.load(self.path)
+        self.loads += 1
+        return int(cam.game.get_episode_time()) - 1
+
+    def _render(self, k: int, cam, deg: float, a: list, tics: int,
+                now: int) -> None:
+        rot = self._rotate(a, deg)
+
+        def plan(f):
+            if f is None or f > now or any(t not in self.hist
+                                           for t in range(f + 1, now + 1)):
+                return None
+            return [self.hist[t] for t in range(f + 1, now + 1)]
+
+        replay = plan(self.saved)
+        if replay is None:
+            if self.broken[k] or self.saved is not None:
+                self.misses += 1
+                return                  # keep the last good picture
+            # Before the first save lands: the side engine plays its own copy
+            # of the episode, from the same seed, turned once.
+            r = list(rot)
+            if self.turned[k]:
+                r[self.iy] = a[self.iy]
+            cam.game.make_action(r, tics)
+            self.turned[k] = True
+        else:
+            seq = replay + [rot] * tics
+            try:
+                got = self._load(cam, seq[0])
+                if got != self.saved:
+                    self.relabels += 1
+                    self.saved = got
+                    replay = plan(got)
+                    if replay is None:
+                        self.broken[k] = True
+                        self.misses += 1
+                        return
+                    seq = replay + [rot] * tics
+                    self._load(cam, seq[0])
+            except Exception:
+                self.broken[k] = True
+                self.misses += 1
+                return
+            self.broken[k] = False
+            rest = seq[1:]
+            n_plain = len(replay) - 1 if replay else 0
+            for b in rest[:max(n_plain, 0)]:
+                cam.game.make_action(b, 1)
+            if len(rest) > max(n_plain, 0):
+                cam.game.make_action(rot, len(rest) - max(n_plain, 0))
+        f = cam.frame()
+        if f is not None:
+            self.last[k] = f
+
+    def step(self, main: "DoomSession", action: list, tics: int) -> list:
+        a = list(action)
+        for i in (self.ifw, self.ilat):
+            a[i] = float(math.floor(a[i]))   # what the engine does anyway
+        now = int(main.game.get_episode_time())
+        for k, (cam, deg) in enumerate(zip(self.cams, self.offsets)):
+            self._render(k, cam, deg, a, tics, now)
+        main.game.send_game_command(f"save {self.path}")
+        main.game.make_action(a, tics)
+        after = int(main.game.get_episode_time())
+        for t in range(now + 1, after + 1):
+            self.hist[t] = a
+        try:
+            st = os.stat(self.path)
+        except FileNotFoundError:
+            return a
+        sig = (st.st_mtime_ns, st.st_size, st.st_ino)
+        if sig != self.sig:
+            self.sig = sig
+            self.saved = after - 1
+        return a
+
+    def frames(self, like: np.ndarray) -> list:
+        return [f if f is not None else np.zeros_like(like) for f in self.last]
+
+    @staticmethod
+    def _remove(path: str) -> None:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    def close(self) -> None:
+        import glob
+
+        for c in self.cams:
+            c.close()
+        for f in glob.glob(self.stem + "_*.zds"):
+            self._remove(f)
