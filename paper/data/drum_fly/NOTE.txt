@@ -1,0 +1,49 @@
+THE TETHERED DRUM IN AN ARENA BUILT FOR THE FLY
+
+Arena: health_gathering_fly (scripts/build_fly_arena.py). Same map, three
+changes, all of them environment:
+  walls   vertical square-wave grating, period 128 map units = 18-37 degrees
+          at the distances walls sit at, inside the 20-30 degree optimum
+  floor   bright irregular ground, features 32-64 units, replacing a dark
+          liquid flat
+  light   flat and maximum, no fake depth shading
+Interface: anatomical eye map, full field, corrected turn sign. Tethered:
+commands recorded and discarded, no walking, 8 seeds per speed, 350 tics.
+
+WHAT THE ARENA DID TO THE RETINA (open loop, same walk in both arenas)
+
+                                    sky arena   fly arena
+  frame-to-frame |change|, whole eye   0.0250      0.0466     1.9x
+  frame-to-frame |change|, ventral     0.0069      0.0240     3.5x
+  |contrast| median                    0.339       0.310
+  ground raw luminance                 0.023       0.250
+
+Frame-to-frame change is what a correlator integrates. Static contrast falls
+slightly and that is the right trade: what it loses is the sky-against-ground
+step, a large static edge no motion detector can use.
+
+WHAT IT DID TO THE RESPONSE (modulation against each seed's own no-drum value)
+
+  commanded yaw          1 deg/tic      2             4
+    intact              -0.49+-0.54   -0.52+-0.86   -0.41+-0.46
+    mirrored            -0.36+-0.58   -0.54+-0.39*  -0.28+-0.57
+    frozen               0.00+-0.00    0.00+-0.00    0.00+-0.00
+
+  DNp15 left-minus-right (Hz)
+    intact              +1.22+-1.11*  +0.91+-1.72   +0.84+-1.77
+    mirrored            +0.83+-0.99   +0.95+-1.02   +0.22+-1.64
+    frozen               0.00+-0.00    0.00+-0.00    0.00+-0.00
+
+READING
+A response appears where the sky arena had none: the drum now moves the
+steering neuron by about 1 Hz and the command by about half a degree per tic,
+against a frozen-retina arm that is exactly zero, so it is visually driven.
+In the sky arena the same measurements were +0.39+-0.50 Hz and +0.06+-0.18.
+
+It is not direction selective. The mirrored arm, which reverses every
+horizontal optic-flow signal, gives the same sign and nearly the same size.
+A real optomotor response must reverse; this one does not. So the arena buys
+what it was built to buy -- roughly three times the visually driven signal at
+the steering neuron -- and the barrier is unchanged: per-cell direction
+selectivity capped near 0.08 where a fly needs ~0.5, which is a property of
+the neuron model and the wiring, not of the world we show it.

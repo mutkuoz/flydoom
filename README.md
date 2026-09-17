@@ -239,10 +239,17 @@ blind at Doom's red primary, so the scene is **repainted into blue-green** — w
 exactly what a fly-vision lab does when it builds an arena out of green emitters. The
 gamma is undone first, because photoreceptors integrate linear light.
 
-Two arena changes came later, and both are environment, not brain:
+Three arena changes came later, and all are environment, not brain:
 
 - **A daylight sky.** The stock arena has a dark stone ceiling, so the upper half of every
   eye looked at near-black. Now it's open sky: top-of-view brightness 10.8 → 196.
+- **An arena built for a fly** (`health_gathering_fly`). Doom's wall detail sits near one
+  map unit — far finer than the fly's 5.4° resolution — so its eye averaged the walls to
+  flat grey; its floor was a dark flat with nothing to track. Now: bold vertical stripes at
+  the spatial period the fly's motion detectors prefer (128 map units ≈ 18–37° at wall
+  distance), bright textured ground, and flat daylight. Frame-to-frame change on the retina
+  — the quantity a motion detector integrates — **nearly doubles** (×1.9 overall, ×3.5 in
+  the ventral field, where a walking fly reads its ground flow).
 - **The whole visual field.** Each eye sees 170° across and they point outward, together
   covering ~250°, but one Doom camera can't exceed ~170°. So two more Doom instances render
   90° left and right, loading the main game's save every tic — the *same* world, not a
@@ -273,13 +280,19 @@ defaults every earlier result reproduces bit for bit — **including everything 
 is the honest status of section 4: those numbers are real, and they were measured through an
 interface with one eye reversed.
 
-**Did fixing them produce the reflex? No.** Tethered in a spinning drum — commands recorded
+**Did fixing them produce the reflex? No** — and neither did the better arena. Tethered in a spinning drum — commands recorded
 but not executed, exactly how this is measured in real flies — the fly's steering is flat at
 both the command and the neuron level, and mirroring its eyes doesn't reverse anything. What
 the fix *does* do is double the direction signal at the horizontal system (1.6 → 3.4 Hz),
 which is still 3 Hz against a standing left-right imbalance of ~20 Hz. The limit is the one
 in §2, not the interface: per-cell selectivity capped near 0.08 where a fly needs ~0.5. Full
 numbers: [`paper/data/drum_anat/NOTE.txt`](paper/data/drum_anat/NOTE.txt).
+
+In the fly arena the drum finally moves the steering neuron — about 1 Hz, three times the
+old arena, against exactly zero with frozen eyes, so it is genuinely visual. But mirroring
+the eyes gives the same sign and size, where a real reflex must reverse. The world was worth
+fixing; the barrier is the detector, not the world
+([`paper/data/drum_fly/NOTE.txt`](paper/data/drum_fly/NOTE.txt)).
 
 ---
 

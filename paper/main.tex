@@ -1502,6 +1502,15 @@ own stimulus, the arm that follows increases it, and the asymmetry is a
 property of the loop rather than of the pathway. It is the reason the tethered
 version is the one we report.
 
+Rebuilding the arena for the animal moves the response without moving the
+dissociation. In the fly arena, tethered, the drum modulates \cell{DNp15} by
+$+1.22\pm1.11$\,Hz at 1\,deg/tic and the command by $-0.49\pm0.54$, against
+$+0.39\pm0.50$ and $+0.06\pm0.18$ in the sky arena and exactly zero with a
+frozen retina, so the response is visually driven and roughly three times
+larger. It is still not directional: the mirrored arm gives the same sign and
+nearly the same magnitude ($+0.83\pm0.99$\,Hz), where a genuine optomotor
+response must reverse.
+
 What the corrected map does buy is visible in the open-loop grating. Direction
 separation at the horizontal system, rightward minus leftward drift, rises from
 $1.625$ to $3.375$\,Hz in the configuration the behavioural runs use, and is
@@ -1795,6 +1804,29 @@ half of every eye viewed near-black. The full-eye runs use the same map with
 the ceiling replaced by open sky at the same height and a generated daylight
 texture, which raises the mean brightness of the top quarter of the view from
 10.8 to 196 (of 255).
+
+\emph{Fly arena.} A further variant addresses the rest of the field on the same
+argument. Doom's wall detail sits near one map unit, far below the $5.4^\circ$
+acceptance angle, so the eye averages it to flat grey and the only wall
+contrast left is the silhouette against the sky; its floor is a dark liquid
+flat at 0.023 luminance against the sky's 0.71, with a per-lens standard
+deviation of 0.008, which gives the ventral field nothing to track. The
+replacements are a vertical square-wave grating of period 128 map units, which
+spans $18$--$37^\circ$ at the distances walls sit at and so brackets the
+$20$--$30^\circ$ optimum for the optomotor response, and a bright irregular
+ground with features of 32--64 units; sector lighting is set flat and maximum,
+since Doom shades sectors to fake a depth cue for an eye that infers depth from
+parallax. Frame-to-frame change in per-lens luminance, which is the quantity a
+correlator integrates, rises $1.9\times$ over the whole eye and $3.5\times$ in
+the ventral field, while static contrast falls slightly: what it loses is a
+large static edge that no motion detector can use.
+
+\emph{Render resolution.} Each column integrates a $6.3^\circ$ acceptance
+function, so most of a $1280\times1024$ frame is averaged away before the
+retina sees it. At $640\times480$ per-column luminance correlates $0.995$ with
+the full render (mean absolute difference 0.014 against a 0.245 spread across
+the eye) and the same 4,450 of 4,541 columns fall inside the views, at $1.7$
+times the speed.
 
 None of it releases \cell{LPLC2}. We note the engine's own display controls are
 not a route either: the engine's gamma, contrast, brightness and saturation
