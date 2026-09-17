@@ -80,6 +80,7 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true")
     ap.add_argument("--wide", action="store_true")
     ap.add_argument("--eye-map", default="lattice")
+    ap.add_argument("--render", default="full", choices=["full", "fast"])
     ap.add_argument("--fixed-turn", action="store_true")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
@@ -119,6 +120,8 @@ def main() -> int:
         base.append("--wide")
     if args.eye_map != "lattice":
         base += ["--eye-map", args.eye_map]
+    if args.render != "full":
+        base += ["--render", args.render]
     if args.fixed_turn:
         base.append("--fixed-turn")
     if args.yaw_max is not None:

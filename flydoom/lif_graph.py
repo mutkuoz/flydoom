@@ -144,3 +144,20 @@ class GraphedLIF:
         if out_set is not None:
             self.out_set.copy_(out_set)
         self.graph.replay()
+
+
+# MEASURED 2026-09-18, and the reason this module stays unused.
+#
+# The premise above is no longer true. On the real network the eager step now
+# costs 0.320 ms, not the 8.50 ms profiled in August: 26x faster, and nothing
+# about the model changed, so the dispatch cost the graph exists to remove is
+# already gone. Replaying the graph costs 0.487 ms, which is 1.5x SLOWER, and
+# the reason is visible in step_inplace above: it delivers spikes with one
+# index_add per delay group where LIFNet.step uses a CSR matrix product. The
+# graph faithfully replays a worse formulation.
+#
+# tests/test_lif_graph.py verifies that replay is bit-identical to the eager
+# step over twelve steps with mixed delays, graded units and conductance
+# synapses, so the module is correct. It is simply not a speedup any more, and
+# the remaining per-tic cost sits in the 57 per-substep sensory updates rather
+# than in the LIF step at all.

@@ -69,7 +69,7 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
             scenario: str = "defend_the_center",
             half_period: int = 70, eye_map: str = "lattice",
             wide: bool = False, fixed_turn: bool = False,
-            open_loop: bool = False) -> dict:
+            open_loop: bool = False, render: str = "full") -> dict:
     """One episode with a SQUARE-WAVE rotation added to the agent's action.
 
     `half_period` is in tics; 70 at 35 tics/s is a 4 s cycle, 0.25 Hz, which
@@ -79,13 +79,13 @@ def run_one(imposed: float, seed: int, tics: int, device: str,
     from flydoom.doom import DoomConfig
     from flydoom.motor import MotorConfig
 
-    from m9_behaviour import WIDE_EYE
+    from m9_behaviour import RENDER
     cfg = AgentConfig(
         device=device, seed=seed, spiking_t4=True, optic_gain=optic_gain,
         eye_map=eye_map,
         motor=MotorConfig(yaw_source=yaw_source, fixed_turn_sign=fixed_turn),
         doom=DoomConfig(labels=True, seed=seed, scenario=scenario,
-                        **(WIDE_EYE if wide else {})),
+                        **(RENDER[render] if wide else {})),
     )
     agent = FlyDoomAgent(cfg)
     if mirror:
@@ -216,6 +216,8 @@ def main() -> int:
     ap.add_argument("--fixed-turn", action="store_true",
                     help="steer toward the more active side; see "
                          "MotorConfig.fixed_turn_sign")
+    ap.add_argument("--render", default="full", choices=["full", "fast"],
+                    help="see m9_behaviour.RENDER")
     ap.add_argument("--open-loop", action="store_true",
                     help="tethered fly: the brain's commands are recorded "
                          "but not executed, and it does not walk. Removes "
@@ -256,7 +258,7 @@ def main() -> int:
                             args.yaw_source, args.optic_gain,
                             args.scenario, args.half_period,
                             args.eye_map, args.wide, args.fixed_turn,
-                            args.open_loop)
+                            args.open_loop, args.render)
                 per.append(r["modulation"])
                 xs.append(imp)
                 ys.append(r["modulation"])

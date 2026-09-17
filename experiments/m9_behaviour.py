@@ -239,6 +239,16 @@ def _eye_bias(agent) -> float:
 WIDE_EYE = dict(fov_deg=170.0, width=1280, height=1024,
                 gnomonic=True, pyramid_blur=True, side_views=(90.0, -90.0))
 
+# The same eye rendered at a quarter of the pixels. Each lens integrates a 6.3
+# degree acceptance function, so most of those pixels are averaged away before
+# the retina sees them: MEASURED, per-lens luminance correlates 0.995 with the
+# full-resolution render (mean |difference| 0.014 against a 0.245 spread across
+# the eye) and the same 4,450 of 4,541 lenses fall inside the view. It is 1.7x
+# faster end to end, which is the difference between a 30-seed condition taking
+# an hour and taking two.
+WIDE_EYE_FAST = dict(WIDE_EYE, width=640, height=480)
+RENDER = {"full": WIDE_EYE, "fast": WIDE_EYE_FAST}
+
 
 def _chatter(x) -> float:
     x = np.asarray(x)
@@ -258,7 +268,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               mirror: bool = False,
               blind: bool = False,
               wide: bool = False,
-              eye_map: str = "lattice") -> tuple[dict, dict]:
+              eye_map: str = "lattice",
+              render: str = "full") -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -268,7 +279,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         mk["tau_baseline"] = tau_baseline
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
-                        labels=smell, **(WIDE_EYE if wide else {})),
+                        labels=smell, **(RENDER[render] if wide else {})),
         motor=MotorConfig(**mk),
         smell=smell,
         shuffle_graph=shuffled,
@@ -451,6 +462,10 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--render", default="full", choices=["full", "fast"],
+                    help="resolution of the full eye's three views. 'fast' is "
+                         "640x480, a quarter of the pixels and 1.7x faster, "
+                         "and its lenses correlate 0.995 with 'full'.")
     ap.add_argument("--eye-map", default="lattice",
                     choices=["lattice", "anatomical"],
                     help="where each lens looks; see AgentConfig.eye_map")
@@ -536,6 +551,7 @@ def main() -> int:
     record["touch"] = args.touch
     record["wide"] = args.wide
     record["eye_map"] = args.eye_map
+    record["render"] = args.render
     record["fixed_turn"] = args.fixed_turn
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
@@ -553,7 +569,7 @@ def main() -> int:
                                     args.optic_gain, args.spiking_t4,
                                     args.touch,
                                     motor_kw, args.mirror, args.blind,
-                                    args.wide, args.eye_map)
+                                    args.wide, args.eye_map, args.render)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
@@ -561,7 +577,7 @@ def main() -> int:
                                       args.tau_baseline, args.optic_gain,
                                       args.spiking_t4, args.touch, motor_kw,
                                       args.mirror, args.blind, args.wide,
-                                      args.eye_map)
+                                      args.eye_map, args.render)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:
