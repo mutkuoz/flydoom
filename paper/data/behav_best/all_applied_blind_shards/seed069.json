@@ -1,0 +1,181 @@
+{
+ "tics": 700,
+ "seeds": 1,
+ "seed_start": 69,
+ "bias_mv": 0.0,
+ "smell": true,
+ "tau_baseline": null,
+ "device": "cpu",
+ "argv": [
+  "--scenarios",
+  "health_gathering_supreme",
+  "--tics",
+  "700",
+  "--seeds",
+  "1",
+  "--device",
+  "cpu",
+  "--bias",
+  "0.0",
+  "--smell",
+  "--optic-gain",
+  "16.0",
+  "--spiking-t4",
+  "--touch",
+  "--yaw-source",
+  "DNp15",
+  "--blind",
+  "--seed-start",
+  "69",
+  "--json",
+  "paper/data/behav_best/all_applied_blind_shards/seed069.json"
+ ],
+ "git_sha": "bab5ec7-dirty",
+ "started": "2026-09-16T07:05:17",
+ "runs": [
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "connectome",
+   "episodes": [
+    {
+     "tics": 448,
+     "path": 1632.1051683536293,
+     "net_displacement": 735.9833397145743,
+     "tiles_visited": 30,
+     "health_end": 4.0,
+     "healed": 16.0,
+     "damage": 104.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 18.381168433074823,
+     "yaw_abs_mean": 1.4989372244531645,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 14.235206460952758,
+     "fwd_clip_frac": 0.0,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.268348623853211,
+     "yaw_chatter": 0.348993288590604,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.052752293577981654,
+     "collisions": 5.0,
+     "collisions_per_1k_tics": 11.185682326621924,
+     "free_run_tics": 89.4,
+     "vision_steer_r": 0.0
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "shuffled",
+   "episodes": [
+    {
+     "tics": 416,
+     "path": 524.1672149666999,
+     "net_displacement": 271.69825649292716,
+     "tiles_visited": 9,
+     "health_end": 4.0,
+     "healed": 8.0,
+     "damage": 96.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 17.170093327129905,
+     "yaw_abs_mean": 0.7946669978717088,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 21.365384615384617,
+     "fwd_clip_frac": 0.9711538461538461,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.9975961538461539,
+     "use_frac": 0.9975961538461539,
+     "spin": 0.034653465346534656,
+     "yaw_chatter": 0.6506024096385542,
+     "attack_chatter": 0.0024096385542168677,
+     "stuck_frac": 0.7301980198019802,
+     "collisions": 4.0,
+     "collisions_per_1k_tics": 9.63855421686747,
+     "free_run_tics": 103.75,
+     "vision_steer_r": 0.0
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "random",
+   "episodes": [
+    {
+     "tics": 480,
+     "path": 1507.8839825805603,
+     "net_displacement": 477.5712248660488,
+     "tiles_visited": 29,
+     "health_end": 8.0,
+     "healed": 28.0,
+     "damage": 112.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 19.232248856685924,
+     "yaw_abs_mean": 1.6715012543282568,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 14.417923188618046,
+     "fwd_clip_frac": 0.00625,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.3504273504273504,
+     "yaw_chatter": 0.4405010438413361,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.24217118997912318,
+     "collisions": 7.0,
+     "collisions_per_1k_tics": 14.613778705636742,
+     "free_run_tics": 68.42857142857143
+    }
+   ]
+  },
+  {
+   "scenario": "health_gathering_supreme",
+   "arm": "still",
+   "episodes": [
+    {
+     "tics": 384,
+     "path": 0.0,
+     "net_displacement": 0.0,
+     "tiles_visited": 1,
+     "health_end": 4.0,
+     "healed": 0.0,
+     "damage": 88.0,
+     "kills": 0.0,
+     "tiles_per_1k_path": 1000.0,
+     "yaw_abs_mean": 0.0,
+     "yaw_clip_frac": 0.0,
+     "fwd_abs_mean": 0.0,
+     "fwd_clip_frac": 0.0,
+     "lat_clip_frac": 0.0,
+     "attack_frac": 0.0,
+     "use_frac": 0.0,
+     "spin": 0.0,
+     "yaw_chatter": 0.0,
+     "attack_chatter": 0.0,
+     "stuck_frac": 0.0,
+     "collisions": 0.0,
+     "collisions_per_1k_tics": 0.0,
+     "free_run_tics": 383.0
+    }
+   ]
+  }
+ ],
+ "arms": [
+  "connectome",
+  "shuffled",
+  "random",
+  "still"
+ ],
+ "optic_gain": 16.0,
+ "spiking_t4": true,
+ "yaw_source": "DNp15",
+ "touch": true,
+ "motor_kw": {
+  "yaw_source": "DNp15"
+ },
+ "mirror": false,
+ "blind": true,
+ "env": {
+  "FLYDOOM_DEVICE": "cpu"
+ }
+}

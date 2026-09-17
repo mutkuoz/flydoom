@@ -102,3 +102,38 @@ statistically matched random agent, and with a mirrored retina it does not.
 That is vision-dependent, since mirroring changes only the retinal sampling
 order, but it is a weaker statement than "performance depends on vision" and
 should not be written as the stronger one.
+
+BLIND CONTROL, 30 SEEDS -- CONVERGES WITH THE MIRROR
+
+Connectome minus its own command-matched control:
+
+  metric          intact              mirrored          blind
+  healed          +12.67 +- 10.80 *   -0.53 +- 7.37     -5.60 +- 11.57
+  tics            +37.90 +- 36.60 *   -5.47 +- 31.88   -33.30 +- 48.33
+  tiles_visited    +3.93 +-  3.05 *   -0.57 +- 3.71     +0.47 +-  4.22
+  stuck_frac       -0.07 +-  0.06 *   +0.01 +- 0.08     -0.06 +-  0.08
+
+Freezing the retina on one frame abolishes every advantage that mirroring
+abolishes. The two controls break vision in different ways -- mirroring
+reverses horizontal optic flow while preserving its statistics, freezing
+removes optic flow while preserving the mean image -- and they agree.
+
+Absolute health collected by the model is graded across the three conditions,
+intact 24.80 > mirrored 16.80 > blind 14.27, which is the ordering expected if
+performance scales with how much usable visual signal remains.
+
+The qualification is unchanged and applies to both controls: the model's own
+paired decline is directionally consistent and not individually significant
+(blind minus intact: healed -10.53 +- 13.31, tics -45.47 +- 52.53).
+
+HEADLINE, STATED AT THE STRENGTH THE DATA SUPPORT
+
+With an intact retina the model issues motor commands that beat a
+statistically matched random agent on health collected, survival, exploration
+and stuck-fraction. Reversing optic flow abolishes that advantage, and
+removing optic flow abolishes it too. The advantage is vision-dependent.
+
+Not claimed: that the model's absolute performance falls significantly without
+vision, or that any recognisable fly reflex is present. The optomotor drum
+shows no directional response, looming shows none, fixation cells are silent,
+and klinotaxis is absent.
