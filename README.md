@@ -345,7 +345,7 @@ them built to kill our own explanations.
 | M10–M14 | Odour tracking · touch · optomotor drum · gated odour · replay | mostly ❌, all with controls |
 | M15–M16 | LIF validation · **where each eye points, from the wiring** | ✅ |
 
-133 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
+134 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
 offset, fan-in, isolation, add-back, saturation, per-subtype geometry, morphology, real
 traces, and the shunt cancellation.
 
@@ -357,7 +357,7 @@ flydoom/        the model: graph.py, lif.py, retina.py, doom.py, motor.py,
 experiments/    m0–m16 plus the diagnostics; run_sharded.py for batches
 scripts/        recording, arena building, analysis
 paper/          the preprint (main.tex/pdf) and every result in paper/data/
-tests/          133 tests
+tests/          134 tests
 ```
 
 ---

@@ -82,13 +82,28 @@ def test_closer_smells_stronger():
 
 
 def test_half_strength_at_r_half():
+    """r_half halves the CONCENTRATION, which is what the parameter means.
+
+    It does not halve the firing rate, and asserting that it does was this
+    test's bug: receptors saturate and then adapt, so a source at r_half comes
+    out at about 0.65 of a source at zero rather than 0.5. Both stages are
+    deliberate (OlfactionConfig.r_half, and the ORN adaptation below it), so
+    the invariant belongs on the quantity the parameter controls.
+    """
     o = make(r_half=300.0, intermittency_hz=1e-6, duty=1.0)
+    at_half = o._concentration([300.0])
+    at_zero = o._concentration([1.0])
+    assert at_half == pytest.approx(at_zero * 0.5, rel=0.05)
+
+    # and the rate still rises with concentration, saturating rather than
+    # doubling
     o.on_tic([enemy(300.0)])
-    at_half = float(settle(o)[THREAT[0]])
+    r_half_rate = float(settle(o)[THREAT[0]])
     o2 = make(r_half=300.0, intermittency_hz=1e-6, duty=1.0)
     o2.on_tic([enemy(1.0)])
-    at_zero = float(settle(o2)[THREAT[0]])
-    assert at_half == pytest.approx(at_zero * 0.5, rel=0.15)
+    r_zero_rate = float(settle(o2)[THREAT[0]])
+    assert r_half_rate < r_zero_rate
+    assert r_half_rate > 0.5 * r_zero_rate
 
 
 def test_sources_sum_but_saturate():
