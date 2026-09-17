@@ -111,7 +111,10 @@ without vision is not individually significant and no recognisable reflex
 underlies it: an optomotor drum, a looming stimulus and a fixation target each
 produce no directional response. The advantage replicates in a second arena
 over sixty seeds once every lens sees the scene, and is absent there with the
-original field of view.
+original field of view. Two errors in the visual interface, an eye map read
+with the wrong hexagonal convention and a reversed steering sign, are corrected
+and measured: together they double the population direction signal and still
+produce no optomotor response.
 
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
@@ -1464,6 +1467,50 @@ is a further specificity control. Every higher-scoring point the search located
 lay outside the feasible region, failing the olfactory constraint in the manner
 described for row (ii).
 
+\subsection{Two interface errors, and what correcting them changes}
+\label{sec:interface}
+
+Plotting each ommatidial column at the direction it looks, rather than on the
+lattice, shows a slanted parallelogram slanted the same way in both eyes, where
+a real right eye mirrors the left. Methods gives the two errors this exposed:
+an eye map read with the wrong hexagonal convention and mirrored in neither
+eye, and a steering sign that turned the model away from its more active
+steering neuron. Every result above was measured through that interface. Both
+corrections are options rather than defaults, so those results reproduce bit
+for bit, and the question here is only what the corrections buy.
+
+For the reflex they should matter most to, nothing. In a tethered drum --- the
+commands recorded and discarded, the body turning only as the drum dictates and
+not walking, so that a counter-turn cannot cancel its own stimulus --- ten
+seeds per speed give no directional response at either level we can read. The
+commanded yaw modulation, taken against each seed's own no-drum baseline, is
+$+0.06\pm0.18$, $+0.09\pm0.18$, $+0.39\pm0.19$ and $-0.05\pm0.18$ at 1, 2, 4
+and 8\,deg/tic; the \cell{DNp15} left--right difference that precedes the
+decoder's deadzone and baseline filter is $+0.39\pm0.50$, $+0.20\pm0.52$,
+$-0.14\pm0.46$ and $+0.20\pm0.57$\,Hz. One cell of sixteen separates, points
+the wrong way, and does not reverse under a mirrored retina. The frozen-retina
+arm returns exactly zero, which is the check that the bookkeeping is sound:
+with an unchanging image both half-cycles are identical.
+
+Closed loop looks more encouraging and is misleading. Flipping the sign chain
+in exactly one place --- a mirrored retina, or the uncorrected steering sign
+--- produces a large speed-tuned modulation ($+1.26\pm0.29$ and $+0.68\pm0.45$
+at 1\,deg/tic) in the direction that \emph{adds} to the imposed rotation, while
+flipping it twice or not at all produces nothing. That is positive feedback
+amplifying a wrong-way turn: the arm whose turn opposes the drum reduces its
+own stimulus, the arm that follows increases it, and the asymmetry is a
+property of the loop rather than of the pathway. It is the reason the tethered
+version is the one we report.
+
+What the corrected map does buy is visible in the open-loop grating. Direction
+separation at the horizontal system, rightward minus leftward drift, rises from
+$1.625$ to $3.375$\,Hz in the configuration the behavioural runs use, and is
+$0.500$ against $0.375$\,Hz in the frozen model. Per-cell selectivity is
+unchanged ($|\mathrm{DSI}|\approx0.007$), as it must be: the map fixes where a
+column looks, not what a detector computes. A doubled population signal of
+3\,Hz against a standing left--right asymmetry near $20$\,Hz does not reach
+behaviour, and the ceiling of Sec.~\ref{sec:shunt} is what it runs into.
+
 \section{Discussion}
 
 The dissociation we observe is not between easy and hard computations, nor
@@ -1607,6 +1654,13 @@ but its axes are not isotropic in visual angle, so each is scaled to the
 published field of view. Absolute angular claims inherit this.
 \item \textbf{The gustatory control is partly true by construction}, since
 $W_{\mathrm{syn}}$ is fitted on it.
+\item \textbf{The visual interface carried two errors} (Sec.~\ref{sec:interface}):
+an eye map read with the wrong hexagonal convention and unmirrored between the
+eyes, and a reversed steering sign. Every result reported here was measured
+through it. Correcting both doubles the population direction signal, leaves
+per-cell selectivity unchanged, and produces no optomotor response, so the
+conclusions are unchanged; but any result that depends on the sign structure of
+binocular optic flow should be read with this in mind.
 \item \textbf{One rendering engine.} All visual results come from Doom, and
 all but the full-eye runs from one viewport geometry; the full-eye runs add a
 second arena and field of view, but we have not tested whether a different
@@ -1704,6 +1758,38 @@ pyramid matched to its local scale. The engine's head-bob is pinned at its
 default, because ViZDoom persists console variables across sessions and a
 diagnostic had silently set it to zero.
 
+\emph{Where each column looks.} The map above places a column by stretching
+the lattice's own Cartesian coordinates onto the published field of view. That
+map, used for every result except where noted, contains two errors, both
+measured rather than argued. First, FlyWire's $(p,q)$ are axial hexagonal
+coordinates whose axes are $120^\circ$ apart, not $60^\circ$: read at $60$
+each eye is a $51\times17$ sliver, read at $120$ it is $32\times27$, and the
+four \cell{T4}/\cell{T5} preferred directions come out $95^\circ$ apart
+rather than $110^\circ$. Second, both hemispheres carry the same anatomical
+convention, so one eye's map must be mirrored, and neither was: for a rotating
+world both eyes then report the same local direction, which is the one stimulus
+an optomotor response must distinguish, while forward translation reports
+opposite ones.
+
+The corrected map takes its axes from the wiring. For each subtype and
+hemisphere we take the synapse-weighted offset between the columns supplying
+the tip of a dendrite and those supplying its base (\cell{Mi9} against
+\cell{Mi4}/\cell{C3} for \cell{T4}; \cell{Tm9} against
+\cell{Tm1}/\cell{Tm2} for \cell{T5}), which estimates the preferred
+direction from anatomy alone. \cell{T4} and \cell{T5} agree within
+$1$--$13^\circ$ on all four directions in both eyes, placing front-to-back
+along $-h$ and upward along $+v$, where $h=(q-p)\sqrt3/2$ and $v=(p+q)/2$. The
+\cell{R7}/\cell{R8} columns presynaptic to the dorsal-rim \cell{DmDRA} cells
+lie on the $+v$ side, which fixes ``up'' without reference to motion. Both
+agree with the published eye map, in which $+h$ ``points towards the posterior
+medulla, corresponding to anterior on the eye because of the optic
+chiasm''~\citep{zhao2025}. Each eye is then placed as measured: from
+$10^\circ$ into the opposite hemifield in front to $155^\circ$ behind, and
+from $70^\circ$ below the horizon to directly
+above~\citep{zhao2025,kemppainen2022}, which supersedes the $\pm40^\circ$
+splay. $98\%$ of columns then fall inside the three views; the remainder look
+above $82^\circ$, which no planar projection renders.
+
 \emph{Sky arena.} The standard arena has a dark stone ceiling, so the dorsal
 half of every eye viewed near-black. The full-eye runs use the same map with
 the ceiling replaced by open sky at the same height and a generated daylight
@@ -1728,6 +1814,17 @@ by $dt$; dividing by $\tau$ instead scales every reported rate by $160\times$
 and is a failure mode we hit and document. A 12-tic warmup precedes baseline
 estimation, and a $\tau=3$\,s baseline removes the standing left--right
 asymmetry.
+
+The steering sign was wrong, and every result except where noted inherits it.
+The decoder takes the left-minus-right difference of the steering pair and
+sends it to \texttt{TURN\_LEFT\_RIGHT\_DELTA}, on the assumption that the
+engine treats positive as a left turn. Measured, a $+10$ command lowers the
+heading by $10^\circ$ and displaces the rendered scene $28$\,px to the left
+at $90^\circ$ over 320\,px, which is a right turn. The model therefore
+steered \emph{away} from the side whose steering neuron fired harder, where
+both \cell{DNa02}~\citep{rayshubskiy2025} and \cell{DNp15} steer toward
+their own side. The corrected sign is available as an option and used only
+where stated.
 
 \subsection{Statistical analysis}
 \label{sec:stats}
