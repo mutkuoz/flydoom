@@ -74,58 +74,50 @@ in a closed sensorimotor loop}
 
 \begin{abstract}
 \noindent
-Synapse-resolution connectomics permits simulation of an entire brain with
-essentially no free parameters, but such models are typically driven open
-loop. We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
+We embed a frozen FlyWire FAFB v783 connectome (139{,}255 neurons;
 2{,}710{,}038 edges) in a closed sensorimotor loop with a video game. No
-parameter is trained, and the only fitted quantity is a single global synaptic
-gain calibrated on a non-visual behaviour.
+parameter is trained; the only fitted quantity is a global synaptic gain
+calibrated on a non-visual behaviour.
 
-Transfer is dissociated by modality. Chemosensory transformations are
-reproduced: sugar drives the proboscis motor pool to 77\,Hz, bitter
-co-stimulation suppresses it by 99\%, and an olfactory channel raises lateral
-horn activity to $14.1\pm5.5$\,Hz while suppressing a descending neuron one
-synapse downstream ($-17.7\pm7.4$\,Hz), none of it fitted and none surviving a
-degree-preserving shuffle. Per-cell direction selectivity is not:
-$|\mathrm{DSI}|\leq0.0121$, roughly $40\times$ below the experimental
-threshold for calling a terminal direction-tuned.
+Chemosensory transformations transfer. Sugar drives the proboscis motor pool
+to 77\,Hz, bitter co-stimulation suppresses it by 99\%, and odour suppresses a
+descending neuron one synapse from the lateral horn ($-17.7\pm7.4$\,Hz), none
+of it fitted and none surviving a degree-preserving shuffle. Odour also
+modulates \cell{DNa02}, the goal-directed steering neuron, by
+$17.3\pm1.6$\,Hz with vision held constant.
 
-The obstacle is the neuron model. A product requires a multiplicative
-interaction between the correlator arms, which in a conductance-based neuron
-must come from inhibitory division, and that division cancels itself: shunting
-divides the membrane by $1.77\times$ while the hyperpolarisation it causes
-raises the excitatory driving force by $1.85\times$. Making inhibition purely
-divisive abolishes the residue rather than restoring it, so what survives is a
-threshold conjunction. Raising the inhibitory-to-excitatory ratio restores the
-interaction, but no single value serves the brain: applied globally it drives
-the proboscis pool to 168\,Hz under bitter, because 51\% of inhibitory
-synapses terminate on inhibitory neurons. Restricted to the visual populations
-it leaves the chemosensory results intact and raises selectivity sevenfold.
+Per-cell direction selectivity does not transfer
+($|\mathrm{DSI}|\leq0.0121$). Shunting inhibition cancels itself in this neuron
+model, and making inhibition purely divisive abolishes the residue, so what
+survives is a threshold conjunction rather than a product. A regional
+inhibitory scale raises selectivity sevenfold without altering the
+chemosensory results; a single global value cannot, since it inverts the
+gustatory response.
 
-Recording site then proves more consequential than any parameter. Read at the
-horizontal system, the optomotor output stage, the frozen model carries a
-directional signal of 17 to 26\,Hz that ablating \cell{T4}/\cell{T5}
-abolishes, an order of magnitude above anything resolvable at the descending
-pair used as the steering readout, and the regional scale maximising per-cell
-selectivity drives that signal to zero. Behaviour follows neither: over thirty
-held-out seeds, conditions differing by an order of magnitude and in sign at
-the output stage return four and six of eighteen measures against a
-command-matched control.
+Recording site proves more consequential than any parameter. The frozen model
+carries a 17--26\,Hz directional signal at the horizontal system that ablating
+\cell{T4}/\cell{T5} abolishes, and the regional scale that maximises per-cell
+selectivity drives it to zero. That signal reaches \cell{DNp15}, the optomotor
+descending neuron, at up to 32\,Hz, while the steering readout used throughout
+was \cell{DNa02}, which draws $2.3\%$ of its input from vision and fires near
+its refractory ceiling.
 
-The readout accounts for it. \cell{DNa02}, which the decoder uses for
-steering, draws $2.3\%$ of its input from visual populations and $0.34\%$ from
-the horizontal system, and fires near its 454\,Hz refractory ceiling. The
-literature's optomotor pathway to \cell{DNa02} is 75 of 7{,}297 units of
-signed weight here; that output goes to \cell{DNp15}, where the
-\cell{T4}/\cell{T5}-dependent difference reaches 32\,Hz. Across the output
-stage, $79.8\%$ of 1{,}305 descending neurons never fire. The computation
-arrives at a descending neuron; the decoder reads a different one.
+Decoding yaw from \cell{DNp15} with every correction applied, the model's
+commands beat a command-matched random agent on health collected
+($+12.67\pm10.80$), survival, exploration and stuck-fraction over thirty
+held-out seeds. Mirroring the retina abolishes that advantage, and so does
+freezing it. The advantage is vision-dependent, though the model's own decline
+without vision is not individually significant and no recognisable reflex
+underlies it: an optomotor drum, a looming stimulus and a fixation target each
+produce no directional response.
 
-Two results generalise beyond this model: degree-preserving shuffles are
-invalid as closed-loop controls, because the arms sample different stimulus
-distributions; and episode-level behavioural measures failed to resolve a
-population signal varying by an order of magnitude across conditions, which
-bounds what any closed-loop connectome study can claim from them.
+Three results generalise. Any stimulus manipulation is an invalid closed-loop
+control, as degree-preserving shuffles already are, because an arm that
+behaves differently samples a different stimulus; command-matched controls and
+trajectory-matched replay avoid this. Episode-level measures failed to resolve
+a population signal varying tenfold across conditions. And a square-wave
+stimulus places its phases half a period apart on average, so equal sample
+counts do not remove drift from a phase-locked comparison.
 \end{abstract}
 
 \vspace{0.4em}
@@ -1279,7 +1271,7 @@ signal that reaches a descending neuron the decoder does not read, touch
 reaches the decoded neuron but without lateralisation, and smell reaches it
 lateralised and with the predicted sign, which is the one that works.
 
-\subsection{Closed-loop behaviour: a negative result}
+\subsection{Closed-loop behaviour}
 \label{sec:behaviour}
 
 Every condition was run through the identical protocol on the same thirty
@@ -1363,6 +1355,53 @@ difference at 80\% power would require $n\approx106$. We report the negative
 result rather than a subset of metrics chosen after the fact, and note that it
 constrains what any closed-loop connectome study can claim from episode-level
 measures.
+
+\emph{A vision-dependent advantage over matched chance.} The comparisons above
+change the stimulus between arms, and in closed loop that confounds every
+measurement: an arm that behaves differently goes somewhere different and sees
+something different. The comparison between the model and its own
+command-matched control does not have that defect, because both arms receive
+identical conditions and differ only in the source of the command. In the
+configuration that applies every correction reported here (spiking
+\cell{T4}/\cell{T5}, optic gain 16, yaw decoded from \cell{DNp15}, antennal
+contact), that comparison separates, and it separates only while the model can
+see.
+
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+\toprule
+model minus matched control & intact retina & mirrored retina & frozen retina\\
+\midrule
+health collected & $\mathbf{+12.67\pm10.80}$ & $-0.53\pm7.37$ & $-5.60\pm11.57$\\
+tics survived    & $\mathbf{+37.90\pm36.60}$ & $-5.47\pm31.88$ & $-33.30\pm48.33$\\
+tiles visited    & $\mathbf{+3.93\pm3.05}$   & $-0.57\pm3.71$  & $+0.47\pm4.22$\\
+stuck fraction   & $\mathbf{-0.07\pm0.06}$   & $+0.01\pm0.08$  & $-0.06\pm0.08$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+With an intact retina the model beats the matched control on four measures,
+over thirty held-out seeds. Mirroring the retina, which reverses every
+horizontal optic-flow signal while leaving firing rates, contrast statistics and
+wiring untouched, abolishes all four. Freezing it on a single frame, which
+removes optic flow while preserving the mean image, abolishes them too. The two
+controls break vision in different ways and agree, so the conclusion does not
+rest on either manipulation alone. Absolute health collected is graded across
+the conditions, $24.80$ intact, $16.80$ mirrored, $14.27$ frozen.
+
+The claim is narrower than it may appear, and we state its limits. The
+dissociation lies in the advantage over the matched control, not in absolute
+performance: the model's own decline without vision is directionally consistent
+in every comparison and individually significant in none (frozen minus intact,
+health $-10.53\pm13.31$). The control is matched per seed to the model's own
+command statistics and itself improves under mirroring, from $12.13$ to $17.33$
+health, which means that without usable vision the model's commands become
+ones a random agent does better with. What is established is therefore that
+the model's command structure is advantageous only while it can see. What is not
+established is that any recognisable fly reflex underlies it: the optomotor
+drum shows no directional response, looming shows none, the fixation cells are
+silent, and klinotaxis is absent.
 
 Three controls exclude the possibility that the gain in selectivity follows
 from reduced drive alone. Matching the firing rate by lowering gain instead of raising

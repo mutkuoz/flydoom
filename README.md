@@ -311,6 +311,27 @@ Three senses, three different failures: **vision** computes a signal that lands 
 don't read, **touch** lands on the right neuron but can't tell left from right, and **smell**
 lands on the right neuron *and* knows its side — which is why smell is the one that works.
 
+**And then, finally, something that survived its controls.** With every fix applied —
+spiking motion detectors, the optic lobe actually switched on, and steering read from the
+optomotor neuron instead of the navigation one — the fly's commands beat a random agent with
+*identical command statistics*, over 30 levels it had never seen:
+
+| | eyes working | eyes mirrored | eyes frozen |
+|---|---|---|---|
+| health collected vs random | **+12.7** | −0.5 | −5.6 |
+| time survived vs random | **+37.9** | −5.5 | −33.3 |
+| ground covered vs random | **+3.9** | −0.6 | +0.5 |
+
+Two completely different ways of breaking its vision — flipping the eyes left-to-right, or
+freezing them on one image — both wipe out the advantage. So it's not luck and it's not
+motor habits: **the fly does better only while it can see.**
+
+What it is *not*: a recognisable fly reflex. Spin the world around it and it doesn't
+counter-turn. Fly something at it and it doesn't flinch. So this is "vision helps it play"
+rather than "it behaves like a fly." And the effect is in how it beats chance, not a big
+visible drop when you blind it — that drop points the right way but isn't statistically
+solid at 30 levels.
+
 **One number retracted.** We had a "vision–steering correlation" that looked like proof
 vision was driving the fly. It tracks the inhibition knob — the one that *abolishes* the
 motion signal. So it isn't measuring vision. It was the last behavioural evidence for vision
