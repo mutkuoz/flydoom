@@ -109,7 +109,9 @@ held-out seeds. Mirroring the retina abolishes that advantage, and so does
 freezing it. The advantage is vision-dependent, though the model's own decline
 without vision is not individually significant and no recognisable reflex
 underlies it: an optomotor drum, a looming stimulus and a fixation target each
-produce no directional response.
+produce no directional response. The advantage replicates in a second arena
+over sixty seeds once every lens sees the scene, and is absent there with the
+original field of view.
 
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
@@ -319,6 +321,8 @@ bit-identical, and it resets with each episode. At $130^\circ$ the viewport
 covers 64\% of the lattice and at $160^\circ$, 80\%; remaining columns are
 filled with the frame's mean luminance, because a dark surround is a permanent
 high-contrast edge that the looming detectors report as a stationary object.
+The full-eye runs at the end of Sec.~\ref{sec:behaviour} remove this limit, so
+that every column samples the scene (Methods).
 
 Frames are not held across the substeps of a tic. Doom draws at 35\,Hz and the
 simulator runs 57 substeps per frame, so a held frame presents the retina with
@@ -1403,6 +1407,40 @@ established is that any recognisable fly reflex underlies it: the optomotor
 drum shows no directional response, looming shows none, the fixation cells are
 silent, and klinotaxis is absent.
 
+\emph{The full visual field, in a second arena.} Every result above samples at
+most 64\% of the lattice, because one planar view cannot cover two eyes of
+$170^\circ$ splayed $\pm40^\circ$. We removed that limit by rendering three
+views (Methods), so that all $4{,}541$ columns sample the scene, and at the
+same time replaced the arena's dark ceiling with open sky. The brain and
+decoder are unchanged. Sixty held-out seeds (40--99) were run per condition,
+in two blocks; the second was added because the first was underpowered, is
+reported combined, and nothing was selected on either.
+
+\begin{center}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+model minus matched control & full eye & mirrored & frozen & original eye\\
+\midrule
+health collected & $\mathbf{+8.67\pm6.99}$ & $+3.67\pm5.71$ & $+0.60\pm6.42$ & $-0.87\pm6.08$\\
+tics survived & $\mathbf{+31.77\pm29.16}$ & $+11.73\pm27.02$ & $-4.75\pm26.14$ & $+0.18\pm22.33$\\
+tiles visited & $\mathbf{+3.83\pm2.42}$ & $+1.28\pm2.27$ & $\mathbf{+3.02\pm2.64}$ & $+2.22\pm2.53$\\
+stuck fraction & $\mathbf{-0.06\pm0.06}$ & $\mathbf{-0.05\pm0.05}$ & $\mathbf{-0.06\pm0.05}$ & $-0.04\pm0.06$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+With the full eye the advantage in health and survival returns, with the same
+cost in damage taken ($+7.87\pm6.73$), and mirroring or freezing the eye
+removes it. With the original $130^\circ$ view in the same arena there is no
+such advantage, so in this arena the effect requires the wider field. Two
+measures do not share the dissociation: exploration and stuck-fraction
+survive a frozen eye, so they are not evidence of vision here. The limit stated
+above also holds: the model's own health is ordered as expected ($21.2$ full
+eye, $19.3$ mirrored, $19.3$ frozen, $16.3$ original eye), but no
+model-versus-model difference in health or survival is individually
+significant (full minus original eye, health $+4.93\pm6.23$).
+
 Three controls exclude the possibility that the gain in selectivity follows
 from reduced drive alone. Matching the firing rate by lowering gain instead of raising
 inhibition yields $-0.0152$ against $-0.0716$. Applying the identical factor to
@@ -1569,9 +1607,12 @@ but its axes are not isotropic in visual angle, so each is scaled to the
 published field of view. Absolute angular claims inherit this.
 \item \textbf{The gustatory control is partly true by construction}, since
 $W_{\mathrm{syn}}$ is fitted on it.
-\item \textbf{Single stimulus environment.} All visual results come from one
-rendering engine with one viewport geometry; we have not tested whether a
-different visual statistic changes the arm imbalance.
+\item \textbf{One rendering engine.} All visual results come from Doom, and
+all but the full-eye runs from one viewport geometry; the full-eye runs add a
+second arena and field of view, but we have not tested whether a different
+visual statistic changes the arm imbalance. Doom's sky is not drawn in true
+perspective, so the three views of the full eye disagree slightly above the
+horizon.
 \end{itemize}
 
 \section{Methods}
@@ -1636,6 +1677,38 @@ equivalent to repainting every surface, and the same move a fly-vision
 laboratory makes when it builds an arena from green emitters. That recovers the
 lost signal and then some, raising retinal standard deviation from 0.020 to
 0.033, measured open loop on 100 identical frames.
+
+\emph{Full visual field.} Each eye's lattice spans $170\times150^\circ$ and the
+eyes point $40^\circ$ outward, about $250^\circ$ together, while one planar view
+cannot exceed $180^\circ$. For the full-eye runs we render three
+$170^\circ$ views at $1280\times1024$, forward and $90^\circ$ to either side,
+and each column reads the view nearest its own direction. The engine draws one
+view per tic and ties the camera to the heading, so each side view comes from a
+separate engine instance that loads the main game's saved state every tic and
+advances one tic with the agent's action rotated by the offset; it renders the
+same world, not a replica. Three engine behaviours had to be handled: a console
+save lands on alternate tics and holds the state one tic before the tic that
+wrote it, so the intervening actions are replayed; loading itself runs a tic
+with the last-set action, which is therefore set first; and movement commands
+are floored to integers, so the quarter turn is applied as an exact integer
+permutation. At zero offset the side view is pixel-identical to the main view
+over whole episodes; at $\pm90^\circ$, columns in the overlap read the same
+scene from both views ($r=0.97$ and $0.99$). Two corrections accompany the
+wider field. A planar view places elevation $e$ at $\tan e/\cos a$, not
+$\tan e$; the earlier mapping, used for every result except the full-eye runs,
+points a column at an elevation off by a median $1.8^\circ$ ($8.0^\circ$
+beyond $40^\circ$ of azimuth) and counts 148 columns as inside the viewport
+that are not. And since a $170^\circ$ view magnifies its periphery up to
+$130$-fold, each column takes its acceptance blur from the level of an image
+pyramid matched to its local scale. The engine's head-bob is pinned at its
+default, because ViZDoom persists console variables across sessions and a
+diagnostic had silently set it to zero.
+
+\emph{Sky arena.} The standard arena has a dark stone ceiling, so the dorsal
+half of every eye viewed near-black. The full-eye runs use the same map with
+the ceiling replaced by open sky at the same height and a generated daylight
+texture, which raises the mean brightness of the top quarter of the view from
+10.8 to 196 (of 255).
 
 None of it releases \cell{LPLC2}. We note the engine's own display controls are
 not a route either: the engine's gamma, contrast, brightness and saturation

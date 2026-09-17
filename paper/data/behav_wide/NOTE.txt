@@ -1,0 +1,45 @@
+THE FULL EYE IN A DAYLIGHT ARENA
+
+What changed (all environment, nothing in the brain):
+  - arena: health_gathering_sky, the usual map with open daylight sky in
+    place of the dark ceiling (scripts/build_sky_arena.py)
+  - full eye: three 170 degree cameras (front, 90 left, 90 right); every one
+    of 4,541 lenses reads the world, against 64% at the old 130 degree view
+  - corrected lens placement (gnomonic) and per-lens blur (pyramid_blur)
+Brain and decoder: the all-applied configuration of behav_best (spiking
+T4/T5, optic gain 16, DNp15 yaw, antennal touch, smell on).
+
+Protocol: 60 held-out seeds in two blocks, 40-69 then 70-99, each block run
+per condition (run_block1.sh, run_block2.sh). Nothing was selected on either
+block; the second block was added after the first came back underpowered,
+and is reported combined whatever it showed. The first block alone is in
+RESULT_block1.txt. GPU; the behav_best headline ran on CPU in the old arena,
+so it is shown for reference and never paired with these runs.
+
+Connectome minus its own command-matched random arm, paired by seed, 95% CI
+(* = excludes zero). Full table: RESULT.txt (scripts/analyse_wide.py).
+
+                         healed          tics             tiles           stuck
+  full eye, intact       +8.67 +- 6.99*  +31.77 +- 29.16*  +3.83 +- 2.42*  -0.06 +- 0.06*
+  full eye, mirrored     +3.67 +- 5.71   +11.73 +- 27.02   +1.28 +- 2.27   -0.05 +- 0.05*
+  full eye, frozen       +0.60 +- 6.42    -4.75 +- 26.14   +3.02 +- 2.64*  -0.06 +- 0.05*
+  narrow eye, intact     -0.87 +- 6.08    +0.18 +- 22.33   +2.22 +- 2.53   -0.04 +- 0.06
+  (damage: intact +7.87 +- 6.73*, worse; the others do not separate)
+
+READING
+1. With the full eye the model beats its matched control on health and
+   survival again, in a second arena, over 60 seeds. Mirroring the eye or
+   freezing it removes both. That is the headline's vision-dependent
+   advantage, replicated.
+2. With the old 130 degree eye in the same arena there is no such advantage.
+   In this arena, the effect needs the wider field.
+3. Exploration (tiles) and getting stuck less do NOT depend on vision here:
+   both survive the frozen eye. They are not evidence of seeing.
+4. Same limit as the headline: the dissociation is in the advantage over the
+   control. The model's own numbers between conditions are directionally
+   consistent (health 21.2 intact, 19.3 mirrored, 19.3 frozen, 16.3 narrow)
+   but no connectome-vs-connectome difference in health or survival is
+   significant. Full eye minus narrow eye: health +4.93 +- 6.23, survival
+   +19.08 +- 27.21.
+5. This is performance, not a named fly reflex. The optomotor drum, looming,
+   fixation and klinotaxis have not been rerun with the full eye.

@@ -1,0 +1,24 @@
+connectome minus its command-matched random arm, paired by seed
+
+condition                          n  healed                   tics                     tiles_visited            stuck_frac               damage                   
+full eye, sky: intact             60     +8.67 +-  6.99* better  +31.77 +- 29.16* better   +3.83 +-  2.42* better   -0.06 +-  0.06* better   +7.87 +-  6.73* worse 
+full eye, sky: mirrored           60     +3.67 +-  5.71          +11.73 +- 27.02           +1.28 +-  2.27           -0.05 +-  0.05* better   +2.40 +-  5.83        
+full eye, sky: frozen             60     +0.60 +-  6.42           -4.75 +- 26.14           +3.02 +-  2.64* better   -0.06 +-  0.05* better   +0.43 +-  6.17        
+narrow eye, sky: intact           60     -0.87 +-  6.08           +0.18 +- 22.33           +2.22 +-  2.53           -0.04 +-  0.06           +0.37 +-  5.71        
+headline (old arena): intact      30    +12.67 +- 10.80* better  +37.90 +- 36.60* better   +3.93 +-  3.05* better   -0.07 +-  0.06* better  +10.87 +-  8.51* worse 
+headline (old arena): mirrored    30     -0.53 +-  7.37           -5.47 +- 31.88           -0.57 +-  3.71           +0.01 +-  0.08           -0.87 +-  7.73        
+headline (old arena): frozen      30     -5.60 +- 11.57          -33.30 +- 48.33           +0.47 +-  4.22           -0.06 +-  0.08           -5.27 +- 11.22        
+
+connectome alone, mean over seeds
+  full eye, sky: intact            healed   21.20 +- 5.53   tics  448.18 +-24.68   tiles_visited   22.37 +- 1.81
+  full eye, sky: mirrored          healed   19.27 +- 5.15   tics  438.22 +-22.34   tiles_visited   19.42 +- 2.20
+  full eye, sky: frozen            healed   19.27 +- 6.09   tics  435.52 +-21.39   tiles_visited   22.37 +- 2.34
+  narrow eye, sky: intact          healed   16.27 +- 4.67   tics  429.10 +-19.84   tiles_visited   22.48 +- 2.03
+  headline (old arena): intact     healed   24.80 +-10.26   tics  460.27 +-33.89   tiles_visited   21.63 +- 2.99
+  headline (old arena): mirrored   healed   16.80 +- 6.34   tics  430.57 +-25.56   tiles_visited   19.80 +- 2.40
+  headline (old arena): frozen     healed   14.27 +- 7.97   tics  414.80 +-37.60   tiles_visited   20.70 +- 3.57
+
+connectome vs connectome, same seeds (first minus second)
+  full eye, sky: intact - narrow eye, sky: intact          60     +4.93 +-  6.23          +19.08 +- 27.21           -0.12 +-  2.41           +0.01 +-  0.06           +4.67 +-  6.32        
+  full eye, sky: intact - mirrored                         60     +1.93 +-  7.12           +9.97 +- 29.61           +2.95 +-  2.61* better   -0.05 +-  0.06           +3.17 +-  6.86        
+  full eye, sky: intact - frozen                           60     +1.93 +-  7.64          +12.67 +- 30.72           +0.00 +-  2.78           -0.04 +-  0.07           +1.93 +-  7.40        

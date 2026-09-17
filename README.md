@@ -313,7 +313,32 @@ lands on the right neuron *and* knows its side — which is why smell is the one
 
 ### Watch the best version
 
-[`media/best_comparison.mp4`](media/best_comparison.mp4) — three brains on **the same level**, stacked:
+[`media/best_full_eye.mp4`](media/best_full_eye.mp4) — the best version with its **whole field
+of view** and a **daylight sky**.
+
+Each fly eye sees 170° across and the two eyes point 40° outward, so together they cover about
+250°. A Doom camera can't see past about 170°, so before this, roughly a third of the lenses
+were looking at nothing (the black patch in the eye panels). Now three cameras (left, front,
+right) show the *same* world: every tic the side cameras load the main game's save and take
+the fly's own step, turned 90°. Every one of the 4,541 lenses sees something. The dark stone
+ceiling is now open sky, which is what a fly walks under. Nothing in the brain changed.
+
+Did it matter? Over **60 new levels** each:
+
+| model minus matched random agent | full eye | full eye, mirrored | full eye, frozen | old eye, same sky arena |
+|---|---|---|---|---|
+| health collected | **+8.7** | +3.7 | +0.6 | −0.9 |
+| time survived | **+31.8** | +11.7 | −4.8 | +0.2 |
+| ground covered | **+3.8** | +1.3 | **+3.0** | +2.2 |
+
+Bold = the 95% interval excludes zero. With the full eye, the "does better only while it can
+see" result comes back in a new arena, and mirroring or freezing the eyes removes it again.
+With the old narrower eye in the same sky arena it's not there at all. The "ground covered"
+edge survives frozen eyes, so that one isn't vision. Details:
+[`paper/data/behav_wide/NOTE.txt`](paper/data/behav_wide/NOTE.txt).
+
+Earlier clip, three brains on **the same level**, stacked:
+[`media/best_comparison.mp4`](media/best_comparison.mp4)
 
 | row | what it is |
 |---|---|
