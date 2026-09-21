@@ -8,7 +8,9 @@ the same tic the frame came from. All of them were recorded with
 
 Both recorded on **the same level** (`health_gathering_fly`, seed 40) through the
 corrected interface: the whole visual field from three 170° cameras, the
-anatomical eye map, and steering toward the more active side. The arena is the
+anatomical eye map, steering toward the more active side, and MDN read as
+bursts so the fly walks forward (before that it reversed on 97% of tics; see
+`MotorConfig.phasic_mdn`). The arena is the
 one built for a fly's eye (`scripts/build_fly_arena.py`): walls striped at the
 spatial period its motion detectors prefer, bright textured ground, flat
 daylight.
@@ -22,12 +24,13 @@ daylight.
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
     --scenario health_gathering_fly --wide --eye-map anatomical --fixed-turn \
-    --seed 40 --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch \
-    --out media/flydoom.mp4            # add --mirror for the control
+    --phasic-mdn --seed 40 --spiking-t4 --optic-gain 16 --yaw-source DNp15 \
+    --touch --out media/flydoom.mp4    # add --mirror for the control
 ```
 
-One level is an illustration, not evidence — here the intact fly happens to lose
-more lives than the mirrored one. The evidence is the 60-level tables in
+or just `media/record.sh`, which rebuilds both.
+
+One level is an illustration, not evidence. The evidence is the 60-level tables in
 [`../paper/data/behav_wide/`](../paper/data/behav_wide).
 
 **Reading the panels.** Top: the three Doom cameras — left, ahead, right —

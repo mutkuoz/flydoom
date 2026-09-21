@@ -255,7 +255,7 @@ Three arena changes came later, and all are environment, not brain:
   90° left and right, loading the main game's save every tic — the *same* world, not a
   lookalike. At a 0° offset the side view matches the main game pixel for pixel.
 
-### 6. Two interface bugs, found by looking at the picture
+### 6. Three interface bugs, found by looking at the picture
 
 Late in the project we plotted each lens *where it actually looks*, instead of on the
 lattice. The field came out a slanted parallelogram — and both eyes slanted the same way,
@@ -294,6 +294,28 @@ the eyes gives the same sign and size, where a real reflex must reverse. The wor
 fixing; the barrier is the detector, not the world
 ([`paper/data/drum_fly/NOTE.txt`](paper/data/drum_fly/NOTE.txt)).
 
+**And it had been walking backwards.** Watching it get pinned into wall corners, we logged
+what it commands: the walk key was negative on 97% of tics. Walking is read as BPN (forward)
+minus MDN (the "moonwalker" neuron, reverse gear), and that was safe when it was designed,
+because MDN was silent. Raising the optic gain to switch the visual system on — the change
+behind section 4 — also drives MDN from **0 to 107 Hz**, so the fly reversed, blind, into
+walls and stayed there. In a real fly MDN fires in bursts to back away from something, so
+the fix reads it that way: only MDN's rise above its own running level counts as "back up"
+(`phasic_mdn`). The antennae now only register contact when the fly pushes *forward* —
+they're on its head.
+
+| three levels | walks backward | stuck | tiles explored | health collected |
+|---|---|---|---|---|
+| before | 97% | 37–68% | 7–14 | 0–20 |
+| after | **0%** | **24–41%** | **15–26** | **16–60** |
+
+It still gets pinned sometimes. That part is the model: it turns at the same rate whether
+stuck or free, wall contact barely moves MDN, and touch can't steer because both antennae
+reach the same side of the brain. **This also means every behaviour number in section 4 was
+measured on a fly walking backwards** — against a random agent that, being matched to its
+command statistics, walked backwards too. The comparison is fair; the behaviour wasn't
+fly-like. Re-running those tables with a forward-walking fly is the obvious next step.
+
 ---
 
 ## Running it
@@ -321,7 +343,7 @@ download but requires signing in, and is **not** redistributed here.
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
     --scenario health_gathering_fly --wide --eye-map anatomical --fixed-turn \
-    --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch
+    --phasic-mdn --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch
 ```
 
 **Speed.** On an RTX 5070 Ti, roughly **0.06 s per Doom tic** with the full eye (three
