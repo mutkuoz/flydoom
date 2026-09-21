@@ -1,0 +1,66 @@
+THE BEHAVIOUR TABLES WITH A FORWARD-WALKING FLY
+
+Why this was re-run. Every behavioural result before this was measured through
+an interface with three errors: the eye map read with the wrong hexagonal
+convention and unmirrored, a reversed turn sign, and MDN's tonic 107 Hz (driven
+by the optic gain of 16) read as a walk command, so the agent reversed on 97%
+of tics. Its matched random agent reversed too, so the comparisons were fair,
+but the behaviour was not a fly's.
+
+What changed: the interface only (anatomical eye map, correct turn sign, MDN
+read as bursts, antennal contact on forward pushes). Same brain configuration,
+same 60 held-out seeds (40-99), same controls. Full table: RESULT.txt
+(scripts/analyse_fixed.py). run.sh rebuilds it.
+
+MODEL MINUS ITS COMMAND-MATCHED RANDOM AGENT (* = 95% CI excludes zero)
+
+                        health       survival      ground covered  stuck
+  legacy, sky arena
+    intact              +8.67*       +31.77*       +3.83*          -0.06*
+    mirrored            +3.67        +11.73        +1.28           -0.05*
+    frozen              +0.60         -4.75        +3.02*          -0.06*
+  corrected, sky arena
+    intact              -4.27         -8.18        -0.15           +0.02
+    mirrored            +2.47        +10.50        +2.77*          -0.09*
+    frozen              +4.33        +22.45*       +2.13*          -0.04
+  corrected, fly arena
+    intact              +7.53*       +34.00*       +1.58           +0.03
+    mirrored            -0.67        -13.12        +1.80           -0.12*
+    frozen              +4.47        +22.63        +3.18*          -0.08*
+
+READING
+
+1. In the sky arena the old result does not survive. With a correct interface
+   the intact fly does no better than chance on any measure. Its walls look
+   flat grey at the fly's resolution, so walking face-first into one leaves
+   nothing to steer by; and head to head on the same levels the intact fly
+   covers 3.5 fewer tiles and is stuck 9 points more than the mirrored one.
+   The old configuration's advantage came partly from its errors: reversing
+   with a reversed turn sign steers the direction of travel toward the more
+   active side, and it faced away from the wall it was pressed against.
+
+2. In the fly arena -- walls striped at the period the motion detectors
+   prefer, bright textured ground -- the health and survival advantage comes
+   back (+7.53 health, +34.0 tics, both significant, with more damage taken,
+   the same profile as the original headline), and mirroring removes it
+   (-0.67, -13.1). Freezing weakens it to non-significance (+4.47, +22.6),
+   so the frozen control is ambiguous rather than clean.
+
+3. The same limit as before: no model-versus-model difference in health or
+   survival is individually significant (fly arena, intact minus mirrored,
+   health +3.00 +- 6.18). The dissociation is in the advantage over the
+   matched control.
+
+4. Exploration and stuck-time advantages belong to the mirrored and frozen
+   flies, not the intact one, in both arenas. The intact fly is stuck more
+   than the mirrored one in both (sky +0.09*, fly +0.08*). With correct
+   geometry its vision steers it toward large dark structure, which in Doom
+   means walls. Real flies are drawn to large dark vertical objects; here that
+   is maladaptive, and the extra damage it takes (+8.63*) is consistent with it
+   approaching objects indiscriminately, poison included. A hypothesis, not a
+   measured mechanism.
+
+Net: a vision-dependent advantage over chance exists with a correct interface
+and a forward-walking fly, but only in an arena whose structure the fly can
+resolve, only on health and survival, and with an ambiguous frozen control.
+It is weaker and narrower than the claim it replaces.

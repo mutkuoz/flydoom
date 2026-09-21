@@ -109,12 +109,14 @@ held-out seeds. Mirroring the retina abolishes that advantage, and so does
 freezing it. The advantage is vision-dependent, though the model's own decline
 without vision is not individually significant and no recognisable reflex
 underlies it: an optomotor drum, a looming stimulus and a fixation target each
-produce no directional response. The advantage replicates in a second arena
-over sixty seeds once every lens sees the scene, and is absent there with the
-original field of view. Two errors in the visual interface, an eye map read
-with the wrong hexagonal convention and a reversed steering sign, are corrected
-and measured: together they double the population direction signal and still
-produce no optomotor response.
+produce no directional response. Three errors in the interface --- an eye map
+read with the wrong hexagonal convention, a reversed steering sign, and a walk
+command that ran the agent backwards --- partly produced that advantage.
+Corrected, over sixty seeds, it survives only in an arena rebuilt so the fly can
+resolve its structure ($+7.53\pm6.66$ health, abolished by mirroring, weakened
+by freezing) and vanishes where the walls are finer than its acceptance angle;
+the corrected eye doubles the population direction signal and still produces no
+optomotor response.
 
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
@@ -1444,6 +1446,42 @@ eye, $19.3$ mirrored, $19.3$ frozen, $16.3$ original eye), but no
 model-versus-model difference in health or survival is individually
 significant (full minus original eye, health $+4.93\pm6.23$).
 
+\emph{With the interface corrected.} Every behavioural result above was
+measured through the interface whose errors Sec.~\ref{sec:interface} and the
+Limitations describe, including an agent that walked backwards on $97\%$ of
+tics. We re-ran the full-eye comparison with all of them corrected: the same
+brain configuration, the same sixty seeds and controls, in the sky arena and in
+an arena rebuilt so its walls carry structure at the fly's resolution (Methods).
+
+\begin{center}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+model minus matched control & sky: intact & fly: intact & fly: mirrored & fly: frozen\\
+\midrule
+health collected & $-4.27\pm6.79$ & $\mathbf{+7.53\pm6.66}$ & $-0.67\pm7.70$ & $+4.47\pm5.96$\\
+tics survived    & $-8.18\pm26.56$ & $\mathbf{+34.00\pm25.27}$ & $-13.12\pm30.48$ & $+22.63\pm26.86$\\
+tiles visited    & $-0.15\pm1.76$ & $+1.58\pm2.09$ & $+1.80\pm2.46$ & $\mathbf{+3.18\pm2.10}$\\
+stuck fraction   & $+0.02\pm0.05$ & $+0.03\pm0.06$ & $\mathbf{-0.12\pm0.05}$ & $\mathbf{-0.08\pm0.05}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the sky arena the advantage is gone: the intact model does no better than
+chance on any measure, and head to head it covers $3.52\pm2.23$ fewer tiles and
+is stuck $0.09\pm0.06$ more than the mirrored one. In the fly arena the health
+and survival advantage returns with the profile it had before, including more
+damage taken ($+8.63\pm6.17$), and a mirrored retina removes it; a frozen
+retina only weakens it, so the second control is ambiguous rather than clean.
+The earlier result was therefore partly an artifact of its errors: reversing
+with a reversed turn sign steers the direction of travel toward the more active
+side, and the agent faced away from the wall it was pressed against. With
+correct geometry the model's vision instead steers it toward large dark
+structure --- it is stuck more than the mirrored model in both arenas --- which
+is the attraction a fly shows to dark vertical objects, and maladaptive in a
+maze. What survives is a vision-dependent advantage over chance, confined to a
+world whose structure the animal can resolve.
+
 Three controls exclude the possibility that the gain in selectivity follows
 from reduced drive alone. Matching the firing rate by lowering gain instead of raising
 inhibition yields $-0.0152$ against $-0.0716$. Applying the identical factor to
@@ -1673,8 +1711,9 @@ wall. The matched control, sharing its command statistics, reversed too, so the
 comparisons are sound; the behaviour is not fly-like. Reading \cell{MDN} as
 bursts above its own running level, as a fly's is~\citep{bidaye2014}, and
 counting antennal contact only on forward pushes restores forward walking
-(0\% reversed) and roughly doubles exploration over three levels; the
-behavioural tables have not yet been re-run with it.
+(0\% reversed) and roughly doubles exploration over three levels. Re-run with
+it, the behavioural advantage survives only in the fly arena
+(Sec.~\ref{sec:behaviour}).
 \item \textbf{The visual interface carried two errors} (Sec.~\ref{sec:interface}):
 an eye map read with the wrong hexagonal convention and unmirrored between the
 eyes, and a reversed steering sign. Every result reported here was measured

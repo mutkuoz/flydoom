@@ -1,0 +1,30 @@
+connectome minus its command-matched random arm, paired by seed
+
+condition                      n  healed                   tics                     tiles_visited            stuck_frac               damage                   
+legacy, sky: intact           60     +8.67 +-  6.99* better  +31.77 +- 29.16* better   +3.83 +-  2.42* better   -0.06 +-  0.06* better   +7.87 +-  6.73* worse 
+legacy, sky: mirrored         60     +3.67 +-  5.71          +11.73 +- 27.02           +1.28 +-  2.27           -0.05 +-  0.05* better   +2.40 +-  5.83        
+legacy, sky: frozen           60     +0.60 +-  6.42           -4.75 +- 26.14           +3.02 +-  2.64* better   -0.06 +-  0.05* better   +0.43 +-  6.17        
+corrected, sky: intact        60     -4.27 +-  6.79           -8.18 +- 26.56           -0.15 +-  1.76           +0.02 +-  0.05           -3.50 +-  6.30        
+corrected, sky: mirrored      60     +2.47 +-  8.01          +10.50 +- 34.44           +2.77 +-  2.49* better   -0.09 +-  0.05* better   +3.23 +-  7.91        
+corrected, sky: frozen        60     +4.33 +-  5.00          +22.45 +- 20.36* better   +2.13 +-  1.72* better   -0.04 +-  0.04           +4.83 +-  5.31        
+corrected, fly: intact        60     +7.53 +-  6.66* better  +34.00 +- 25.27* better   +1.58 +-  2.09           +0.03 +-  0.06           +8.63 +-  6.17* worse 
+corrected, fly: mirrored      60     -0.67 +-  7.70          -13.12 +- 30.48           +1.80 +-  2.46           -0.12 +-  0.05* better   -1.07 +-  7.13        
+corrected, fly: frozen        60     +4.47 +-  5.96          +22.63 +- 26.86           +3.18 +-  2.10* better   -0.08 +-  0.05* better   +4.50 +-  5.97        
+
+connectome alone, mean over seeds
+  legacy, sky: intact          healed   21.20 +- 5.53   tics  448.18 +-24.68   tiles_visited   22.37 +- 1.81   stuck_frac    0.24 +- 0.04
+  legacy, sky: mirrored        healed   19.27 +- 5.15   tics  438.22 +-22.34   tiles_visited   19.42 +- 2.20   stuck_frac    0.29 +- 0.04
+  legacy, sky: frozen          healed   19.27 +- 6.09   tics  435.52 +-21.39   tiles_visited   22.37 +- 2.34   stuck_frac    0.28 +- 0.05
+  corrected, sky: intact       healed   13.27 +- 4.54   tics  418.15 +-20.14   tiles_visited   15.42 +- 1.21   stuck_frac    0.36 +- 0.04
+  corrected, sky: mirrored     healed   18.47 +- 5.26   tics  433.02 +-24.62   tiles_visited   18.93 +- 1.87   stuck_frac    0.27 +- 0.04
+  corrected, sky: frozen       healed   15.73 +- 4.82   tics  428.35 +-20.29   tiles_visited   16.05 +- 1.63   stuck_frac    0.35 +- 0.05
+  corrected, fly: intact       healed   21.07 +- 5.18   tics  445.67 +-19.12   tiles_visited   17.25 +- 1.72   stuck_frac    0.34 +- 0.06
+  corrected, fly: mirrored     healed   18.07 +- 5.72   tics  432.55 +-22.85   tiles_visited   17.72 +- 1.76   stuck_frac    0.26 +- 0.04
+  corrected, fly: frozen       healed   19.07 +- 5.18   tics  441.10 +-21.53   tiles_visited   18.13 +- 1.88   stuck_frac    0.31 +- 0.05
+
+connectome vs connectome, same seeds (first minus second)
+  corrected, sky: intact - corrected, sky: mirrored        60     -5.20 +-  7.37          -14.87 +- 32.80           -3.52 +-  2.23* worse    +0.09 +-  0.06* worse    -4.97 +-  7.25        
+  corrected, sky: intact - corrected, sky: frozen          60     -2.47 +-  6.38          -10.20 +- 27.24           -0.63 +-  2.00           +0.01 +-  0.06           -2.40 +-  6.43        
+  corrected, sky: intact - legacy, sky: intact             60     -7.93 +-  7.53* worse   -30.03 +- 31.50           -6.95 +-  2.19* worse    +0.12 +-  0.06* worse    -7.70 +-  7.30* better
+  corrected, fly: intact - corrected, fly: mirrored        60     +3.00 +-  6.18          +13.12 +- 22.38           -0.47 +-  2.21           +0.08 +-  0.06* worse    +3.33 +-  5.80        
+  corrected, fly: intact - corrected, fly: frozen          60     +2.00 +-  7.81           +4.57 +- 30.57           -0.88 +-  2.62           +0.03 +-  0.08           +2.43 +-  7.51        

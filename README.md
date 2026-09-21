@@ -42,7 +42,7 @@ Read this before reading anything else into the video.
 | ✅ | **Taste works.** Sugar makes it extend its tongue (77 Hz); bitter suppresses that by 99% | nobody wrote the suppression — it falls out of the wiring |
 | ✅ | **Smell works, and beats a shuffled brain by a thousandfold** | the one result where the real wiring beats a scrambled copy of itself |
 | ✅ | **It plays in closed loop** without spinning, stalling or falling over | 60 held-out levels, 700 tics each |
-| ✅ | **Vision helps it play** — it beats a random agent with identical command statistics, and only while it can see | mirror its eyes or freeze them and the advantage disappears |
+| ✅ | **Vision helps it play — narrowly.** In an arena it can see, it beats a random agent with identical command statistics on health and survival, and mirroring its eyes removes that | only in that arena; freezing its eyes weakens the effect rather than cleanly removing it |
 | ⚠️ | **Motion detection is ~2% of a real fly's**, and we can say exactly why | a ceiling of 0.08 where a fly needs ~0.5 — measured, not assumed |
 | ❌ | **No recognisable fly reflex.** Spin the world: no counter-turn. Loom something at it: no flinch. No fixation, no odour tracking | the gap between "vision helps" and "behaves like a fly" |
 
@@ -200,37 +200,49 @@ Cut every input to the motion detectors and the HS signal collapses to ~1 Hz, so
 genuinely motion. And across the whole output stage, **79.8% of the 1,305 descending
 neurons never fire at all**.
 
-### 4. Vision helps it play — and only while it can see
+### 4. Vision helps it play — narrowly, and only in a world it can see
 
-With every correction applied (spiking detectors, the optic lobe actually switched on,
-steering read from `DNp15`, antennal touch), the fly's commands beat a random agent with
-*identical command statistics* — same speed, same smoothness, differing only in whether the
-commands are about anything. Then we broke its vision two different ways.
+The test: does the fly beat a random agent with *identical command statistics* — same speed,
+same smoothness, differing only in whether the commands are about anything? Then break its
+vision two different ways (mirror the eyes, freeze them) and see if the advantage goes.
 
-**Original arena, 30 held-out levels:**
+**The current answer**, with every interface bug in section 6 fixed and the fly walking
+forward, over 60 held-out levels:
 
-| model minus matched random agent | eyes working | eyes mirrored | eyes frozen |
-|---|---|---|---|
-| health collected | **+12.7** | −0.5 | −5.6 |
-| time survived | **+37.9** | −5.5 | −33.3 |
-| ground covered | **+3.9** | −0.6 | +0.5 |
-
-**Daylight arena with the whole visual field, 60 held-out levels:**
-
-| model minus matched random agent | full eye | mirrored | frozen | old narrow eye |
+| model minus matched random agent | fly arena: eyes working | mirrored | frozen | sky arena: eyes working |
 |---|---|---|---|---|
-| health collected | **+8.7** | +3.7 | +0.6 | −0.9 |
-| time survived | **+31.8** | +11.7 | −4.8 | +0.2 |
-| ground covered | **+3.8** | +1.3 | **+3.0** | +2.2 |
+| health collected | **+7.5** | −0.7 | +4.5 | −4.3 |
+| time survived | **+34.0** | −13.1 | +22.6 | −8.2 |
+| ground covered | +1.6 | +1.8 | **+3.2** | −0.2 |
 
-Bold = the 95% interval excludes zero. Two unrelated ways of breaking vision — mirroring the
-eyes, freezing them — both remove the advantage, in both arenas. **The fly does better only
-while it can see.**
+Bold = the 95% interval excludes zero. In the **fly arena** — striped walls, textured ground,
+a world whose structure the fly can resolve — it collects more health and survives longer
+than chance, and mirroring its eyes removes that. In the **sky arena**, whose walls look flat
+grey at the fly's resolution, it does no better than chance at all. So: vision helps, but
+only when there is something to see, only on health and survival, and freezing the eyes only
+weakens the effect rather than cleanly removing it.
 
-What this is **not**: a fly reflex. Ground covered survives frozen eyes, so that column isn't
-vision. The effect is in how it beats chance, not a dramatic collapse when blinded — that
-drop points the right way but isn't statistically solid. And the named reflexes are all
-absent.
+Two more things it is honest to say. Head to head, no model-versus-model difference in health
+or survival is statistically solid — the effect is in how it beats chance. And with correct
+geometry the fly's vision **steers it toward walls**: it's stuck more than the mirrored fly
+in both arenas. Real flies are drawn to large dark vertical shapes; in a Doom maze that's a
+trap.
+
+<details>
+<summary><b>The earlier, stronger result — and why it was partly an artifact</b></summary>
+
+Before the fixes, the same test looked cleaner: **+12.7** health (30 levels, original
+arena) and **+8.7** (60 levels, sky arena), with mirroring and freezing both removing it.
+That fly was walking backwards on 97% of tics, one eye saw the world reversed, and the turn
+sign was flipped. Reversing with a flipped turn sign steers the *direction of travel* toward
+the more active side, and it faced away from whatever wall it was pressed against — the
+errors partly cancelled into something that looked like skilled play. Numbers:
+[`paper/data/behav_wide/`](paper/data/behav_wide) (before) and
+[`paper/data/behav_fixed/NOTE.txt`](paper/data/behav_fixed/NOTE.txt) (after).
+</details>
+
+What this is **not**: a fly reflex. Spin the world and it doesn't counter-turn; loom
+something at it and it doesn't flinch.
 
 ### 5. The environment is part of the experiment
 
@@ -311,10 +323,8 @@ they're on its head.
 
 It still gets pinned sometimes. That part is the model: it turns at the same rate whether
 stuck or free, wall contact barely moves MDN, and touch can't steer because both antennae
-reach the same side of the brain. **This also means every behaviour number in section 4 was
-measured on a fly walking backwards** — against a random agent that, being matched to its
-command statistics, walked backwards too. The comparison is fair; the behaviour wasn't
-fly-like. Re-running those tables with a forward-walking fly is the obvious next step.
+reach the same side of the brain. Re-running the behaviour tables with a forward-walking fly
+changed the headline — section 4 now shows the corrected result.
 
 ---
 
