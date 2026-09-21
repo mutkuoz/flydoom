@@ -17,10 +17,10 @@ number in the project.
   <img src="media/flydoom.gif" width="760" alt="the connectome playing Doom, with its whole visual field">
 </p>
 
-**Top:** three Doom cameras — left, ahead, right — covering the fly's whole field of view.
-**Bottom left:** what the fly actually receives — both eyes, each lens drawn where it points,
-showing contrast after adaptation, which is the quantity the eye sends on. (On raw
-brightness the same picture is two flat blobs: in this arena the sky reads 30× the ground.)
+**Top:** three Doom cameras — left, ahead, right — covering the fly's whole field of view,
+in an arena rebuilt for a fly's eye: striped walls, textured ground, daylight.
+**Bottom left:** what the fly actually receives — both eyes, 1,581 lenses, each drawn where
+it points. The striped walls show up as dark bars along its horizon.
 **Then:** firing rates of the nerves that drive its body, the left-minus-right steering
 signal, the two odour channels, and a heading-up map of where it walked.
 
@@ -320,7 +320,7 @@ download but requires signing in, and is **not** redistributed here.
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
-    --scenario health_gathering_sky --wide --eye-map anatomical \
+    --scenario health_gathering_fly --wide --eye-map anatomical --fixed-turn \
     --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch
 ```
 

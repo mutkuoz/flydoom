@@ -27,6 +27,7 @@ import matplotlib  # noqa: E402
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.colors import PowerNorm  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import vizdoom as vzd  # noqa: E402
@@ -176,20 +177,20 @@ class Recorder:
             np.fill_diagonal(d, np.inf)
             spacing = float(np.median(d.min(axis=1)))
             size = (spacing * px_per_deg * 72.0 / dpi * 1.1) ** 2
-            # The drawn quantity is contrast after adaptation, which is
-            # already centred on 0.5, so it wants a linear scale rather than
-            # the square root a raw-brightness panel needed.
+            # Square root, so the ground is visible next to the sky, on a
+            # fixed range so a colour means the same thing in every frame of
+            # every clip rather than being refitted per recording.
             self.eye_art[side] = a.scatter(
-                x, y, c=np.full(len(x), 0.5), cmap=cmap, plotnonfinite=True,
-                vmin=0.0, vmax=1.0, s=size, marker="h", linewidths=0,
+                x, y, c=np.full(len(x), 0.0), cmap=cmap, plotnonfinite=True,
+                norm=PowerNorm(0.5, vmin=0.0, vmax=1.0), s=size, marker="h",
+                linewidths=0,
             )
             n_cols += len(x)
         for v in (0.0,):
             a.axhline(v, color=EDGE, lw=0.5, zorder=0)
         a.axvline(0.0, color=EDGE, lw=0.5, zorder=0)
         a.set_title(f"what the fly sees \u00b7 {n_cols} lenses, each where it "
-                    f"points \u00b7 contrast after adaptation", color=FG,
-                    fontsize=8.5, pad=4, loc="left")
+                    f"points", color=FG, fontsize=8.5, pad=4, loc="left")
         a.set_xticks([-90, 0, 90]); a.set_xticklabels(["left", "ahead", "right"],
                                                        fontsize=7)
         a.set_yticks([])
@@ -402,17 +403,18 @@ class Recorder:
         plt.close(self.fig)
 
 
-def per_column_luminance(agent, adapted: bool = True):
+def per_column_luminance(agent, adapted: bool = False):
     """What each ommatidial column sends on, per eye.
 
-    `adapted` gives the signal the lamina actually transmits: contrast against
-    each column's own running mean, which is what the network receives and what
-    a photoreceptor reports. Raw luminance is the wrong quantity to draw. In
-    this arena the sky reads 0.71 and the ground 0.023, a 30:1 ratio, so on a
-    brightness scale the whole ventral field collapses to one flat dark blob
-    (measured: ground s.d. 0.007). The same lenses carry an adapted s.d. of
-    0.281 across the full range, because adaptation is local: 77% of lenses
-    report more than 10% contrast. Pass adapted=False for raw brightness.
+    Brightness by default, on a square-root scale, because that is the one
+    that reads as a picture of the arena: sky above, ground below, the wall
+    stripes as bars. `adapted=True` draws what the lamina transmits instead --
+    contrast against each column's own running mean -- which is the more
+    faithful quantity and unreadable in motion: 12% of lenses sit at full
+    contrast in a walking frame, so the panel shimmers like noise and the
+    scene disappears. Kept because it is the network's actual input, and
+    because in an arena whose ground is 30x darker than its sky it is the only
+    view in which the ventral field is not a flat blob.
     """
     v = agent.vision
     if adapted and v.lum_prev is not None:
@@ -500,6 +502,12 @@ def main() -> int:
                     help="the full eye: 170 deg cameras facing front, left "
                          "and right, corrected lens geometry and per-lens "
                          "blur, so every lens of both eyes sees the world.")
+    ap.add_argument("--eye-panel", default="brightness",
+                    choices=["brightness", "adapted"],
+                    help="what the eye panel draws. 'adapted' is the lamina's "
+                         "own signal, contrast against each column's running "
+                         "mean; it is the network's real input and shimmers "
+                         "like noise while walking.")
     ap.add_argument("--eye-map", default="lattice",
                     choices=["lattice", "anatomical"],
                     help="where each lens looks; see AgentConfig.eye_map")
@@ -588,7 +596,9 @@ def main() -> int:
               if ag.smell is not None else None)
         smelling = ("" if sm is None else
                     f"   smell f{sm[0]:.2f} r{sm[1]:.2f}")
-        rec.draw(ag.doom.frame(), per_column_luminance(ag), r.rates, d,
+        rec.draw(ag.doom.frame(),
+                 per_column_luminance(ag, args.eye_panel == "adapted"),
+                 r.rates, d,
                  r.action["TURN_LEFT_RIGHT_DELTA"] / 12.0, t,
                  f"t {t:5.1f}s   health {r.health:3.0f}   "
                  f"yaw {r.action['TURN_LEFT_RIGHT_DELTA']:+6.2f}   "

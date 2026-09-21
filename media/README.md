@@ -6,9 +6,12 @@ the same tic the frame came from. All of them were recorded with
 
 ## Current
 
-Both recorded on **the same level** (`health_gathering_sky`, seed 40) through the
+Both recorded on **the same level** (`health_gathering_fly`, seed 40) through the
 corrected interface: the whole visual field from three 170° cameras, the
-anatomical eye map, and steering toward the more active side.
+anatomical eye map, and steering toward the more active side. The arena is the
+one built for a fly's eye (`scripts/build_fly_arena.py`): walls striped at the
+spatial period its motion detectors prefer, bright textured ground, flat
+daylight.
 
 | file | what it is |
 |---|---|
@@ -18,31 +21,31 @@ anatomical eye map, and steering toward the more active side.
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
-    --scenario health_gathering_sky --wide --eye-map anatomical --fixed-turn \
+    --scenario health_gathering_fly --wide --eye-map anatomical --fixed-turn \
     --seed 40 --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch \
     --out media/flydoom.mp4            # add --mirror for the control
 ```
 
-On this particular level the intact fly loses its first life at 12.1 s and the
-mirrored one at 10.3 s. That is one level; the evidence is the 60-level tables
-in [`../paper/data/behav_wide/`](../paper/data/behav_wide).
+One level is an illustration, not evidence — here the intact fly happens to lose
+more lives than the mirrored one. The evidence is the 60-level tables in
+[`../paper/data/behav_wide/`](../paper/data/behav_wide).
 
 **Reading the panels.** Top: the three Doom cameras — left, ahead, right —
 which together cover the fly's whole field of view. Bottom left: what the fly
 receives, both eyes, each of the 1,581 lenses drawn at the direction it looks,
-so sky sits above the horizon line and the ground below. Then: firing rates of
-the nerves that drive the body, the left-minus-right steering signal off
-`DNp15`, the two odour channels, and a heading-up map of where it walked.
+so sky sits above the horizon line and the ground below; the wall stripes show
+as dark bars. Then: firing rates of the nerves that drive the body, the
+left-minus-right steering signal off `DNp15`, the two odour channels, and a
+heading-up map of where it walked.
 
-The eye panel draws **contrast after adaptation** — each lens against its own
-running mean — because that is the signal the eye sends on, and raw brightness
-is the wrong quantity to look at. Measured in this arena: the sky reads 0.71
-and the ground 0.023, so on a brightness scale the entire ventral field
-collapses into one flat blob (ground s.d. 0.007). The same lenses carry an
-adapted s.d. of 0.281 over the full range, and 77% of all lenses report more
-than 10% contrast. What looks like an empty dark half is a full field of
-structure once adaptation is applied, which is exactly why a photoreceptor
-adapts.
+**Why brightness, and not what the retina transmits.** The eye panel draws
+brightness on a square-root scale. The lamina's actual output — contrast against
+each lens's own running mean — is the more faithful quantity, and it is
+available with `--eye-panel adapted`, but in motion it is unreadable: about 12%
+of lenses sit at full contrast in a walking frame, and the panel shimmers like
+noise. Brightness only failed in the old sky arena, whose ground is 30× darker
+than its sky and collapsed into one flat blob; in the fly arena the ground is
+bright and textured, and brightness reads as a picture of the scene.
 
 ## archive/
 
