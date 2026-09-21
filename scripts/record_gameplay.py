@@ -35,6 +35,7 @@ import vizdoom as vzd  # noqa: E402
 from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
 from flydoom.doom import DoomConfig  # noqa: E402
+from flydoom.mechanosensation import MechanoConfig  # noqa: E402
 from flydoom.olfaction import FOOD_NAMES, THREAT_NAMES  # noqa: E402
 
 TICS_PER_SECOND = 35
@@ -502,6 +503,10 @@ def main() -> int:
                     help="the full eye: 170 deg cameras facing front, left "
                          "and right, corrected lens geometry and per-lens "
                          "blur, so every lens of both eyes sees the world.")
+    ap.add_argument("--phasic-mdn", action="store_true",
+                    help="read MDN as bursts above its own running level, keep BPN's walking "
+                         "drive, and count antennal contact only on forward pushes. "
+                         "See MotorConfig.phasic_mdn.")
     ap.add_argument("--eye-panel", default="brightness",
                     choices=["brightness", "adapted"],
                     help="what the eye panel draws. 'adapted' is the lamina's "
@@ -549,7 +554,10 @@ def main() -> int:
     akw = dict(
         doom=DoomConfig(**dkw),
         motor=MotorConfig(yaw_source=args.yaw_source,
-                          fixed_turn_sign=args.fixed_turn),
+                          fixed_turn_sign=args.fixed_turn,
+                          **(dict(phasic_mdn=True, forward_gain=0.16)
+                             if args.phasic_mdn else {})),
+        mechano=MechanoConfig(front_only=args.phasic_mdn),
         eye_map=args.eye_map,
         smell=not args.no_smell,
         device=args.device,

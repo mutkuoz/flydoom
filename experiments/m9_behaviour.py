@@ -59,6 +59,7 @@ from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
 from flydoom.doom import DoomConfig, DoomSession  # noqa: E402
 from flydoom.motor import MotorConfig  # noqa: E402
+from flydoom.mechanosensation import MechanoConfig  # noqa: E402
 
 USE_COLOR = sys.stdout.isatty()
 
@@ -289,6 +290,7 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         optic_gain=optic_gain,
         spiking_t4=spiking_t4,
         touch=touch,
+        mechano=MechanoConfig(front_only=bool(mk.get("phasic_mdn"))),
         device=device,
     ))
     # ---- controls that should DESTROY a vision-driven effect ----------
@@ -462,6 +464,10 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--phasic-mdn", action="store_true",
+                    help="read MDN as bursts above its own running level, keep BPN's walking "
+                         "drive, and count antennal contact only on forward pushes. "
+                         "See MotorConfig.phasic_mdn.")
     ap.add_argument("--render", default="full", choices=["full", "fast"],
                     help="resolution of the full eye's three views. 'fast' is "
                          "640x480, a quarter of the pixels and 1.7x faster, "
@@ -544,6 +550,8 @@ def main() -> int:
                 if v is not None}
     if args.fixed_turn:
         motor_kw["fixed_turn_sign"] = True
+    if args.phasic_mdn:
+        motor_kw.update(phasic_mdn=True, forward_gain=0.16)
     record["arms"] = arms
     record["optic_gain"] = args.optic_gain
     record["spiking_t4"] = args.spiking_t4
@@ -552,6 +560,7 @@ def main() -> int:
     record["wide"] = args.wide
     record["eye_map"] = args.eye_map
     record["render"] = args.render
+    record["phasic_mdn"] = args.phasic_mdn
     record["fixed_turn"] = args.fixed_turn
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror

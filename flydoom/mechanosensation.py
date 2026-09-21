@@ -71,6 +71,14 @@ class MechanoConfig:
     tau_release: float = 0.05
     """Decay once contact ends. Fast, because the antenna springs back."""
 
+    front_only: bool = False
+    """Count a stall as antennal contact only when the agent was pushing
+    FORWARD. OFF reproduces earlier results, which also counted backing into a
+    wall -- but the antennae are on the head, and a fly reversing into a wall
+    touches it with its abdomen and hind legs. Counted both ways, reversing into
+    a wall stimulates the very afferents that, in a real fly, drive backing up
+    (via MDN), which is a trap rather than a sense."""
+
     stuck_cmd: float = 4.0
     """Commanded walk, in map units per tic, above which the agent counts as
     pushing. Matches the collision detector in the behavioural harness so the
@@ -141,7 +149,8 @@ class Antennae:
 
         dx, dy = float(x) - prev[0], float(y) - prev[1]
         step = math.hypot(dx, dy)
-        pushing = abs(float(commanded_fwd)) >= c.stuck_cmd
+        pushing = (float(commanded_fwd) >= c.stuck_cmd if c.front_only
+                   else abs(float(commanded_fwd)) >= c.stuck_cmd)
         was_touching = self.touching
         self.touching = bool(pushing and step < c.stuck_move)
 

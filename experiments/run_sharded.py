@@ -82,6 +82,7 @@ def main() -> int:
     ap.add_argument("--eye-map", default="lattice")
     ap.add_argument("--render", default="full", choices=["full", "fast"])
     ap.add_argument("--fixed-turn", action="store_true")
+    ap.add_argument("--phasic-mdn", action="store_true")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
     ap.add_argument("--yaw-max", type=float, default=None)
@@ -124,6 +125,8 @@ def main() -> int:
         base += ["--render", args.render]
     if args.fixed_turn:
         base.append("--fixed-turn")
+    if args.phasic_mdn:
+        base.append("--phasic-mdn")
     if args.yaw_max is not None:
         base += ["--yaw-max", str(args.yaw_max)]
     if args.forward_max is not None:

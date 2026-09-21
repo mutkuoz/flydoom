@@ -145,6 +145,26 @@ class MotorConfig:
     steering neuron fired harder. DNa02 (Rayshubskiy et al.) and DNp15, the
     HS-driven DNHS1, both steer toward their own side."""
 
+    phasic_mdn: bool = False
+    """Read MDN as bursts above its own running level, not as a tonic value.
+    OFF reproduces every earlier result.
+
+    The forward command is BPN - MDN, and its DC was left in on purpose: in the
+    configuration it was designed on, BPN - MDN sat at +27.6 Hz, a steady walk,
+    because MDN was silent. MEASURED since then: raising the optic gain to 16
+    takes MDN from 0.0 to 107 Hz (BPN 32.5 -> 68.5), the difference goes to
+    about -27 Hz, and the agent walks BACKWARD on 100% of tics -- blind, since
+    the eyes face forward -- and spends 68% of them pushed into a wall. Touch is
+    not the cause (91.5 Hz without it, 96.0 with).
+
+    A real fly's MDN is near silent while it walks and fires in bursts to back
+    away from something (Bidaye et al. 2014), so its tonic level is not a
+    command. With this on, MDN is centred on a tau_baseline running level, like
+    the steering pair's standing asymmetry, and only its excess subtracts from
+    BPN's walking drive. BPN keeps its DC. forward_gain is then re-derived by
+    the rule it was set with -- the walking DC at half the clamp -- from the
+    BPN level that remains: 0.5 * 22 / 68.5 = 0.16."""
+
     tau_baseline: float = 3.0
     """Seconds. Time constant for adapting out a CONSTANT command offset.
 
@@ -266,6 +286,15 @@ class MotorDecoder:
             return 0.0
         return x - dz if x > 0 else x + dz
 
+    def _centre_any(self, name: str, raw: float, warming: bool) -> float:
+        """_centre for a channel that is not in centre_channels."""
+        if warming:
+            self.baseline[name] = raw
+            return 0.0
+        d = self._baseline_decay
+        self.baseline[name] = d * self.baseline.get(name, raw) + (1 - d) * raw
+        return raw - self.baseline[name]
+
     def _centre(self, name: str, raw: float, warming: bool) -> float:
         """Subtract this channel's slow baseline, tracking it while warming.
 
@@ -329,8 +358,12 @@ class MotorDecoder:
         # they oppose, so the net is their difference rather than two buttons
         # that can both be held at once. NOT centred -- see the gain block in
         # MotorConfig for why this DC is a command and not an artifact.
-        fwd = self._centre("forward",
-                           r.get("BPN", 0.0) - r.get("MDN", 0.0), warming)
+        if c.phasic_mdn:
+            mdn = self._centre_any("mdn", r.get("MDN", 0.0), warming)
+            fwd = 0.0 if warming else r.get("BPN", 0.0) - max(0.0, mdn)
+        else:
+            fwd = self._centre("forward",
+                               r.get("BPN", 0.0) - r.get("MDN", 0.0), warming)
         # no deadzone here: it is applied to centred channels to reject
         # two-cell counting noise around zero, and this channel's operating
         # point is +27.6 Hz, not zero.
