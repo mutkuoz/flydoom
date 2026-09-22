@@ -415,7 +415,7 @@ them built to kill our own explanations.
 | M10–M14 | Odour tracking · touch · optomotor drum · gated odour · replay | mostly ❌, all with controls |
 | M15–M16 | LIF validation · **where each eye points, from the wiring** | ✅ |
 | M17 | Does giving the detector a *shape* fix motion vision? | ⚠️ 10× better, 15× short |
-| M18 | Does it hold a dark bar in front of it? | ❌ a frozen retina holds it too |
+| M18 | Does it hold a dark bar in front of it? | ❌ so does a frozen retina, in an empty arena |
 
 139 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
 offset, fan-in, isolation, add-back, saturation, per-subtype geometry, morphology, real

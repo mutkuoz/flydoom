@@ -57,3 +57,53 @@ measurement with the power, and it is what --sweep does.
 
     python experiments/m18_stripe.py --seeds 20 --tics 1500 --jobs 3
     python scripts/analyse_stripe.py
+
+THE OPEN-LOOP VERSION, WHICH IS THE ONE WITH THE POWER (--sweep)
+
+Turn the body at a constant 0.5 deg/tic so the bar walks all the way round the
+eye -- about two revolutions in 1200 scored tics -- record the yaw the brain
+commands, and bin it by where the bar was. Run every arm at +0.5 and -0.5,
+because a response to the ROTATION is common to both and reverses with it,
+while a response to bar POSITION does not. Positive yaw turns the body right
+and positive azimuth puts the bar on its left, so steering toward the bar is a
+curve that falls through zero.
+
+Restoring slope, degrees of command per degree of bar offset, frontal +-90:
+
+  arm         rotate +0.5   rotate -0.5     mean
+  intact         +0.0003      -0.0008    -0.0002    signs disagree
+  mirrored       -0.0025      -0.0036    -0.0030    signs agree
+  frozen         +0.0024      -0.0017    +0.0004    signs disagree
+  blank          -0.0011      +0.0012    +0.0000    signs disagree
+  head           +0.0019      +0.0008    +0.0013    signs agree
+
+NULL, and this time with a bound. The intact model's slope reverses with the
+rotation, which makes it a response to being turned rather than to the bar, and
+its magnitude -- 0.0008 at most, or 0.07 deg/tic across the whole frontal field
+-- is smaller than what the arena with NO BAR produces (0.0012) and a third of
+what a FROZEN RETINA produces (0.0024). The bar-dependent component of the
+turning command is therefore below the level the apparatus generates on its
+own, against a command whose own standard deviation is 1.8 deg/tic.
+
+Two arms do hold their sign across both rotations: mirrored (-0.003) and head
+(+0.0013). Neither is interpretable as fixation. A mirrored retina should
+REVERSE a position response, and the intact model has none to reverse; a slope
+that appears only in the control is a property of the control.
+
+The binned curves say the same thing more plainly. They scatter between -0.50
+and +0.59 deg/tic with no systematic shape, on a command that swings +-5. The
+turning command is not a function of where the bar is.
+
+A NOTE ON REPLICATION IN THIS ARENA, worth more than the result. The four seeds
+returned BYTE-IDENTICAL commanded yaw. That is not a bug: noise_std is 0, the
+cylinder is the same every time, the starting heading is the same, and the
+rotation is imposed, so nothing in the episode depends on the seed. The
+measurement is exact rather than noisy, and the scatter in the binned curve is
+real history-dependence in the decoder (a 3 s baseline, adaptation state), not
+sampling error. Any confidence interval computed across seeds here is fiction.
+The unit of replication in a deterministic drum is the stimulus -- rotation
+direction, rate, bar width -- and future runs should vary those, not the seed.
+
+    python experiments/m18_stripe.py --sweep 0.5 --seeds 4 --tics 1500 \
+        --arms intact mirrored frozen blank head
+    python scripts/analyse_stripe.py

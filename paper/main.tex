@@ -117,8 +117,9 @@ without vision is not individually significant and no recognisable reflex
 underlies it: an optomotor drum, a looming stimulus and a fixation target each
 produce no directional response. In a purpose-built bar arena the model does
 hold a dark bar at a fixed retinal azimuth, but a frozen retina holds it as
-tightly and an empty cylinder scores the same, so the apparent fixation is the
-decoder's baseline filter and not the eye. Against a size-matched static disc,
+tightly and an empty cylinder scores the same; swept open loop, the turning
+command's dependence on bar position is smaller than what the empty cylinder
+and the frozen retina produce. Against a size-matched static disc,
 the looming response is $26.42$ against $26.44$\,Hz at \cell{LC4}: the
 expansion adds nothing measurable. Three errors in the interface --- an eye map
 read with the wrong hexagonal convention, a reversed steering sign, and a walk
@@ -1646,9 +1647,31 @@ baseline (Sec.~\ref{sec:readout}), so a sustained command is removed and the
 loop's only fixed point is zero net turning; the heading then freezes wherever
 it happens to be, and because the bar is fixed in the world a frozen heading
 \emph{is} a fixed bar azimuth. A closed-loop equilibrium measure cannot
-distinguish an animal that fixates from one that has stopped, and we report it
-here as a null with that reason attached rather than as an absence of
-behaviour.
+distinguish an animal that fixates from one that has stopped.
+
+The open-loop version has the power the equilibrium measure lacks. Turning the
+body at a constant $0.5^\circ$ per tic walks the bar twice round the eye in one
+episode, and the commanded yaw binned by bar azimuth is the position response
+directly. Each arm is run at $+0.5$ and $-0.5$, because a response to the
+rotation is common to both and reverses with it while a response to position
+does not. The restoring slope, in degrees of command per degree of bar offset
+across the frontal $\pm90^\circ$, is $+0.0003$ and $-0.0008$ for the intact
+model: it reverses with the rotation, so it is a response to being turned. Its
+magnitude is smaller than the same measurement in the cylinder with \emph{no
+bar} ($0.0012$) and a third of the value a \emph{frozen retina} produces
+($0.0024$). The bar-dependent component of the turning command is therefore
+below what the apparatus generates on its own, against a command whose standard
+deviation is $1.8^\circ$ per tic; the binned curves scatter between $-0.50$ and
+$+0.59$ with no systematic shape.
+
+One methodological point generalises beyond this experiment. The four seeds
+returned byte-identical commands, because the model is noiseless, the cylinder
+is fixed, and the rotation is imposed: nothing in an open-loop drum episode
+depends on the seed. The measurement is exact rather than noisy, the scatter in
+the binned curve is history-dependence in the decoder rather than sampling
+error, and a confidence interval computed across seeds would be fiction. In a
+deterministic arena the unit of replication is the stimulus --- rotation
+direction, rate, bar width --- and not the random seed.
 
 \subsection{Two interface errors, and what correcting them changes}
 \label{sec:interface}
