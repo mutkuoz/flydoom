@@ -86,3 +86,75 @@ updates the running average had been lost when an earlier edit aborted, so the
 slow arm was delivering a permanently zero trace -- an ablation, not a filter.
 Identical outputs across a swept parameter are worth more attention than a
 result that merely looks disappointing.)
+
+THE OTHER HALF OF THE DENDRITE (--nmda)
+
+The conductance model makes inhibition divisive, which is the null-direction
+half of a correlator. The preferred-direction half is the opposite
+nonlinearity: excitation that AMPLIFIES when it lands on a branch already
+depolarised, which in a real dendrite is an NMDA-type Mg block lifting. Added
+as a voltage-dependent multiplier on the excitatory conductance the wiring
+already delivers, evaluated per COMPARTMENT so that with a cable it is local to
+the branch:
+
+    g_e -> g_e * (1 + FRAC * sigmoid((v - v_half) / k)),  v_half -48 mV
+
+THE CONTROL THAT MATTERS. A sigmoid with a very large k sits at 0.5 whatever
+the voltage, so --nmda 1 --nmda-k 1.0 delivers the SAME mean amplification with
+no coincidence detection at all. Any difference between the two is the
+nonlinearity; anything they share is drive.
+
+T5 a-minus-b separation, g_axial 8:
+
+    arm         base    nmda 1    flat 1 (=1.5x drive)
+    point      +.0047   -.0425    -.0428
+    chain      +.0641   -.0010    +.0194
+    flipped    +.0860   -.0169    -.0007
+    shuffled   +.0471   -.0227    -.0138
+
+NEGATIVE, and cleanly: -0.0425 against -0.0428. The voltage dependence
+contributes nothing that a flat gain of the same size does not. Whatever the
+supralinear term does here, it does by delivering more excitation.
+
+WHAT THE CONTROL FOUND INSTEAD. Read the same table as a gain sweep, because
+that is what it is. A 1.25x flat excitatory gain gives point -0.0289 and a 1.5x
+gives -0.0428, against +0.0047 at 1.0: a global scalar, applied to no
+particular cell type, moves the pair separation by an order of magnitude AND
+REVERSES ITS SIGN. The compartment arms cross over at a different gain from the
+point arm, so at 1.5x the chain and the point neuron disagree about which way
+the model prefers.
+
+That is a caveat this project has to carry: the sign of the model's direction
+preference is not a robust prediction. It survives being read as a mirror-pair
+structure, which is what the compartment result claimed, and it does not
+survive being read as an absolute direction.
+
+    python experiments/m17_dendrite.py --g-axial 8 --nmda 1 [--nmda-k 1.0]
+
+HOW MUCH OF IT IS THE ORDER, WITH MORE THAN ONE SHUFFLE (--shuffle-seeds)
+
+Point 2 above -- that the compartments buy electrotonic placement rather than
+retinotopic sequence -- rested on ONE shuffled cable. Four independent draws,
+at two global gains:
+
+  T5 a-minus-b        chain   flipped   shuffled (4 draws)        chain/shuf
+  gain 1.00          +.0641   +.0860   .0471 .0487 .0487 .0504      1.3x
+  gain 1.25 (flat)   +.0447   +.0394   .0113 .0133 .0119 .0131      3.6x
+
+The shuffle is reproducible to about 0.003, so the comparison is not noise.
+And it does not say the same thing at both gains. At the gain everything else
+in this project was measured at, the ordered cable beats its shuffle by 31% and
+the REVERSED cable beats both, which is the "placement, not sequence" reading.
+Raise the global excitatory gain by a quarter and the ordering carries most of
+the effect instead: ordered 0.045, reversed 0.039, shuffled 0.012, which is the
+order a correlator predicts, with the ordered cable on top.
+
+So the honest statement is narrower than either: which of placement and
+sequence dominates depends on a global gain this project does not measure. The
+same sweep flips the point neuron's sign (above), so 1.25x is not obviously the
+right operating point either -- it is simply a second one, and the two disagree.
+Worth saying out loud in any write-up rather than quoting the gain that
+flatters the hypothesis.
+
+    python experiments/m17_dendrite.py --g-axial 8 --shuffle-seeds 4 \
+        [--nmda 0.5 --nmda-k 1.0]

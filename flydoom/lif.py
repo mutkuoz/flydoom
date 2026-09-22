@@ -49,6 +49,9 @@ class LIFParams:
     e_inh: float = config.E_INH
     g_syn: float = config.G_SYN
     graded_max_rate: float = config.GRADED_MAX_RATE
+    nmda_frac: float = config.NMDA_FRAC
+    nmda_v_half: float = config.NMDA_V_HALF
+    nmda_k: float = config.NMDA_K
     stp: bool = config.STP
     stp_u: float = config.STP_U
     stp_tau_rec: float = config.STP_TAU_REC
@@ -490,8 +493,16 @@ class LIFNetwork:
             # so the membrane relaxes toward v_inf with an EFFECTIVE time
             # constant tau/g_tot. Inhibition therefore divides rather than
             # subtracts, which is the whole point.
-            g_tot = 1.0 + self.g_exc + self.g_inh
-            num = p.v_rest + self.g_exc * p.e_exc + self.g_inh * p.e_inh
+            g_e = self.g_exc
+            if p.nmda_frac:
+                # Voltage-dependent excitation: the Mg block lifting. Read at
+                # the voltage the compartment ENTERS the step with, like the
+                # axial terms below, so one consistent state advances the whole
+                # cable and the regenerative term cannot run away within a step.
+                g_e = g_e * (1.0 + p.nmda_frac * torch.sigmoid(
+                    (self.v - p.nmda_v_half) / p.nmda_k))
+            g_tot = 1.0 + g_e + self.g_inh
+            num = p.v_rest + g_e * p.e_exc + self.g_inh * p.e_inh
             if g_ext is not None:
                 num = num + g_ext
             if self.g_ax is not None:

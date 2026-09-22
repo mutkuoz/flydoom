@@ -293,6 +293,31 @@ E_INH = -70e-3     # V  [PUBLISHED] chloride reversal for GABA-A / GluCl.
 
 G_SYN = 0.00278    # dimensionless conductance per synapse  [FITTED]
 
+# ---- the other half of the dendrite: an excitation that grows with voltage --
+#
+# The conductance model above makes inhibition divisive, which is the null-
+# direction half of a correlator. The preferred-direction half is the opposite
+# nonlinearity: excitation that AMPLIFIES when it coincides with depolarisation
+# the cell already has. In a real dendrite that is the Mg block of an NMDA-type
+# receptor lifting as the branch depolarises, and T4/T5 are reported to need
+# both an enhancing and a suppressing arm rather than either alone.
+#
+# Written as a voltage-dependent multiplier on the excitatory conductance the
+# wiring already delivers:
+#
+#     g_e -> g_e * (1 + NMDA_FRAC * sigmoid((v - NMDA_V_HALF) / NMDA_K))
+#
+# It is evaluated per COMPARTMENT, so with a compartment chain the amplification
+# is local to the branch the inputs land on, which is what makes it a
+# coincidence detector rather than a gain knob. One global fraction, no per-cell
+# type anything. Off by default: every published result here predates it.
+
+NMDA_FRAC = 0.0    # [OURS] 0 disables. 1 doubles g_e at full activation.
+NMDA_V_HALF = -48e-3  # V [OURS] half activation, 4 mV above rest and 3 below
+                      # threshold, so the boost is weak at rest and strong for
+                      # a branch already carrying input.
+NMDA_K = 3e-3      # V [OURS] slope. Smaller is a sharper coincidence gate.
+
 # ---- per-transmitter conductance: the parameter arm 2 needs ----
 #
 # G_SYN above is ONE fitted number applied to every synapse regardless of which

@@ -61,7 +61,7 @@ import torch  # noqa: E402
 from flydoom import config  # noqa: E402
 from flydoom.cells import AnnotationTable  # noqa: E402
 from flydoom.graph import ConnectomeGraph  # noqa: E402
-from flydoom.lif import LIFNetwork  # noqa: E402
+from flydoom.lif import LIFNetwork, LIFParams  # noqa: E402
 from flydoom.retina import Retina  # noqa: E402
 from flydoom import compartments_chain as CC  # noqa: E402
 
@@ -163,6 +163,20 @@ def main() -> int:
     ap.add_argument("--spiking-t4", action="store_true", default=True)
     ap.add_argument("--n-comp", type=int, default=3)
     ap.add_argument("--g-axial", type=float, default=1.0)
+    ap.add_argument("--nmda", type=float, default=0.0, metavar="FRAC",
+                    help="voltage-dependent excitation, the preferred-direction "
+                         "half of a correlator: g_e is multiplied by "
+                         "(1 + FRAC * sigmoid((v - v_half)/k)), per compartment. "
+                         "See config.NMDA_FRAC.")
+    ap.add_argument("--shuffle-seeds", type=int, default=1, metavar="N",
+                    help="how many independent shuffled cables to run. The "
+                         "shuffle is the control that says whether retinotopic "
+                         "ORDER matters, and one draw of it is one sample.")
+    ap.add_argument("--nmda-k", type=float, default=None, metavar="VOLTS",
+                    help="slope of the voltage dependence. A LARGE value (1.0) "
+                         "pins the sigmoid at 0.5 whatever the voltage, which "
+                         "is the drive-matched control: the same mean "
+                         "amplification with no coincidence detection.")
     ap.add_argument("--slow-filter", type=float, default=None, metavar="TAU_MS",
                     help="deliver the slow arm as a one-pole low pass of this "
                          "time constant instead of a conduction delay. Delays "
@@ -208,29 +222,42 @@ def main() -> int:
         print(f"slow arm is a low pass, tau {args.slow_filter:g} ms, in place "
               f"of the {config.T_DLY_SLOW * 1e3:.0f} ms delay")
 
+    kw_p = {"nmda_frac": args.nmda}
+    if args.nmda_k:
+        kw_p["nmda_k"] = args.nmda_k
+    params = LIFParams(**kw_p) if args.nmda else None
+    if args.nmda:
+        k = args.nmda_k or config.NMDA_K
+        print(f"supralinear dendrite: g_e x (1 + {args.nmda:g} * sigmoid), "
+              f"half at {config.NMDA_V_HALF * 1e3:.0f} mV, slope {k * 1e3:g} mV"
+              + ("   [FLAT: drive-matched control]" if k > 0.05 else ""))
+
     def build(plan):
         if plan is None:
-            return LIFNetwork.from_graph(g, device=args.device, seed=0,
-                                         edge_delay=edge_delay, graded=graded,
-                                         **slow_kw)
+            return LIFNetwork.from_graph(g, params=params, device=args.device,
+                                         seed=0, edge_delay=edge_delay,
+                                         graded=graded, **slow_kw)
         return LIFNetwork(plan["n_total"], pre_t,
                           torch.as_tensor(plan["post_idx"], device=args.device),
-                          w_t, None, args.device, 0, edge_delay=edge_delay,
+                          w_t, params, args.device, 0, edge_delay=edge_delay,
                           graded=CC.extend_graded(graded, plan),
                           axial_edges=plan["axial_edges"],
                           axial_edge_g=plan["axial_edge_g"], **slow_kw)
 
     arms = {"point": None}
-    for name, kw in (("chain", {}), ("flipped", {"flip": True}),
-                     ("shuffled", {"shuffle": 0})):
+    shuffles = [(f"shuffled{k}" if args.shuffle_seeds > 1 else "shuffled",
+                 {"shuffle": k}) for k in range(args.shuffle_seeds)]
+    for name, kw in [("chain", {}), ("flipped", {"flip": True})] + shuffles:
         arms[name] = CC.build_chain(g, ann, axes, cell_pt, n_comp=args.n_comp,
                                     g_axial=args.g_axial, **kw)
+    shuf_names = [n for n, _ in shuffles]
     print(f"chain: {arms['chain']['n_cells']:,} cells x {args.n_comp} "
           f"compartments, {arms['chain']['n_moved']:,} of "
           f"{arms['chain']['n_edges_onto_targets']:,} inputs placed off centre; "
           f"per compartment {arms['chain']['per_compartment']}")
 
     record = {"n_comp": args.n_comp, "g_axial": args.g_axial,
+              "nmda": args.nmda, "nmda_k": args.nmda_k,
               "optic_gain": args.optic_gain, "tf": args.tf,
               "period": args.period, "eye_map": args.eye_map, "arms": {}}
     print(f"\n{'arm':>9} " + "".join(f"{t:>9}" for t in SUBTYPES))
