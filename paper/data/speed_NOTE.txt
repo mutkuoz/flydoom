@@ -1,0 +1,48 @@
+WHERE A TIC ACTUALLY GOES
+
+The repo carried two beliefs about its own speed, and both were out of date.
+
+BELIEF 1, in flydoom/lif_graph.py: the simulator is dispatch-bound, so a CUDA
+graph that replays 200 launches as one unit is the fix. That module was written,
+verified bit-identical over twelve steps, and then measured again in September:
+the eager step had become 26x faster on its own (0.320 ms against the 8.50 ms
+profiled in August) and graph replay is now 1.5x SLOWER than it, because the
+graph faithfully replays a worse formulation -- one index_add per delay group
+where the eager path uses a CSR product. The module already says so. It stays
+unused, and correct, and that is the right outcome.
+
+BELIEF 2, carried in the project notes: what remains is the 57 per-substep
+sensory updates. Measured by removing them -- the same episode with the frame
+HELD for the tic instead of interpolated across it, which is 1 retina update
+instead of 57 -- they cost 2.5 to 3.2 ms of a tic, 3 to 5%. They are not the
+bottleneck and have not been for some time.
+
+WHAT IS, measured with one synchronisation per section per tic, fly arena eye
+(1280x1024 gnomonic, three cameras, pyramid blur), spiking T4/T5, optic gain 16,
+on a machine also running three episodes, so the absolute numbers are inflated
+and the proportions are what to read:
+
+    57 LIF substeps + motor.observe      39.4 ms    59%
+    frame -> per-lens luminance          14.4 ms    22%
+    ViZDoom, three cameras                9.8 ms    15%
+    motor readout and decode              2.9 ms     4%
+    fetching the frame                    0.3 ms     0.4%
+
+The LIF step is most of a tic, and at 0.32 ms a step against 2.7M edges it is
+not obviously improvable without changing the model: dt is 0.5 ms and 57
+substeps span one Doom tic, so halving the substep count means doubling dt,
+which is a modelling decision and not an optimisation.
+
+WHAT WAS FIXED HERE. Two device-to-host synchronisations per tic, both of them
+accidental and both bit-identical to remove:
+
+  * sample() read the surround mean back into Python with float() to fill it
+    into a tensor. It now stays a GPU scalar.
+  * motor.sample() called float() on every monitored population separately, a
+    dozen separate syncs per tic. They are stacked and transferred once.
+
+Readout: 5.96 -> 2.85 ms per tic, measured in the same profiler run under the
+same load. The rest of the tic is unchanged, which is the honest summary: the
+saving is half of 4%.
+
+    python scripts/profile_tic.py

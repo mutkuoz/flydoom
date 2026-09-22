@@ -504,8 +504,12 @@ class DoomVision:
         # Columns outside Doom's viewport see the frame's MEAN, not black. A
         # dark surround is a permanent high-contrast edge at a fixed
         # retinotopic position and the looming detectors read it as an object.
-        mean = float(sampled[self.inside].mean()) if self.n_inside else 0.5
-        return torch.where(self.inside, sampled, torch.full_like(sampled, mean))
+        # The mean stays a GPU scalar. Reading it into Python costs a
+        # device-to-host sync once per tic, which stalls the queue for the
+        # whole of the frame's convolution work; the value is identical.
+        mean = (sampled[self.inside].mean() if self.n_inside
+                else torch.full((), 0.5, device=sampled.device))
+        return torch.where(self.inside, sampled, mean.expand_as(sampled))
 
     def reset(self) -> None:
         self.adapt_mean.fill_(0.5)

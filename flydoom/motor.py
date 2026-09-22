@@ -274,8 +274,13 @@ class MotorDecoder:
         """Read the filtered rate of each population. Call once per Doom tic."""
         if self._filt is None:
             return dict(self.rates)
-        for k, idx in self.pop.items():
-            self.rates[k] = float(self._filt[idx].mean())
+        # One device-to-host transfer for every population, not one each:
+        # each float() of a GPU scalar is a separate sync, and there are a
+        # dozen populations behind every tic.
+        keys = list(self.pop)
+        means = torch.stack([self._filt[self.pop[k]].mean() for k in keys])
+        for k, v in zip(keys, means.tolist()):
+            self.rates[k] = v
         return dict(self.rates)
 
     # -- decoding --------------------------------------------------------
