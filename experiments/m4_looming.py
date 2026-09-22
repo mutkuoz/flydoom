@@ -285,6 +285,11 @@ def main() -> int:
         "LPLC2": population(g, ann, "LPLC2"),
         "LC11": population(g, ann, "LC11"),
         "DNp01": population(g, ann, "DNp01"),
+        # MDN commands backward walking, and in the fly it is driven by visual
+        # projection neurons as well as by the antennae. The closed-loop agent
+        # reads it as a reverse command, so what makes it burst is a question
+        # about the agent's behaviour and not only about the escape circuit.
+        "MDN": population(g, ann, "MDN"),
     }
     mon_t = {k: torch.as_tensor(v.astype(np.int64), device=args.device)
              for k, v in mons.items()}
@@ -336,7 +341,7 @@ def main() -> int:
     # ---------------- the four conditions ----------------
     print(f"\n{paint('CONDITIONS', '1;36')}")
     print(f"  {'condition':<12} {'L1':>7} {'LC4':>7} {'LPLC2':>7} {'LC11':>7}"
-          f" {'DNp01':>7}")
+          f" {'DNp01':>7} {'MDN':>7}")
     results = {}
     for kind in ("looming", "static", "static_matched", "receding", "blank"):
         radii = radius_schedule(kind, n_steps, net.p.dt, lv, t_c,
@@ -349,7 +354,7 @@ def main() -> int:
         r = {k: rate_of(counts, v, args.duration) for k, v in mon_t.items()}
         results[kind] = (r, trace)
         print(f"  {kind:<12} {r['L1']:7.1f} {r['LC4']:7.2f} {r['LPLC2']:7.2f}"
-              f" {r['LC11']:7.2f} {r['DNp01']:7.2f}")
+              f" {r['LC11']:7.2f} {r['DNp01']:7.2f} {r['MDN']:7.2f}")
 
     # ---------------- acceptance ----------------
     print(f"\n{paint('ACCEPTANCE', '1')}")
@@ -366,9 +371,17 @@ def main() -> int:
             f"LC4 {loom['LC4']:.2f}, LPLC2 {loom['LPLC2']:.2f} Hz")
     c.check(loom["DNp01"] > 0.5, "EXPANDING DISC DRIVES DNp01 (giant fiber)",
             f"{loom['DNp01']:.2f} Hz")
-    c.check(loom["DNp01"] > 2 * max(static["DNp01"], 0.01),
-            "CONTROL: static disc does not",
-            f"static {static['DNp01']:.2f} vs looming {loom['DNp01']:.2f} Hz")
+    # Judged against static_matched, which carries the SAME mean angular size
+    # as the sweep. The old `static` holds the sweep's FINAL size for the whole
+    # window and so delivers far more drive than the stimulus it controls for:
+    # a detector could pass or fail that comparison on total luminance alone.
+    # The unmatched number stays in the detail line, since every earlier run
+    # was scored on it.
+    matched = results["static_matched"][0]
+    c.check(loom["DNp01"] > 2 * max(matched["DNp01"], 0.01),
+            "CONTROL: a size-matched static disc does not",
+            f"static_matched {matched['DNp01']:.2f} vs looming "
+            f"{loom['DNp01']:.2f} Hz (unmatched static {static['DNp01']:.2f})")
     c.check(loom["DNp01"] > 1.5 * max(recede["DNp01"], 0.01),
             "CONTROL: receding disc is weaker than looming",
             f"receding {recede['DNp01']:.2f} vs {loom['DNp01']:.2f} Hz")

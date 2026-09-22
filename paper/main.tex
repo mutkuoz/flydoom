@@ -518,16 +518,26 @@ terminal would merely qualify as direction-tuned.
 
 Looming fails in the same way and more starkly (Table~\ref{tab:looming}).
 Neither the intact nor a degree-preserving shuffled connectome distinguishes an
-expanding from a contracting stimulus; both instead show
-$\text{static}\gg\text{looming}\approx\text{receding}$, the signature of a
-response to dark \emph{area} rather than to expansion. Because the shuffled
-graph performs comparably: the measurable looming response is not attributable
-to connectivity at all.
+expanding from a contracting stimulus. The comparison that shows this is
+against a \emph{size-matched} static disc, held at the sweep's mean angular
+size so that the two stimuli deliver the same total drive and differ only in
+that one expands. Against it, \cell{LC4} gives 26.42\,Hz to the looming sweep
+and 26.44\,Hz to the static one: to four significant figures the expansion adds
+nothing, and what the pathway reports is mean angular size. (A static disc held
+at the sweep's \emph{final} size, the control used in earlier versions of this
+table, delivers far more drive than the stimulus it controls for and can
+therefore beat looming however well the detectors work; we report it only for
+continuity.) The blank field is 94\% of the looming response, and the shuffled
+graph behaves the same way, so the measurable looming response is not
+attributable to connectivity at all.
 
 \begin{table}[t]\centering\small
-\caption{Looming (M4), open loop, mean rate in Hz. Neither arm separates
-looming from receding, and the intact connectome does not outperform a
-degree-preserving shuffle.}
+\caption{Looming (M4), open loop, mean rate in Hz; $l/|v|=40$\,ms, 1\,s,
+driving \cell{L1}+\cell{L2}+\cell{L3}. \emph{Static (matched)} holds the
+sweep's mean angular size and is the control the comparison needs; \emph{static
+(final)} holds its end point and is the defective one. Against the matched
+control the expansion adds nothing, in either arm, and a blank field
+reproduces most of the response.}
 \label{tab:looming}
 \begin{tabular}{lrrr@{\hskip 2em}rrr}
 \toprule
@@ -535,12 +545,20 @@ degree-preserving shuffle.}
 \cmidrule(r){2-4}\cmidrule(l){5-7}
 & \cell{LC4} & \cell{LPLC2} & \cell{DNp01} & \cell{LC4} & \cell{LPLC2} & \cell{DNp01}\\
 \midrule
-Looming  & 36.06 & 0.00 & 139.0 & 7.04 & 2.82 & 88.7\\
-Static   & 73.37 & 0.02 & 149.3 & 45.15 & 14.41 & 207.0\\
-Receding & 34.58 & 0.00 & 149.7 & 6.19 & 2.50 & 84.0\\
+Looming           & 26.42 & 0.00 & 131.5 & 5.38 & 2.27 & 71.5\\
+Static (matched)  & 26.44 & 0.00 & 141.0 & 5.16 & 2.10 & 70.0\\
+Receding          & 24.31 & 0.00 & 147.0 & 4.16 & 1.79 & 65.5\\
+Blank             & 24.90 & 0.00 & 120.0 & 4.26 & 1.64 & 69.5\\
+\addlinespace
+Static (final)    & 77.21 & 0.00 & 145.5 & 47.15 & 15.30 & 213.0\\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\cell{DNp01}, the giant fibre, fires at 120--147\,Hz in every condition
+including the blank, which is not a looming response that is too weak but a
+cell that is saturated: no behaviour downstream of it in this model carries
+information about the stimulus.
 
 \subsubsection*{State of the looming detector}
 In closed loop \cell{LPLC2} reads exactly $0.00$\,Hz, and the reason is

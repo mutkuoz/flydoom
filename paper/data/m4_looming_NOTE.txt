@@ -1,0 +1,79 @@
+LOOMING, RE-SCORED AGAINST A CONTROL THAT IS ACTUALLY MATCHED
+
+The paper's looming table compares the expanding disc against a STATIC disc
+held at the sweep's FINAL size. That control is defective and the paper says
+so: the sweep runs from 5 to 70 degrees, so holding the end point delivers far
+more total drive than the stimulus it controls for. "Static beats looming" was
+therefore never evidence of anything.
+
+m4 has carried a matched control for a while without scoring on it. static_
+matched holds the sweep's MEAN angular size for the whole window, so the two
+stimuli deliver the same total drive and differ only in that one expands.
+The acceptance check now uses it.
+
+Intact connectome, l/v 40 ms, 1 s, driving L1+L2+L3, bias 0, mean rate in Hz:
+
+  condition          L1      LC4   LPLC2    LC11   DNp01     MDN
+  looming          61.8    26.42    0.00    6.55   131.50    5.25
+  static          138.4    77.21    0.00   44.69   145.50    6.25
+  static_matched   60.5    26.44    0.00    6.94   141.00    4.50
+  receding         59.8    24.31    0.00    5.87   147.00    3.50
+  blank            58.1    24.90    0.00    4.97   120.00    3.50
+
+Degree-preserving shuffle, the same settings:
+
+  condition          L1      LC4   LPLC2    LC11   DNp01     MDN
+  looming          62.9     5.38    2.27   10.08    71.50    7.75
+  static          141.7    47.15   15.30   68.60   213.00   85.75
+  static_matched   61.7     5.16    2.10    9.09    70.00    6.25
+  receding         60.9     4.16    1.79    7.80    65.50    4.50
+  blank            59.1     4.26    1.64    8.44    69.50    5.75
+
+READING
+
+1. LC4 gives 26.42 Hz to the looming sweep and 26.44 Hz to a static disc of the
+   same mean size. To four significant figures the expansion adds NOTHING. The
+   old comparison left room to argue that looming was present but swamped;
+   this one does not. What LC4 reports is mean angular size.
+
+1b. The shuffled arm says the same thing: 5.38 looming against 5.16 matched
+   static, and 71.5 against 70.0 at DNp01. Whatever is being measured does not
+   need the wiring.
+
+2. The verdict is unchanged -- M4 still fails -- but two of the three controls
+   fail for a sharper reason than before. Receding (24.31) is barely below
+   looming (26.42), and blank is 24.90, which is 94% of the looming response.
+   Nearly the whole "looming response" is present with no object at all.
+
+3. DNp01, the giant fibre, sits at 120-147 Hz in EVERY condition including the
+   blank. It is not reporting the stimulus, it is saturated, and no behaviour
+   downstream of it in this model can mean anything. That is a stronger
+   statement than "looming fails" and it belongs in the write-up.
+
+4. LPLC2 is 0.00 Hz throughout, as in every previous run.
+
+WHAT MAKES MDN BURST
+
+MDN commands backward walking, and the closed-loop agent reads it as a reverse
+command, so what drives it is a question about behaviour and not only about the
+escape circuit. Two measurements, neither of them looming:
+
+  visual (this table)  blank 3.50, matched static 4.50, looming 5.25, and the
+                       large static disc 6.25. MDN tracks how much DARK is in
+                       the field, in the same rank order as LC4, and the
+                       expanding stimulus is not special.
+
+  antennal contact (m11, 3 seeds x 200 tics, forced contact)
+                       none 7.18, left 6.50, right 8.26 Hz, with BPN flat at
+                       30.5-30.7. Contact moves MDN by about 1 Hz and not
+                       consistently in one direction, so in this model
+                       collision does NOT command a reversal.
+
+So the model's reverse command is driven by dark area in view -- a nearby wall
+fills the eye, MDN rises, the decoder subtracts it from the walking command.
+That is at least the right kind of behaviour for the wrong reason: real MDN is
+driven by visual projection neurons too, but backward walking in flies is
+evoked by looming and by antennal contact, and here it is evoked by neither.
+
+    python experiments/m4_looming.py
+    python experiments/m11_antennal_touch.py --seeds 3

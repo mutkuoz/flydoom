@@ -121,6 +121,15 @@ def main() -> int:
         v = [x[key] for x in rows[side]]
         return sum(v) / max(len(v), 1)
 
+    # MDN commands backward walking. In the fly, antennal contact is one of the
+    # things that evokes it, so the same forced-contact episodes answer a
+    # second question at no extra cost: what makes this model's MDN burst.
+    print("\n  the walking commands, mean rate over the same episodes")
+    print(f"  {'contact':<8}{'MDN':>9}{'BPN':>9}{'BPN - MDN':>12}")
+    for side in ("none", "left", "right"):
+        m, b = mean(side, "MDN"), mean(side, "BPN")
+        print(f"  {side:<8}{m:9.2f}{b:9.2f}{b - m:12.2f}")
+
     base = mean("none")
     dl, dr = mean("left") - base, mean("right") - base
     print(f"\n  baseline L-R {base:+.2f} Hz")
