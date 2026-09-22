@@ -161,6 +161,8 @@ class LIFNetwork:
         g_axial: "np.ndarray | float | None" = None,
         axial_edges: "np.ndarray | None" = None,
         axial_edge_g: "np.ndarray | float | None" = None,
+        slow_filter_tau: "float | None" = None,
+        slow_delay_steps: int | None = None,
         csr: bool = True,
     ) -> None:
         self.n = n_neurons
@@ -339,6 +341,21 @@ class LIFNetwork:
             np.add.at(tot, e[0], ge)
             np.add.at(tot, e[1], ge)
             self.g_ax_sum = torch.as_tensor(tot, device=device)
+
+        # The slow arm as a FILTER rather than a delay line. A conduction
+        # delay reproduces a signal exactly, `d` steps late; the slow arm of a
+        # fly's correlator is a low-pass stage, which is a smear rather than a
+        # shift and keeps no sharp copy of the past. Delays from 1.8 to 240 ms
+        # have been swept and none rescued direction selectivity; the shape of
+        # the arm never has been. Groups at `slow_delay_steps` read this trace
+        # instead of the ring.
+        self.slow_tau = slow_filter_tau
+        self.slow_steps = slow_delay_steps
+        self.slow_trace = (torch.zeros(self.n, dtype=torch.float32,
+                                       device=device)
+                           if slow_filter_tau else None)
+        self.slow_alpha = (float(self.p.dt / slow_filter_tau)
+                           if slow_filter_tau else 0.0)
         self.reset()
 
     @classmethod
@@ -351,10 +368,11 @@ class LIFNetwork:
         edge_delay: "np.ndarray | None" = None,
         tau_mem: "np.ndarray | None" = None,
         graded: "np.ndarray | None" = None,
+        **kw,
     ) -> LIFNetwork:
         pre, post, w = graph.to_torch(device)
         return cls(graph.n_neurons, pre, post, w, params, device, seed,
-                   edge_delay=edge_delay, tau_mem=tau_mem, graded=graded)
+                   edge_delay=edge_delay, tau_mem=tau_mem, graded=graded, **kw)
 
     @property
     def delay_summary(self) -> str:
@@ -390,6 +408,8 @@ class LIFNetwork:
         # A spiking neuron contributes exactly 1.0 on the step it fires.
         self.delay_buf = torch.zeros((self.buf_len, n), dtype=torch.float32,
                                      device=d)
+        if getattr(self, "slow_trace", None) is not None:
+            self.slow_trace = torch.zeros(n, dtype=torch.float32, device=d)
         self.out = torch.zeros(n, dtype=torch.float32, device=d)
         # Available presynaptic resource, one per neuron. Starts full.
         self.stp_R = torch.ones(n, dtype=torch.float32, device=d)
@@ -430,7 +450,10 @@ class LIFNetwork:
         cond = p.conductance
         scale = p.g_syn if cond else p.w_syn
         for gi, (d, is_inh, lo, hi) in enumerate(self.delay_groups):
-            arriving = self.delay_buf[(self.delay_ptr + L - d) % L]
+            if self.slow_trace is not None and d == self.slow_steps:
+                arriving = self.slow_trace
+            else:
+                arriving = self.delay_buf[(self.delay_ptr + L - d) % L]
             if self.csr is not None:
                 # identical arithmetic, contiguous rows, no atomics
                 delivered = torch.mv(self.csr[gi], arriving)
@@ -553,6 +576,10 @@ class LIFNetwork:
         # just consumed, and advance the ring
         self.delay_buf[self.delay_ptr] = self.out
         self.delay_ptr = (self.delay_ptr + 1) % self.buf_len
+        if self.slow_trace is not None:
+            # one-pole low pass on the emitted output, which the slow groups
+            # read in place of their delayed copy
+            self.slow_trace.add_((self.out - self.slow_trace) * self.slow_alpha)
         self.t += p.dt
         return spiked
 

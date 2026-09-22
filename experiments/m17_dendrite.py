@@ -163,6 +163,10 @@ def main() -> int:
     ap.add_argument("--spiking-t4", action="store_true", default=True)
     ap.add_argument("--n-comp", type=int, default=3)
     ap.add_argument("--g-axial", type=float, default=1.0)
+    ap.add_argument("--slow-filter", type=float, default=None, metavar="TAU_MS",
+                    help="deliver the slow arm as a one-pole low pass of this "
+                         "time constant instead of a conduction delay. Delays "
+                         "have been swept; the SHAPE of the arm has not.")
     ap.add_argument("--eye-map", default="anatomical",
                     choices=["lattice", "anatomical"])
     ap.add_argument("--json", type=Path)
@@ -197,16 +201,24 @@ def main() -> int:
     wt = torch.as_tensor(watch, device=args.device)
     where = {int(c): k for k, c in enumerate(watch)}
 
+    slow_kw = {}
+    if args.slow_filter:
+        slow_kw = dict(slow_filter_tau=args.slow_filter * 1e-3,
+                       slow_delay_steps=int(round(config.T_DLY_SLOW / config.DT)))
+        print(f"slow arm is a low pass, tau {args.slow_filter:g} ms, in place "
+              f"of the {config.T_DLY_SLOW * 1e3:.0f} ms delay")
+
     def build(plan):
         if plan is None:
             return LIFNetwork.from_graph(g, device=args.device, seed=0,
-                                         edge_delay=edge_delay, graded=graded)
+                                         edge_delay=edge_delay, graded=graded,
+                                         **slow_kw)
         return LIFNetwork(plan["n_total"], pre_t,
                           torch.as_tensor(plan["post_idx"], device=args.device),
                           w_t, None, args.device, 0, edge_delay=edge_delay,
                           graded=CC.extend_graded(graded, plan),
                           axial_edges=plan["axial_edges"],
-                          axial_edge_g=plan["axial_edge_g"])
+                          axial_edge_g=plan["axial_edge_g"], **slow_kw)
 
     arms = {"point": None}
     for name, kw in (("chain", {}), ("flipped", {"flip": True}),

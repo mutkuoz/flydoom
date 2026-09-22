@@ -57,3 +57,32 @@ about the wiring, and it is the first thing in this project to move per-cell
 selectivity by more than a factor of two.
 
 Reproduce: experiments/m17_dendrite.py --g-axial 8
+
+THE SHAPE OF THE SLOW ARM (--slow-filter)
+
+Delays from 1.8 to 240 ms have been swept and none rescued direction
+selectivity. The SHAPE of the slow arm never had been: a conduction delay
+reproduces its input exactly, d steps late, where a fly's slow arm is a
+low-pass stage, which smears rather than shifts and keeps no sharp copy of the
+past. lif.py can now deliver the slow groups as a one-pole low pass.
+
+T5 a-minus-b separation, g_axial 8:
+
+  slow arm                 point   chain   flipped  shuffled
+  80 ms delay (baseline)  .0047   .0641   .0860    .0471
+  low pass tau 20 ms      .0022   .0192   .0188    .0140
+  low pass tau 80 ms      .0036   .0388   .0504    .0289
+  low pass tau 160 ms     .0017   .0319   .0447    .0237
+
+NEGATIVE. The filter is worse than the delay at every time constant tried,
+best at 80 ms where it matches the delay it replaces and falling away either
+side. A delay preserves the sharp temporal edge the correlator multiplies
+against; smearing it costs about 40% of what selectivity there is. The delay
+line stays.
+
+(A bug worth recording: the first run of this comparison returned byte-
+identical numbers for tau 5 ms and 500 ms, which is impossible. The line that
+updates the running average had been lost when an earlier edit aborted, so the
+slow arm was delivering a permanently zero trace -- an ablation, not a filter.
+Identical outputs across a swept parameter are worth more attention than a
+result that merely looks disappointing.)
