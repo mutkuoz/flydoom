@@ -560,6 +560,22 @@ including the blank, which is not a looming response that is too weak but a
 cell that is saturated: no behaviour downstream of it in this model carries
 information about the stimulus.
 
+The same measurement answers a question about the model's locomotion. The
+forward command is $\cell{BPN}-\cell{MDN}$, and \cell{MDN} --- the moonwalker
+descending neuron, which commands backward walking~\citep{bidaye2014} --- is
+read as a reverse command by the closed-loop decoder, so what drives it is a
+behavioural question and not only a question about the escape circuit. It is
+not driven by looming: \cell{MDN} gives $3.50$\,Hz to a blank field, $4.50$ to
+the size-matched static disc, $5.25$ to the looming sweep and $6.25$ to the
+large static disc, which is the rank order of mean dark \emph{area} and the
+same order as \cell{LC4}. Nor is it driven by contact: under forced antennal
+stimulation (three seeds, 200 tics each) it moves from $7.18$\,Hz with no
+contact to $6.50$ on the left and $8.26$ on the right, about a hertz and not
+consistently in one direction, with \cell{BPN} flat at $30.5$--$30.7$. In
+\emph{Drosophila} backward walking is evoked both by looming and by the
+antennae. In this model it is evoked by neither, and the agent reverses when a
+wall fills its eye.
+
 \subsubsection*{State of the looming detector}
 In closed loop \cell{LPLC2} reads exactly $0.00$\,Hz, and the reason is
 measurable. It sits at $-52.2$\,mV, \emph{below} its own resting potential
@@ -954,6 +970,66 @@ inclusion rate rather than a change in selectivity itself. And the curve peaks
 at $-75$\,mV against a published value of $-70$\,mV, a difference within the
 standard errors ($0.0064$ and $0.0055$), so the measured reversal potential
 is at or near the optimum and is not the parameter holding the model back.
+
+\subsection{Relaxing the point-neuron assumption}
+\label{sec:dendrite}
+
+Every result above treats a neuron as one electrical node. That assumption is
+what makes the cancellation of Sec.~\ref{sec:shunt} inevitable: if all inputs
+land on the same node, \emph{where} an input arrives cannot be represented, and
+direction is exactly a statement about where. We therefore relaxed it. Each
+\cell{T4}/\cell{T5} cell is split into a chain of three compartments coupled by
+an axial conductance, and every input is placed along that chain by its own
+retinotopic offset projected onto the cell's own correlator axis. No cell type
+is named in the placement rule; the axis is measured from the wiring, as in
+Sec.~\ref{sec:mech}. Two controls accompany it: a \emph{reversed} cable, distal
+and proximal exchanged, and a \emph{shuffled} cable in which each cell keeps its
+inputs and the same number in each compartment, and only which input lands
+where is permuted.
+
+Compartments buy an order of magnitude. Under a drifting grating, the
+separation between the \cell{T5} mirror pair (\cell{T5a} minus \cell{T5b},
+measured per eye because the anatomical map mirrors them) rises from
+$+0.005$ as a point neuron to $+0.064$ with an ordered cable at an axial
+conductance of 8, with the vertical subtypes staying near zero on a horizontal
+grating. Individually \cell{T5a} reaches $+0.034$ and \cell{T5b} $-0.035$,
+against $+0.001$ and $-0.004$ as point neurons. This is the largest single
+improvement in per-cell selectivity we have found, and it is still some
+$15\times$ below the $0.5$ at which a terminal would merely qualify as
+direction-tuned.
+
+What it is not is a result about dendritic \emph{order}. Four independent
+shuffled cables reach $0.047$--$0.050$, reproducible to $0.003$, against the
+ordered $0.064$; and the reversed cable, at $0.086$, is the best of the three.
+Most of what the compartments buy is therefore electrotonic: inhibition sitting
+electrically near the spiking node, which is the ``on the path to the output''
+version of the shunt a point neuron cancels. Retinotopic sequence adds about
+$30\%$ on top of that.
+
+That statement is gain-dependent, and we report the dependence rather than the
+gain that flatters it. Raising the excitatory conductance globally by $1.25$ --
+a single scalar applied to no particular cell type -- inverts the ranking: the
+ordered cable gives $+0.045$, the reversed $+0.039$ and the four shuffles
+$0.011$--$0.013$, which is the order a correlator predicts with sequence
+carrying most of the effect. The same scalar moves the point neuron's
+separation from $+0.005$ to $-0.029$, and a gain of $1.5$ to $-0.043$: an order
+of magnitude, \emph{with a reversal of sign}. We draw the conservative
+conclusion. The mirror-pair structure is robust; the absolute direction the
+model prefers is not, and should not be read as a prediction.
+
+Two further mechanisms were tested here and neither helped. (i) A
+\emph{supralinear} dendrite, in which excitation is multiplied by a sigmoid of
+the compartment's own voltage, as an NMDA-type Mg block would be --- the
+preferred-direction enhancement that accompanies null-direction suppression in
+\emph{Drosophila}~\citep{haag2016,gruntman2018}. Against a control with the
+same mean amplification and no voltage dependence, the difference is
+$-0.0425$ against $-0.0428$: the nonlinearity contributes nothing that the
+extra drive does not. (ii) Replacing the slow arm's fixed conduction delay with
+a one-pole low-pass filter, which is the shape a biological slow arm has.
+Selectivity falls at every time constant tried, peaking at $0.039$ where the
+filter's time constant equals the delay it replaces, against $0.064$ for the
+delay. The sharp temporal edge is what the correlator multiplies against, and
+smearing it costs about $40\%$.
 
 \subsection{Comparison of conductance parameterisations}
 \label{sec:threeway}
@@ -1522,6 +1598,46 @@ at any value between $0.5$ and $3$, despite rescaling $467{,}082$ edges, which
 is a further specificity control. Every higher-scoring point the search located
 lay outside the feasible region, failing the olfactory constraint in the manner
 described for row (ii).
+
+\subsection{Bar fixation, and a control that passes}
+\label{sec:fixation}
+
+The two visual computations tested above are both computations over temporal
+order, which is the thing this model loses. Fixation is not: which side an
+object lies on is a spatial fact, and the retinotopy is verified end to end
+(Sec.~\ref{sec:interface}). It is also, with the optomotor response, among
+the most robust behaviours an insect has. We therefore built the arena that
+behaviour is measured in --- a 72-sided cylinder of radius 512 map units,
+uniformly bright, carrying one dark bar $20^\circ$ wide, with the fly at the
+centre --- and a twin cylinder with no bar at all. At constant distance the
+engine's light falloff is constant, so the bar is the only azimuthal feature in
+the world. The fly is tethered: its forward and lateral commands are recorded
+and discarded and only its yaw reaches the body, so the bar's retinal position
+is a pure integral of what the brain commanded. We report
+$F = \langle\cos\theta\rangle$, the mean cosine of the bar's azimuth, which is
+$+1$ for a bar held ahead and $-1$ for one held behind.
+
+The model locks the bar at a stable azimuth and holds it. Over 20 held-out
+seeds and 1200 scored tics the mean resultant length is $0.965$, so once
+settled the bar stays within a few degrees for the rest of the episode, while
+the fly turns at $1.3^\circ$ per tic and is turning on $78\%$ of them.
+
+It is not fixation, and the controls rather than the effect are what show it. A
+model whose retina is frozen on a single frame locks \emph{more} tightly
+($0.980$) and scores higher, $F = +0.299\pm0.309$ against $+0.128\pm0.278$ for
+the intact model and $-0.051\pm0.333$ mirrored. In the blank cylinder, where
+there is nothing to fixate, individual seeds score $+0.80$, $+0.60$ and $+0.91$.
+The azimuth the intact model holds is $83^\circ$ off centre on average, not
+ahead.
+
+The decoder accounts for all of it. The yaw channel subtracts a 3\,s running
+baseline (Sec.~\ref{sec:readout}), so a sustained command is removed and the
+loop's only fixed point is zero net turning; the heading then freezes wherever
+it happens to be, and because the bar is fixed in the world a frozen heading
+\emph{is} a fixed bar azimuth. A closed-loop equilibrium measure cannot
+distinguish an animal that fixates from one that has stopped, and we report it
+here as a null with that reason attached rather than as an absence of
+behaviour.
 
 \subsection{Two interface errors, and what correcting them changes}
 \label{sec:interface}

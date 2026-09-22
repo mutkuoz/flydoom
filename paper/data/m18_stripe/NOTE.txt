@@ -1,0 +1,59 @@
+DOES IT HOLD A DARK BAR IN FRONT OF IT?
+
+Two visual behaviours have been tested in this project and both came back
+empty, and they share a cause: direction selectivity and looming are both
+computations on the ORDER in which neighbouring ommatidia fire, and order in
+time is what this model loses. Fixation is not. Working out which side an
+object is on needs retinotopy, a spatial fact, verified here end to end. M7
+already found the neural half: LC10a's left-right difference tracks target
+azimuth. This is the behavioural half, and it is the experiment a fly
+laboratory would run first.
+
+THE ARENA (scripts/build_stripe_arena.py). A 72-sided cylinder, radius 512,
+uniformly bright, with one dark bar 20 degrees wide, and the fly at the centre.
+At constant distance Doom's light diminishing is constant, so the bar is the
+only azimuthal feature in the world. Tethered: the brain's forward and lateral
+commands are recorded and discarded and only its yaw reaches the body, so the
+bar's retinal position is a pure integral of what the brain commanded.
+stripe_blank is the same cylinder with no bar.
+
+Measured: F = mean cos(bar azimuth). +1 is the bar always ahead, -1 always
+behind, 0 no preference. 20 held-out seeds (40-59), 1500 tics, 300 dropped.
+
+  arm        n   vector length   |held azimuth|          F
+  intact    20       0.965            83.2        +0.128 +- 0.278
+  mirrored  20       0.961            94.7        -0.051 +- 0.333
+  frozen    20       0.980            68.1        +0.299 +- 0.309
+
+NULL, and the frozen arm is why.
+
+1. The fly DOES lock the bar at a stable azimuth. Vector length 0.965 means
+   that once settled it holds the bar within a few degrees, for a thousand
+   tics, while turning 1.3 deg/tic and moving on 78% of them. That looked like
+   a result.
+
+2. It is not vision. A fly whose retina is frozen on one frame locks just as
+   tightly (0.980) and its F is no lower. The explanation is in the decoder,
+   not the eye: the yaw channel subtracts a 3 s baseline, so any sustained
+   command is removed, and the only fixed point of the loop is "stop turning".
+   The heading then freezes wherever it happens to be, and since the bar is
+   fixed in the world, a frozen heading IS a locked bar azimuth. The measure
+   cannot tell the two apart.
+
+3. Nor is the azimuth it holds a fixation azimuth. Intact holds the bar 83
+   degrees off centre on average, not ahead. There is one suggestive thing --
+   6 of 20 intact seeds land between +65 and +73 degrees, and the frozen arm
+   has no such cluster (70% of intact seeds within 45 degrees of +-70, against
+   45% for frozen and mirrored) -- but that is one cluster in one arm of three
+   at n=20, and this note is not going to make a claim out of it.
+
+WHAT THE EXPERIMENT SHOULD HAVE BEEN, and now also is. An equilibrium measure
+has one number per episode and a control that reproduces it. The open-loop
+version has 1200: turn the body at a constant rate so the bar walks all the way
+round the eye, run it both ways so that any response to the rotation itself
+cancels, and read the commanded turn as a function of where the bar is. A fly
+that steers toward the bar gives a curve that falls through zero. That is the
+measurement with the power, and it is what --sweep does.
+
+    python experiments/m18_stripe.py --seeds 20 --tics 1500 --jobs 3
+    python scripts/analyse_stripe.py

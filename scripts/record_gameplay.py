@@ -555,6 +555,15 @@ def main() -> int:
                          "neuron and the one the vision-dependent result uses.")
     ap.add_argument("--seed", type=int, default=None,
                     help="environment seed, so two recordings share a level")
+    ap.add_argument("--tether", action="store_true",
+                    help="record the brain's forward and lateral commands and "
+                         "discard them, so the fly turns in place. This is the "
+                         "arrangement the drum arenas are measured in, and the "
+                         "only way to film one: a walking fly leaves the "
+                         "centre of the cylinder within a second.")
+    ap.add_argument("--head", type=float, default=0.0, metavar="DEG",
+                    help="let the eyes turn on the neck, up to DEG either side. "
+                         "See DoomConfig.head_yaw_max.")
     ap.add_argument("--mirror", action="store_true",
                     help="flip the fly's retinal sampling left-to-right. The "
                          "picture shown is unchanged; what the brain receives "
@@ -628,12 +637,15 @@ def main() -> int:
     if args.wide:
         dkw.update(fov_deg=170.0, width=1280, height=1024,
                    gnomonic=True, pyramid_blur=True, side_views=(90.0, -90.0))
+    if args.head:
+        dkw["head_yaw_max"] = args.head
     akw = dict(
         doom=DoomConfig(**dkw),
         motor=MotorConfig(yaw_source=args.yaw_source,
                           fixed_turn_sign=args.fixed_turn,
                           **(dict(phasic_mdn=True, forward_gain=0.16)
-                             if args.phasic_mdn else {})),
+                             if args.phasic_mdn else {}),
+                          **(dict(head_gain=1.0) if args.head else {})),
         mechano=MechanoConfig(front_only=args.phasic_mdn),
         eye_map=args.eye_map,
         smell=not args.no_smell,
@@ -650,6 +662,15 @@ def main() -> int:
     agent = FlyDoomAgent(AgentConfig(**akw))
     if args.mirror:
         agent.vision.mirror()
+    if args.tether:
+        # The body only turns. Yaw is index 0 of DoomSession.BUTTONS.
+        _step = agent.doom.step
+
+        def tethered(action, tics=1):
+            action = list(action)
+            action[1] = action[2] = 0.0
+            return _step(action, tics)
+        agent.doom.step = tethered
     print(agent.summary())
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
           f"after {args.warmup} warmup tics -> {args.out}")

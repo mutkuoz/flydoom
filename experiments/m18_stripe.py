@@ -177,7 +177,7 @@ def run_one(seed: int, tics: int, device: str, *, scenario: str = "stripe_fix",
     # steering pair is what the brain SAYS, before the decoder's deadzone and
     # its baseline filter can remove it. A tethered fly's torque is the second.
     yl, yr = f"{yaw_source}_L", f"{yaw_source}_R"
-    head, pos, dnp = [], [], []
+    head, pos, dnp, neck = [], [], [], []
     try:
         for t in range(tics):
             rec = agent.tic(t)
@@ -187,16 +187,22 @@ def run_one(seed: int, tics: int, device: str, *, scenario: str = "stripe_fix",
             x, y, a = agent.doom.pose()
             head.append(a)
             pos.append((x, y))
+            neck.append(float(agent.vision.head_deg))
     finally:
         agent.close()
 
     head = np.asarray(head, float)
     px, py = np.asarray(pos, float).T if pos else (np.zeros(0), np.zeros(0))
     bearing = np.degrees(np.arctan2(BAR_WORLD[1] - py, BAR_WORLD[0] - px))
-    az = wrap180(bearing - head)
+    # Where the bar is ON THE RETINA. With a neck the eyes lead the body, and
+    # a head turned `neck` degrees to the left puts a bar that much further to
+    # the right of straight ahead; with the head bolted on, `neck` is zero and
+    # this is the body-relative azimuth as before.
+    az = wrap180(bearing - head - np.asarray(neck, float))
     return {"seed": seed, "scenario": scenario, "mirror": mirror,
             "blind": blind, "free": free, "warmup": warmup,
             "hold_deg": hold_deg, "sweep": sweep, "head_max": head_max,
+            "neck": neck[warmup:],
             "phase": phases[warmup:len(head)],
             "dnp15": dnp[warmup:],
             "az": az[warmup:].tolist(), "head": head[warmup:].tolist(),
