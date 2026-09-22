@@ -388,6 +388,10 @@ class FlyDoomAgent:
 
         rates = self.motor.sample()
         action = self.motor.decode()
+        # The neck moves before the next frame is read, so a head turn shows up
+        # in what the eyes see on the very next tic, which is the point of
+        # having one. No-op unless DoomConfig.head_yaw_max is set.
+        self.vision.set_head(self.motor.head_deg)
         self._last_fwd = float(action.get("MOVE_FORWARD_BACKWARD_DELTA", 0.0))
         result = self.doom.step(
             [action.get(b, 0.0) for b in DoomSession.BUTTONS],

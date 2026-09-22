@@ -130,6 +130,22 @@ class MotorConfig:
     use_on: float = 20.0
     use_off: float = 12.0
 
+    head_gain: float = 0.0
+    """Degrees of head yaw per degree of commanded body yaw. 0 bolts the
+    head to the body, which is every result before this.
+
+    A fly stabilises gaze mostly with its neck: the head turns first, through
+    roughly 20 degrees, and the body follows. Here the same steering command
+    that turns the body also drives the head, which reaches further and
+    recentres, so gaze can move without the body having to. The body command is
+    NOT reduced by it -- that would be a second free parameter -- so this is
+    purely an addition of neck freedom."""
+
+    head_tau: float = 0.2
+    """Seconds. How fast the head returns to straight ahead. Fly head
+    movements are fast and transient; a head that never recentres is just a
+    slowly rotating eye."""
+
     yaw_source: str = "DNa02"
     """Which bilateral descending pair supplies yaw: "DNa02" (the reported
     model) or "DNp15". See MotorDecoder.yaw_pair for why the choice matters."""
@@ -240,6 +256,9 @@ class MotorDecoder:
         self._filt: torch.Tensor | None = None
         # slow baseline per graded channel, updated once per tic
         self.baseline = {"yaw": 0.0, "forward": 0.0, "lateral": 0.0}
+        self.head_deg = 0.0
+        self._head_decay = (float(np.exp(-1.0 / 35.0 / self.cfg.head_tau))
+                            if self.cfg.head_tau > 0 else 0.0)
         self._baseline_decay = (
             float(np.exp(-1.0 / 35.0 / self.cfg.tau_baseline))
             if self.cfg.tau_baseline > 0 else 0.0
@@ -249,6 +268,7 @@ class MotorDecoder:
     def reset(self) -> None:
         self.rates = {k: 0.0 for k in self.pop}
         self.baseline = {k: 0.0 for k in self.baseline}
+        self.head_deg = 0.0
         self._seen_tics = 0
         self.attack.reset()
         self.use.reset()
@@ -358,6 +378,14 @@ class MotorDecoder:
         raw = self._centre("yaw", -lr if c.fixed_turn_sign else lr, warming)
         diff = self._deadzone(raw)
         yaw = float(np.clip(diff * c.yaw_gain, -c.yaw_max_deg, c.yaw_max_deg))
+
+        # --- the neck. A leaky integrator of the same command, so the head
+        # leads where the body is being asked to go and drifts back to straight
+        # ahead. Positive yaw turns the body to its RIGHT, and set_head takes
+        # degrees to the LEFT, hence the sign. The limit is the caller's
+        # (DoomConfig.head_yaw_max), applied where the geometry is.
+        if c.head_gain:
+            self.head_deg = self.head_deg * self._head_decay - c.head_gain * yaw
 
         # --- forward / backward. BPN drives walking, MDN drives moonwalking;
         # they oppose, so the net is their difference rather than two buttons

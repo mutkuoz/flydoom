@@ -154,6 +154,26 @@ class DoomConfig:
     kept it. 0.25 is Doom's default and what every earlier result ran with.
     """
 
+    head_yaw_max: float = 0.0
+    """Degrees the eyes may turn relative to the body. 0 keeps them bolted
+    to it, which is every result before this.
+
+    A fly's head is not fixed. Its neck turns through roughly 20 degrees of yaw
+    and does so faster than the body can, which is why gaze stabilisation in
+    flies is largely a head movement and the body follows. This model has had
+    one heading for both, so a steering command that would be a head saccade in
+    the animal has to be paid for by turning the whole body -- and the body is
+    what collides with walls.
+
+    Nothing about the rendering changes: the eye already sees 360 degrees
+    through three cameras, so turning the head is choosing which directions the
+    lenses read, and the geometry for every allowed angle is built once up
+    front and swapped in. See set_head()."""
+
+    head_yaw_step: float = 2.0
+    """Quantisation of the head angle, degrees. One geometry is built per
+    step, so this trades memory (about 110 KB each) for smoothness."""
+
     side_views: tuple = ()
     """Extra cameras, as yaw offsets in degrees (positive = right), each a
     multiple of 90. (90.0, -90.0) gives every lens a camera within 45 degrees
@@ -265,6 +285,8 @@ class DoomVision:
                                    device=device)
         self.mirrored = False
         self._build_geometry(mirror=False)
+        self.head_deg = 0.0
+        self._head_cache: dict[float, dict] = {}
 
         # --- Gaussian acceptance, expressed in pixels ---
         # Under a perspective projection the angular size of a pixel is not
@@ -310,12 +332,16 @@ class DoomVision:
         self.sustained = torch.as_tensor(sus, device=device)
         self.n_sustained = int(sus.sum())
 
-    def _build_geometry(self, mirror: bool) -> None:
+    def _build_geometry(self, mirror: bool, head_deg: float = 0.0) -> None:
         """Where each lens looks: camera, picture coordinates, blur level.
 
         `mirror` negates every lens azimuth, so each lens reads the direction
         its mirror image would. With one camera that is exactly a flip of the
         picture x coordinate; with side cameras a lens can change camera.
+
+        `head_deg` turns the head on the neck: every lens azimuth is offset,
+        positive to the fly's left, AFTER any mirroring, because the mirror is
+        a control on the retina and the neck is not.
         """
         torch, cfg, device = self.torch, self.cfg, self.device
         tan_h, tan_v = self.tan_h, self.tan_v
@@ -330,6 +356,13 @@ class DoomVision:
             el = eye.elevation_deg[eye.neuron_column]
             if mirror:
                 az = -az
+            if head_deg:
+                # MEASURED: head_deg must SUBTRACT to turn the head left. A
+                # lens's azimuth grows to the right here, so pointing the head
+                # left means every lens reads a smaller azimuth. Checked
+                # against the body: at head_deg +20 the lens luminances match
+                # a 20 degree LEFT body turn to a correlation of 0.993.
+                az = az - head_deg
             # each lens reads the camera nearest its own direction; the main
             # camera wins ties, so a single camera reproduces the old mapping
             off = (az[:, None] - cams[None, :] + 180.0) % 360.0 - 180.0
@@ -390,6 +423,35 @@ class DoomVision:
             self.pyr_hi = torch.as_tensor(hi, device=device)
             self.pyr_frac = torch.as_tensor(frac, device=device)
 
+    GEOM_ATTRS = ("inside", "cam", "grid", "n_inside", "n_total",
+                  "per_camera", "pyr_levels", "pyr_lo", "pyr_hi", "pyr_frac")
+
+    def _snapshot(self) -> dict:
+        return {a: getattr(self, a, None) for a in self.GEOM_ATTRS}
+
+    def set_head(self, deg: float) -> None:
+        """Turn the head `deg` to the fly's left, within head_yaw_max.
+
+        Quantised to head_yaw_step and cached, so after the first visit to an
+        angle this is a swap of a dozen attribute references and costs nothing
+        per tic. Does nothing when the head is bolted to the body (max 0).
+        """
+        lim = self.cfg.head_yaw_max
+        if lim <= 0:
+            return
+        step = max(self.cfg.head_yaw_step, 1e-6)
+        key = float(np.clip(round(deg / step) * step, -lim, lim))
+        if key == self.head_deg:
+            return
+        if self.head_deg not in self._head_cache:
+            self._head_cache[self.head_deg] = self._snapshot()
+        if key not in self._head_cache:
+            self._build_geometry(self.mirrored, head_deg=key)
+            self._head_cache[key] = self._snapshot()
+        for a, v in self._head_cache[key].items():
+            setattr(self, a, v)
+        self.head_deg = key
+
     def mirror(self) -> None:
         """CONTROL: every lens reads its mirror-image direction.
 
@@ -397,10 +459,12 @@ class DoomVision:
         contrast statistics and wiring untouched. With a single camera this is
         the old flip of the sampling grid, bit for bit.
         """
+        self._head_cache.clear()        # every cached angle is the old handedness
         if len(self.cameras) == 1:
             self.grid[..., 0] = -self.grid[..., 0]
         else:
-            self._build_geometry(mirror=not self.mirrored)
+            self._build_geometry(mirror=not self.mirrored,
+                                 head_deg=self.head_deg)
         self.mirrored = not self.mirrored
 
     def _column_spacing_deg(self) -> float:
