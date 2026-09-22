@@ -1,0 +1,59 @@
+GIVING THE DETECTOR A SHAPE
+
+The project's diagnosis of its own motion failure is that the cell adds where
+it must multiply: shunting inhibition cancels itself in a point neuron (/1.77
+against x1.85, net 1.06). A point neuron is the assumption underneath that.
+Every input lands on one node, so WHERE an input arrives cannot be
+represented -- and direction is exactly that.
+
+flydoom/compartments_chain.py builds the alternative: each input placed along a
+cable by its own retinotopic offset, projected onto that cell's own correlator
+axis, with no cell type named in the placement rule. It had never been run,
+because lif.py could only express a PAIR of compartments, which cannot carry an
+order. It now takes an edge list; tests/test_axial_chain.py checks a two-node
+chain against the pair model it generalises.
+
+Drifting grating, 30 deg period, 2 Hz, spiking T4/T5, optic gain 16, anatomical
+eye map, 3 compartments. DSI is measured PER EYE and the left eye's sign
+flipped back before averaging: the anatomical map mirrors the eyes, so pooling
+them cancels the quantity being measured. Reported below is the a-minus-b
+separation, which is what a mirror pair must produce.
+
+  g_axial      T4 pair                          T5 pair
+            point chain flip shuf          point chain flip shuf
+  0.25      .0030 .0010 .0008 .0033        .0047 .0053 .0347 .0057
+  1.0       .0030 .0010 .0019 .0045        .0047 .0053 .0679 .0142
+  4.0       .0030 .0021 .0145 .0064        .0047 .0366 .0937 .0345
+  8.0       .0030 .0077 .0124 .0059        .0047 .0641 .0860 .0471
+  16.0      .0030 .0071 .0094 .0064        .0047 .0691 .0781 .0583
+
+WHAT IT SHOWS
+
+1. Compartments work where a point neuron does not. At g_axial 8-16 the OFF
+   pathway reaches T5a +0.034 and T5b -0.035 individually, against +0.001 and
+   -0.004 as a point neuron: an order of magnitude, with the mirror-pair sign
+   structure a correlator requires. The vertical subtypes stay near zero on a
+   horizontal grating (0.003-0.006), so this is direction rather than drive.
+
+2. It is NOT the ordering. The shuffled control -- same inputs, same count per
+   compartment, only which input lands where destroyed -- reaches 0.058 against
+   the ordered 0.069, and the REVERSED cable is consistently the best of the
+   three (0.078). What the compartments buy is inhibition sitting electrically
+   near the spiking node, which is the "on the path to the output" version of
+   the shunt the point neuron cancels. Retinotopic order adds about 20% on top
+   of that, at most.
+
+3. The ON pathway barely moves: T4 goes from 0.003 to 0.007-0.012, an order of
+   magnitude less than T5. Not explained here.
+
+4. It does not close the gap. The best per-subtype selectivity is about 0.035
+   where a fly shows 0.5, so this is roughly 15x short -- better than the ~0.08
+   ceiling the parameter sweeps reached, and still not a fly.
+
+The honest reading: the point-neuron assumption WAS costing an order of
+magnitude, and the cause is electrotonic placement rather than dendritic
+sequence. That is a statement about how this model represents a neuron, not
+about the wiring, and it is the first thing in this project to move per-cell
+selectivity by more than a factor of two.
+
+Reproduce: experiments/m17_dendrite.py --g-axial 8

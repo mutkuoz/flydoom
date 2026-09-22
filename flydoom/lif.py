@@ -159,6 +159,8 @@ class LIFNetwork:
         graded: "np.ndarray | None" = None,
         axial_partner: "np.ndarray | None" = None,
         g_axial: "np.ndarray | float | None" = None,
+        axial_edges: "np.ndarray | None" = None,
+        axial_edge_g: "np.ndarray | float | None" = None,
         csr: bool = True,
     ) -> None:
         self.n = n_neurons
@@ -316,6 +318,27 @@ class LIFNetwork:
                         == torch.arange(self.n, device=device)).cpu().numpy()
             gx[self_ref] = 0.0
             self.g_ax = torch.as_tensor(gx, device=device)
+
+        # A CHAIN of compartments, where `axial_partner` expresses a pair.
+        # Same physics: each node is pulled toward each neighbour by its own
+        # conductance, which enters the exponential-Euler step as extra
+        # leak plus extra drive. A two-node chain is the pair case.
+        self.ax_a = self.ax_b = self.ax_edge_g = self.g_ax_sum = None
+        if axial_edges is not None:
+            e = np.asarray(axial_edges, dtype=np.int64)
+            if e.ndim != 2 or e.shape[0] != 2:
+                raise ValueError("axial_edges must be shape (2, E)")
+            ge = (np.full(e.shape[1], 1.0 if axial_edge_g is None
+                          else float(axial_edge_g), dtype=np.float32)
+                  if np.isscalar(axial_edge_g) or axial_edge_g is None
+                  else np.asarray(axial_edge_g, dtype=np.float32))
+            self.ax_a = torch.as_tensor(e[0], device=device)
+            self.ax_b = torch.as_tensor(e[1], device=device)
+            self.ax_edge_g = torch.as_tensor(ge, device=device)
+            tot = np.zeros(self.n, dtype=np.float32)
+            np.add.at(tot, e[0], ge)
+            np.add.at(tot, e[1], ge)
+            self.g_ax_sum = torch.as_tensor(tot, device=device)
         self.reset()
 
     @classmethod
@@ -454,6 +477,17 @@ class LIFNetwork:
                 v_partner = self.v[self.axial_partner]
                 g_tot = g_tot + self.g_ax
                 num = num + self.g_ax * v_partner
+            if self.ax_a is not None:
+                # the same, over an edge list: neighbour voltages are read
+                # before the update, so every compartment advances from one
+                # consistent state rather than from its neighbour's new one
+                pull = torch.zeros_like(self.v)
+                pull.index_add_(0, self.ax_a,
+                                self.ax_edge_g * self.v[self.ax_b])
+                pull.index_add_(0, self.ax_b,
+                                self.ax_edge_g * self.v[self.ax_a])
+                g_tot = g_tot + self.g_ax_sum
+                num = num + pull
             v_inf = num / g_tot
             # exponential Euler: exact for g held over the step, and g moves
             # only ~10% within dt at tau_syn=5 ms.
