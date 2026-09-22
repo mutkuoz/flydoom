@@ -185,6 +185,23 @@ the tongue motor neuron receives 0.00% of its input from visual cells.
 **0.08** where a real fly needs ~0.5. Forcing inhibition to be purely divisive abolishes
 what little there is — so the residue isn't division at all, it's the subtractive part plus
 the firing threshold, faking an AND crudely.
+
+**The neuron is a single point, and that is the assumption doing the damage.** If every
+input lands on one node, *where* an input arrives can't be represented — and direction is
+exactly a statement about where. Give each T4/T5 a three-compartment cable and place every
+input along it by its own retinotopic offset, and T5's mirror-pair separation goes from
+0.005 to **0.064**: an order of magnitude, the largest single gain in the project, and
+still ~15× short of a fly. It isn't the *ordering*, though. Four independently shuffled
+cables reach 0.047–0.050 and a **reversed** cable is the best of the three — what the
+compartments buy is inhibition sitting electrically close to the output. And it is
+gain-dependent: a 1.25× global excitatory gain flips the ranking so that order carries most
+of it, and flips the point neuron's *sign*. We report both operating points, because the
+sign of this model's preferred direction turns out not to be a prediction.
+
+**Two more mechanisms, both negative.** A supralinear (NMDA-like) dendrite does nothing
+that a flat gain of the same size doesn't — −0.0425 against −0.0428. And replacing the slow
+arm's fixed delay with a low-pass filter, which is the shape a real slow arm has, is worse
+at every time constant: the correlator needs the sharp temporal edge it multiplies against.
 </details>
 
 ### 3. Where you record matters more than any parameter
@@ -398,7 +415,7 @@ them built to kill our own explanations.
 | M10–M14 | Odour tracking · touch · optomotor drum · gated odour · replay | mostly ❌, all with controls |
 | M15–M16 | LIF validation · **where each eye points, from the wiring** | ✅ |
 | M17 | Does giving the detector a *shape* fix motion vision? | ⚠️ 10× better, 15× short |
-| M18 | Does it hold a dark bar in front of it? | see below |
+| M18 | Does it hold a dark bar in front of it? | ❌ a frozen retina holds it too |
 
 139 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
 offset, fan-in, isolation, add-back, saturation, per-subtype geometry, morphology, real

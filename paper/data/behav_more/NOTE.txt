@@ -1,0 +1,27 @@
+MORE SEEDS, FOR POWER
+
+behav_fixed reports the corrected behaviour tables on 60 held-out seeds
+(40-99). The fly-arena advantage there is real by its own test -- +7.53 health
+and +34.0 tics against the command-matched random agent, both CIs excluding
+zero -- but no model-versus-model contrast is individually significant. Intact
+minus mirrored on health is +3.00 +- 6.18: a confidence interval four times
+wider than the effect it is meant to bracket. That is a power problem, and only
+seeds fix it.
+
+This directory holds the same three fly-arena conditions on 60 FURTHER seeds,
+100-159, for 120 in total. Same brain, same interface, same controls, same
+command line; only the seeds are new, and none of them was looked at while any
+of this was designed. The sky arena is not repeated, because the corrected
+tables already show no effect there and doubling the seeds on a null is an
+expensive way to learn nothing.
+
+run.sh rebuilds it and is resumable: run_sharded skips every seed whose shard
+already parses, so an interrupted run costs nothing but the episode it was in.
+
+READ IT WITH
+
+    python scripts/analyse_more.py
+
+which pools these shards with behav_fixed's and prints the same table over the
+combined seeds. Report the pooled n in anything quoted from it, since a partial
+run gives a partial n and the script will happily print it.

@@ -20,6 +20,7 @@ daylight.
 | `flydoom.mp4` · `flydoom.gif` | the model as it now stands, with stock Doom beside it |
 | `mirrored.mp4` | the same brain with its retina mirrored left-to-right — the control that removes the behavioural advantage |
 | `comparison.mp4` | the two stacked, intact on top |
+| `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
@@ -29,6 +30,28 @@ daylight.
 ```
 
 or just `media/record.sh`, which rebuilds both.
+
+`drum.mp4` is the arena of M18 (`scripts/build_stripe_arena.py`), and it is
+filmed tethered because a walking fly leaves the centre of a cylinder within a
+second — `--tether` records the forward and lateral commands and discards them,
+which is exactly what the experiment does:
+
+```bash
+.venv/bin/python scripts/record_gameplay.py --seconds 25 --scenario stripe_fix \
+    --wide --eye-map anatomical --fixed-turn --phasic-mdn --seed 40 \
+    --spiking-t4 --optic-gain 16 --yaw-source DNp15 --tether --no-smell \
+    --out media/drum.mp4
+```
+
+Two of its panels are empty on purpose: there is nothing in the cylinder to
+smell, and a tethered fly goes nowhere, so the odour traces and the map stay
+blank for the whole clip.
+
+Watch the eye panel rather than the top one: the bar is the single dark column
+that slides across it, and the fly parks it somewhere and keeps it there. That
+looks like fixation and is not — a fly with a frozen retina does the same, and
+so does one in the cylinder with no bar at all. See
+[`../paper/data/m18_stripe/NOTE.txt`](../paper/data/m18_stripe/NOTE.txt).
 
 One level is an illustration, not evidence. The evidence is the 60-level tables in
 [`../paper/data/behav_wide/`](../paper/data/behav_wide).

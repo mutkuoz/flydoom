@@ -20,7 +20,7 @@ cd /home/mutkuoz/Documents/flydoom
 OUT=paper/data/behav_more
 export FLYDOOM_DEVICE=cuda
 COMMON="--tics 700 --seeds 60 --seed-base 100 --smell --bias 0 --device cuda
-        --jobs 4 --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch
+        --jobs 3 --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch
         --wide --render fast --eye-map anatomical --fixed-turn --phasic-mdn
         --arms connectome random still"
 RS=experiments/run_sharded.py

@@ -92,7 +92,13 @@ model, and making inhibition purely divisive abolishes the residue, so what
 survives is a threshold conjunction rather than a product. A regional
 inhibitory scale raises selectivity sevenfold without altering the
 chemosensory results; a single global value cannot, since it inverts the
-gustatory response.
+gustatory response. The point-neuron assumption is itself part of the failure:
+giving each detector a three-compartment cable, with every input placed along
+it by its own retinotopic offset, raises the \cell{T5} mirror-pair separation
+an order of magnitude ($0.005\to0.064$). Most of that is electrotonic rather
+than sequential --- shuffled cables retain $0.047$--$0.050$ and a reversed one
+is better still --- and a global excitatory gain of $1.25$ reverses the sign,
+so the model's preferred direction is not a robust prediction.
 
 Recording site proves more consequential than any parameter. The frozen model
 carries a 17--26\,Hz directional signal at the horizontal system that ablating
@@ -109,7 +115,12 @@ held-out seeds. Mirroring the retina abolishes that advantage, and so does
 freezing it. The advantage is vision-dependent, though the model's own decline
 without vision is not individually significant and no recognisable reflex
 underlies it: an optomotor drum, a looming stimulus and a fixation target each
-produce no directional response. Three errors in the interface --- an eye map
+produce no directional response. In a purpose-built bar arena the model does
+hold a dark bar at a fixed retinal azimuth, but a frozen retina holds it as
+tightly and an empty cylinder scores the same, so the apparent fixation is the
+decoder's baseline filter and not the eye. Against a size-matched static disc,
+the looming response is $26.42$ against $26.44$\,Hz at \cell{LC4}: the
+expansion adds nothing measurable. Three errors in the interface --- an eye map
 read with the wrong hexagonal convention, a reversed steering sign, and a walk
 command that ran the agent backwards --- partly produced that advantage.
 Corrected, over sixty seeds, it survives only in an arena rebuilt so the fly can
@@ -1625,10 +1636,10 @@ the fly turns at $1.3^\circ$ per tic and is turning on $78\%$ of them.
 It is not fixation, and the controls rather than the effect are what show it. A
 model whose retina is frozen on a single frame locks \emph{more} tightly
 ($0.980$) and scores higher, $F = +0.299\pm0.309$ against $+0.128\pm0.278$ for
-the intact model and $-0.051\pm0.333$ mirrored. In the blank cylinder, where
-there is nothing to fixate, individual seeds score $+0.80$, $+0.60$ and $+0.91$.
-The azimuth the intact model holds is $83^\circ$ off centre on average, not
-ahead.
+the intact model and $-0.051\pm0.333$ mirrored. In the blank cylinder, which
+contains nothing to fixate, the score is $+0.265\pm0.307$ --- indistinguishable
+from the arena with a bar in it. The azimuth the intact model holds is
+$83^\circ$ off centre on average, not ahead.
 
 The decoder accounts for all of it. The yaw channel subtracts a 3\,s running
 baseline (Sec.~\ref{sec:readout}), so a sustained command is removed and the
@@ -2126,11 +2137,15 @@ left-right difference of $0.000$; its input is inhibition-dominated at
 $g_i/g_e = 1.85$, which accounts for it. \cell{LPLC2} is also silent at
 $0.75$, beside \cell{LC4} at $0.59$ which fires, so that ratio does not
 account for this one and we do not claim it does. In the looming test the
-static control is the expansion's final radius held for the whole window,
-$70^\circ$ against a sweep beginning at $5^\circ$, so it delivers more total
-drive than the stimulus it controls for; \cell{LC4} responding more to static
-than to looming is a defect of that comparison rather than of adaptation, and
-the check cannot pass as written.
+static control was the expansion's final radius held for the whole window,
+$70^\circ$ against a sweep beginning at $5^\circ$, so it delivered more total
+drive than the stimulus it controlled for, and \cell{LC4} responding more to
+static than to looming was a defect of that comparison rather than of
+adaptation. That is now repaired: the acceptance check is scored against a
+static disc of the sweep's \emph{mean} angular size, which delivers the same
+total drive, and against it \cell{LC4} gives $26.42$ against $26.44$\,Hz
+(Table~\ref{tab:looming}). The verdict is unchanged and no longer rests on a
+comparison that could not have passed.
 
 \emph{Bounding the accessible space:} the inhibitory reversal potential from
 $-52$ to $-100$\,mV, which peaks at the published value and collapses when
@@ -2145,8 +2160,13 @@ optimized model; ablation of \cell{CT1} (12{,}601 edges); ablation of one
 inhibitory flank; a uniform optic-lobe gain to $\times32$ and the same gain
 targeted onto \cell{T4}/\cell{T5} to $\times20$, both of which multiply
 excitatory and inhibitory synapses alike and are therefore distinct from the
-inhibitory-to-excitatory ratio of Sec.~\ref{sec:threeway}; and matching the network's firing-rate
-regime to that of the isolated correlator. \emph{Positive control added:} a
+inhibitory-to-excitatory ratio of Sec.~\ref{sec:threeway}; matching the network's firing-rate
+regime to that of the isolated correlator; a supralinear, voltage-dependent
+excitatory conductance on the dendrite, which does nothing a flat gain of the
+same mean size does not ($-0.0425$ against $-0.0428$); and replacing the slow
+arm's fixed conduction delay with a one-pole low-pass filter, which is worse at
+every time constant tried and best where its time constant equals the delay it
+replaces ($0.039$ against $0.064$). \emph{Positive control added:} a
 hand-built two-input correlator in the same simulator reaches
 $\mathrm{DSI}=-0.79\pm0.017$, which is what licenses us to call the network
 result a failure of the wired model rather than of the method. Rebuilt independently, the same construction reaches $-0.26$ at one

@@ -20,8 +20,11 @@ __pycache__/
 logs/
 runs/
 *.mp4
-# ...but the demo clip is a deliverable, not an artifact
+# ...but the clips the READMEs point at are deliverables, not artifacts
 !media/flydoom.mp4
+!media/mirrored.mp4
+!media/comparison.mp4
+!media/drum.mp4
 
 # downloaded reference papers -- not our own output
 full.html
