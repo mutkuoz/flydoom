@@ -17,7 +17,7 @@ daylight.
 
 | file | what it is |
 |---|---|
-| `flydoom.mp4` · `flydoom.gif` | the model as it now stands |
+| `flydoom.mp4` · `flydoom.gif` | the model as it now stands, with stock Doom beside it |
 | `mirrored.mp4` | the same brain with its retina mirrored left-to-right — the control that removes the behavioural advantage |
 | `comparison.mp4` | the two stacked, intact on top |
 
@@ -33,7 +33,15 @@ or just `media/record.sh`, which rebuilds both.
 One level is an illustration, not evidence. The evidence is the 60-level tables in
 [`../paper/data/behav_wide/`](../paper/data/behav_wide).
 
-**Reading the panels.** Top: the world around the fly, 350°, stitched from
+**Reading the panels.** Top left: the same room in stock Doom, as a person
+would see it — a second engine running the unmodified map from the same seed,
+given the identical keypresses every tic. It stays in exact lockstep (position,
+heading and health identical over 400 tics), because the fly arena changes only
+textures and lighting, never geometry. It is there to show what the arena
+changes bought: Doom's own walls carry their detail far below this eye's 5.4°
+acceptance angle, and its ceiling is dark where a fly expects sky.
+
+Top right: the world around the fly, 350°, stitched from
 the three cameras onto one grid that is linear in azimuth and elevation — the
 fly's own coordinates, and the same axis as the eye panel below, so a wall
 appears at the same place in both. Laid side by side instead, the three views

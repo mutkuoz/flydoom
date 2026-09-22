@@ -35,7 +35,7 @@ import vizdoom as vzd  # noqa: E402
 
 from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
-from flydoom.doom import DoomConfig  # noqa: E402
+from flydoom.doom import DoomConfig, DoomSession  # noqa: E402
 from flydoom.mechanosensation import MechanoConfig  # noqa: E402
 from flydoom.olfaction import FOOD_NAMES, THREAT_NAMES  # noqa: E402
 
@@ -83,7 +83,7 @@ class Recorder:
                  out: Path, history_s: float = 4.0,
                  screen_shape: tuple = (240, 320), cameras: tuple = (0.0,),
                  steer: str = "DNa02", splay_deg: float = 40.0,
-                 fov_deg: float = 130.0):
+                 fov_deg: float = 130.0, shadow: tuple | None = None):
         self.fps = fps
         self.steer = steer
         self.fov_deg = fov_deg
@@ -114,7 +114,9 @@ class Recorder:
                 hspace=0.24, wspace=0.34,
                 left=0.012, right=0.965, top=0.885, bottom=0.085,
             )
-            slot = {"screen": gs[0, :], "eyes_span": gs[1, 0:2],
+            slot = {"screen": gs[0, 2:] if shadow else gs[0, :],
+                    "shadow": gs[0, 0:2] if shadow else None,
+                    "eyes_span": gs[1, 0:2],
                     "pop": gs[1, 2], "steer": gs[1, 3], "smell": gs[1, 4],
                     "map": gs[1, 5]}
         else:
@@ -153,6 +155,24 @@ class Recorder:
                          "stitched into one view", loc="left", color=FG, pad=6)
         else:
             ax.set_title("what Doom draws", loc="left", color=FG, pad=6)
+
+        # --- Doom as a person would see it ------------------------------
+        # The same map, the same tic, the same keypresses -- only the textures
+        # and lighting are the stock ones. The arena beside it is not a filter
+        # over this picture: it is a different set of wall and floor textures,
+        # built because Doom's own carry their detail far below the 5.4 degree
+        # acceptance angle of this eye. See scripts/build_fly_arena.py.
+        self.shadow_art = None
+        if shadow:
+            a = self.fig.add_subplot(slot["shadow"])
+            self.shadow_art = a.imshow(np.zeros((shadow[0], shadow[1], 3),
+                                                np.uint8),
+                                       interpolation="bilinear", aspect="equal")
+            a.set_xticks([]); a.set_yticks([])
+            for sp in a.spines.values():
+                sp.set_edgecolor(EDGE)
+            a.set_title("the same room, stock Doom \u00b7 what a person sees",
+                        loc="left", color=FG, pad=6)
 
         # --- what the fly sees ------------------------------------------
         # One panel for both eyes, each lens drawn where it points (azimuth
@@ -350,11 +370,13 @@ class Recorder:
         return np.where(self._pano_inside[..., None], out, 0)
 
     def draw(self, frame, luminance, rates, diff, turn, t, banner,
-             pos=None, angle=None, objects=(), smell=None):
+             pos=None, angle=None, objects=(), smell=None, shadow=None):
         if frame is not None:
             if frame.ndim == 4:
                 frame = self._panorama(frame)
             self.screen.set_data(frame)
+        if shadow is not None and self.shadow_art is not None:
+            self.shadow_art.set_data(shadow)
         # No scale fitting: the adapted signal is contrast about 0.5 and the
         # panel is drawn on a fixed 0-1 scale, so a lens's colour means the
         # same thing in every frame and in every clip.
@@ -544,6 +566,14 @@ def main() -> int:
                     help="the full eye: 170 deg cameras facing front, left "
                          "and right, corrected lens geometry and per-lens "
                          "blur, so every lens of both eyes sees the world.")
+    ap.add_argument("--shadow", nargs="?", const="health_gathering_supreme",
+                    default=None, metavar="SCENARIO",
+                    help="also show the same room in stock Doom, as a person "
+                         "would see it. A second engine runs the unmodified "
+                         "map from the same seed and is given the identical "
+                         "keypresses every tic, so it stays in lockstep: the "
+                         "fly arena changes only textures and lighting, never "
+                         "geometry, and the engine is deterministic.")
     ap.add_argument("--phasic-mdn", action="store_true",
                     help="read MDN as bursts above its own running level, keep BPN's walking "
                          "drive, and count antennal contact only on forward pushes. "
@@ -616,13 +646,23 @@ def main() -> int:
     print(f"\nrecording {tics} tics ({args.seconds:.0f} s) "
           f"after {args.warmup} warmup tics -> {args.out}")
 
+    # The lockstep copy: same map geometry, same seed, stock textures, and a
+    # field of view a person can read rather than the fly's 170 degrees.
+    shadow = None
+    if args.shadow:
+        shadow = DoomSession(DoomConfig(
+            scenario=args.shadow, window=False, labels=False,
+            seed=args.seed if args.seed is not None else 0,
+            width=640, height=480, fov_deg=100.0))
+
     dc = agent.cfg.doom
     rec = Recorder(agent.retina, args.width,
                    args.height if not dc.side_views else max(args.height, 1000),
                    TICS_PER_SECOND, args.out,
                    screen_shape=(dc.height, dc.width),
                    cameras=agent.vision.cameras, steer=args.yaw_source,
-                   splay_deg=dc.splay_deg, fov_deg=dc.fov_deg)
+                   splay_deg=dc.splay_deg, fov_deg=dc.fov_deg,
+                   shadow=(480, 640) if shadow else None)
     print(f"canvas {rec.size[0]}x{rec.size[1]}")
 
     state = {"n": 0, "episode": 0}
@@ -645,6 +685,12 @@ def main() -> int:
               if ag.smell is not None else None)
         smelling = ("" if sm is None else
                     f"   smell f{sm[0]:.2f} r{sm[1]:.2f}")
+        shadow_frame = None
+        if shadow is not None and not shadow.finished:
+            # the agent has already taken this tic, so the copy takes the same
+            # one and the two land on the same game state
+            shadow.step([r.action[b] for b in DoomSession.BUTTONS])
+            shadow_frame = shadow.frame()
         rec.draw(ag.doom.frame(),
                  per_column_luminance(ag, args.eye_panel == "adapted"),
                  r.rates, d,
@@ -655,7 +701,8 @@ def main() -> int:
                  + smelling
                  + ("" if state["episode"] == 0
                     else f"   life {state['episode'] + 1}"),
-                 pos=pos, angle=ang, objects=objs, smell=sm)
+                 pos=pos, angle=ang, objects=objs, smell=sm,
+                 shadow=shadow_frame)
         state["n"] += 1
         if state["n"] % 35 == 0:
             print(f"  {state['n'] / TICS_PER_SECOND:4.1f} s recorded")
@@ -667,6 +714,8 @@ def main() -> int:
         # rather than silently returning a clip shorter than asked for.
         while state["n"] < tics:
             before = state["n"]
+            if shadow is not None:
+                shadow.new_episode()     # the agent's run() resets its own
             agent.run(tics - state["n"] + args.warmup + 5, on_tic=on_tic)
             if state["n"] == before:      # made no progress; stop rather than spin
                 print("  episode produced no frames; stopping")
@@ -678,6 +727,8 @@ def main() -> int:
                       f"— starting episode {state['episode'] + 1}")
     finally:
         agent.close()
+        if shadow is not None:
+            shadow.close()
         rec.close()
 
     print(f"wrote {args.out}  ({args.out.stat().st_size / 1e6:.1f} MB)")
