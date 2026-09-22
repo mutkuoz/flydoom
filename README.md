@@ -269,6 +269,11 @@ Three arena changes came later, and all are environment, not brain:
   covering ~250°, but one Doom camera can't exceed ~170°. So two more Doom instances render
   90° left and right, loading the main game's save every tic — the *same* world, not a
   lookalike. At a 0° offset the side view matches the main game pixel for pixel.
+- **A laboratory drum** (`stripe_fix`, `stripe_blank`). A 72-sided cylinder, uniformly
+  bright, with one dark 20° bar — and a twin with no bar at all. At constant distance
+  Doom's light falloff is constant too, so the bar is the *only* azimuthal feature in the
+  world, and a fly tethered at the centre turns the bar's retinal position into a pure
+  integral of what its brain commanded. This is Götz's torque meter, in software.
 
 ### 6. Three interface bugs, found by looking at the picture
 
@@ -392,8 +397,10 @@ them built to kill our own explanations.
 | M9 | Does it play better than a matched random agent? | ✅ with vision, ❌ without |
 | M10–M14 | Odour tracking · touch · optomotor drum · gated odour · replay | mostly ❌, all with controls |
 | M15–M16 | LIF validation · **where each eye points, from the wiring** | ✅ |
+| M17 | Does giving the detector a *shape* fix motion vision? | ⚠️ 10× better, 15× short |
+| M18 | Does it hold a dark bar in front of it? | see below |
 
-134 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
+139 automated tests. `m3b`–`m3n` are the motion-vision post-mortem: arm modulation, phase
 offset, fan-in, isolation, add-back, saturation, per-subtype geometry, morphology, real
 traces, and the shunt cancellation.
 
@@ -401,11 +408,13 @@ traces, and the shunt cancellation.
 
 ```
 flydoom/        the model: graph.py, lif.py, retina.py, doom.py, motor.py,
-                olfaction.py, interocept.py (taste), mechanosensation.py
-experiments/    m0–m16 plus the diagnostics; run_sharded.py for batches
-scripts/        recording, arena building, analysis
-paper/          the preprint (main.tex/pdf) and every result in paper/data/
-tests/          134 tests
+                olfaction.py, interocept.py (taste), mechanosensation.py,
+                compartments_chain.py (dendrites)
+experiments/    m0–m18 plus the diagnostics; run_sharded.py for batches
+scripts/        recording, arena building, analysis, profile_tic.py
+paper/          the preprint (main.tex/pdf) and every result in paper/data/,
+                each with a NOTE.txt saying what it means
+tests/          139 tests
 ```
 
 ---
