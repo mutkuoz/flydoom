@@ -17,8 +17,11 @@ number in the project.
   <img src="media/flydoom.gif" width="760" alt="the connectome playing Doom, with its whole visual field">
 </p>
 
-**Top:** three Doom cameras — left, ahead, right — covering the fly's whole field of view,
-in an arena rebuilt for a fly's eye: striped walls, textured ground, daylight.
+**Top left:** the same room in stock Doom, as a person sees it — a second copy of the game
+running in exact lockstep, for comparison. **Top right:** the world around the fly, 350°,
+in an arena rebuilt for a fly's eye: striped walls, textured ground, daylight. Doom's own
+walls carry their detail far below what this eye can resolve, and its ceiling is dark where
+a fly expects sky.
 **Bottom left:** what the fly actually receives — both eyes, 1,581 lenses, each drawn where
 it points. The striped walls show up as dark bars along its horizon.
 **Then:** firing rates of the nerves that drive its body, the left-minus-right steering
