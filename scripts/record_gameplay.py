@@ -37,7 +37,8 @@ from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
 from flydoom.doom import DoomConfig, DoomSession  # noqa: E402
 from flydoom.mechanosensation import MechanoConfig  # noqa: E402
-from flydoom.olfaction import FOOD_NAMES, THREAT_NAMES  # noqa: E402
+from flydoom.olfaction import (FOOD_NAMES, THREAT_NAMES,  # noqa: E402
+                               OlfactionConfig, WHOLE_LEVEL)
 
 TICS_PER_SECOND = 35
 SQRT3 = np.sqrt(3.0)
@@ -574,6 +575,10 @@ def main() -> int:
                          "keypresses every tic, so it stays in lockstep: the "
                          "fly arena changes only textures and lighting, never "
                          "geometry, and the engine is deterministic.")
+    ap.add_argument("--smell-all", action="store_true",
+                    help="smell every object in the level, not only what is on screen, with "
+                         "the falloff of olfaction.WHOLE_LEVEL. Odour does not "
+                         "need line of sight; the label buffer does.")
     ap.add_argument("--phasic-mdn", action="store_true",
                     help="read MDN as bursts above its own running level, keep BPN's walking "
                          "drive, and count antennal contact only on forward pushes. "
@@ -616,7 +621,8 @@ def main() -> int:
     # but a clip recorded without it shows a fly with no nose, and the odour
     # channel drives the descending neurons harder than vision does.
     from flydoom.motor import MotorConfig
-    dkw = dict(scenario=args.scenario, window=False, labels=not args.no_smell)
+    dkw = dict(scenario=args.scenario, window=False, labels=not args.no_smell,
+               objects_info=args.smell_all and not args.no_smell)
     if args.seed is not None:
         dkw["seed"] = args.seed
     if args.wide:
@@ -631,6 +637,8 @@ def main() -> int:
         mechano=MechanoConfig(front_only=args.phasic_mdn),
         eye_map=args.eye_map,
         smell=not args.no_smell,
+        olfaction=(OlfactionConfig(**WHOLE_LEVEL) if args.smell_all
+                   else OlfactionConfig()),
         device=args.device,
         optic_gain=args.optic_gain,
         spiking_t4=args.spiking_t4,

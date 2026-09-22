@@ -116,6 +116,12 @@ class OlfactionConfig:
     """Turbulent plumes arrive in bursts. Without this the channel is a
     suspiciously clean proximity readout."""
 
+    food_strength: float = 1.0
+    """How strongly a single food source emits, relative to a threat. Raising
+    it is a smellier medkit, not a better nose: it scales the source, so a
+    strong one is detectable further away, and it cannot carry direction
+    because nothing in this channel does."""
+
     food_gain: float = 1.0
     threat_gain: float = 1.0
 
@@ -146,6 +152,27 @@ class OlfactionConfig:
     delivered drive is s/(1+k*s): compressive, but crucially NOT zero, so a
     sustained odour still produces sustained drive. k=1 is the plain
     Weber form."""
+
+
+WHOLE_LEVEL = dict(r_half=80.0, falloff_power=3.0, food_strength=5.0)
+"""Falloff for smelling the whole level rather than what is on screen.
+
+Chosen on the signal's statistics, not on any behavioural outcome. With the
+original 280 units and a square law, summing every one of the ~39 items in the
+arena pegs the channel at its ceiling on 100% of tics: it would report "food"
+constantly and carry nothing. At 80 units and a cube law the summed
+concentration runs 0.29 +- 0.24 and never saturates, and the NEAREST source
+supplies about half of it, which is the property that makes a plume worth
+following.
+
+food_strength is the smellier medkit, and 5 is where the signal that reaches
+the brain matches what the on-screen channel used to deliver: sensed food
+0.60 +- 0.33 against the old 0.66 +- 0.28. It needs to be that large because
+smelling the whole level gives a STEADIER signal than a camera that swings
+sources in and out of view, and the receptors adapt away whatever is steady --
+correctly, since a fly responds to changes in odour rather than to background.
+At 10 it saturates and the modulation falls again (0.67 +- 0.24).
+"""
 
 
 class Olfaction:
@@ -199,19 +226,22 @@ class Olfaction:
 
     # -- per Doom tic ----------------------------------------------------
 
-    def _concentration(self, distances: list[float]) -> float:
+    def _concentration(self, distances: list[float],
+                       strength: float = 1.0) -> float:
         """Summed, saturating concentration from a set of sources."""
         c = self.cfg
         total = 0.0
         for r in distances:
-            total += 1.0 / (1.0 + (max(r, 1.0) / c.r_half) ** c.falloff_power)
+            total += strength / (1.0 + (max(r, 1.0) / c.r_half) ** c.falloff_power)
         return min(total, 1.0)
 
     def on_tic(self, objects: list[dict]) -> None:
-        """Update from this tic's visible objects.
+        """Update from this tic's odour sources.
 
-        `objects` is what DoomSession.threats() returns — name, distance,
-        azimuth. The azimuth is deliberately IGNORED here; see the module
+        `objects` carries a name and a distance per source, from
+        DoomSession.odour_sources() (every object in the level) or, in the
+        original configuration, DoomSession.threats() (only what is on
+        screen). Any azimuth present is deliberately IGNORED; see the module
         docstring for why that is the point rather than an oversight.
         """
         threats, foods = [], []
@@ -225,7 +255,8 @@ class Olfaction:
                 threats.append(o["distance"])
             # anything else emits nothing -- see the allowlist note above
         self.raw["threat"] = self._concentration(threats) * self.cfg.threat_gain
-        self.raw["food"] = self._concentration(foods) * self.cfg.food_gain
+        self.raw["food"] = (self._concentration(foods, self.cfg.food_strength)
+                            * self.cfg.food_gain)
         # WHETHER a source is present is a different fact from HOW STRONG it
         # is, and the plume memory below applies only to the first.
         self.seen["threat"] = bool(threats)

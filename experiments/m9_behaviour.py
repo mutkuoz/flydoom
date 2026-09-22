@@ -59,6 +59,7 @@ from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
 from flydoom.doom import DoomConfig, DoomSession  # noqa: E402
 from flydoom.motor import MotorConfig  # noqa: E402
+from flydoom.olfaction import OlfactionConfig, WHOLE_LEVEL  # noqa: E402
 from flydoom.mechanosensation import MechanoConfig  # noqa: E402
 
 USE_COLOR = sys.stdout.isatty()
@@ -270,7 +271,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               blind: bool = False,
               wide: bool = False,
               eye_map: str = "lattice",
-              render: str = "full") -> tuple[dict, dict]:
+              render: str = "full",
+              smell_all: bool = False) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -280,9 +282,12 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         mk["tau_baseline"] = tau_baseline
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
-                        labels=smell, **(RENDER[render] if wide else {})),
+                        labels=smell, objects_info=smell and smell_all,
+                        **(RENDER[render] if wide else {})),
         motor=MotorConfig(**mk),
         smell=smell,
+        olfaction=(OlfactionConfig(**WHOLE_LEVEL) if smell_all
+                   else OlfactionConfig()),
         shuffle_graph=shuffled,
         eye_map=eye_map,
         seed=seed,
@@ -464,6 +469,10 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--smell-all", action="store_true",
+                    help="smell every object in the level, not only what is on screen, with "
+                         "the falloff of olfaction.WHOLE_LEVEL. Odour does not "
+                         "need line of sight; the label buffer does.")
     ap.add_argument("--phasic-mdn", action="store_true",
                     help="read MDN as bursts above its own running level, keep BPN's walking "
                          "drive, and count antennal contact only on forward pushes. "
@@ -561,6 +570,7 @@ def main() -> int:
     record["eye_map"] = args.eye_map
     record["render"] = args.render
     record["phasic_mdn"] = args.phasic_mdn
+    record["smell_all"] = args.smell_all
     record["fixed_turn"] = args.fixed_turn
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
@@ -578,7 +588,8 @@ def main() -> int:
                                     args.optic_gain, args.spiking_t4,
                                     args.touch,
                                     motor_kw, args.mirror, args.blind,
-                                    args.wide, args.eye_map, args.render)
+                                    args.wide, args.eye_map, args.render,
+                                    args.smell_all)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
@@ -586,7 +597,7 @@ def main() -> int:
                                       args.tau_baseline, args.optic_gain,
                                       args.spiking_t4, args.touch, motor_kw,
                                       args.mirror, args.blind, args.wide,
-                                      args.eye_map, args.render)
+                                      args.eye_map, args.render, args.smell_all)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:

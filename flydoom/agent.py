@@ -212,10 +212,10 @@ class FlyDoomAgent:
         )
         self.smell = None
         if c.smell:
-            if not c.doom.labels:
+            if not (c.doom.labels or c.doom.objects_info):
                 raise ValueError(
-                    "smell=True needs DoomConfig(labels=True) — source "
-                    "distances come from the label buffer"
+                    "smell=True needs DoomConfig(labels=True) or "
+                    "objects_info=True — source distances come from one of them"
                 )
             self.smell = Olfaction(
                 self._idx("ORN_DA1"), self._idx("ORN_DM1"),
@@ -348,9 +348,12 @@ class FlyDoomAgent:
         self.last_luminance = column_lum
 
         if self.smell is not None:
-            # azimuth is passed but deliberately discarded inside — see
-            # olfaction.py for why that is the point
-            self.smell.on_tic(self.doom.threats())
+            # Sources are every object in the level when the engine reports
+            # them, since odour does not need line of sight, and otherwise
+            # only what is on screen. Any azimuth is discarded inside — see
+            # olfaction.py for why that is the point.
+            self.smell.on_tic(self.doom.odour_sources() if self.cfg.doom.objects_info
+                              else self.doom.threats())
 
         if self.touch is not None:
             # contact is derived from motion against the command, so it needs

@@ -198,6 +198,17 @@ class DoomConfig:
     Set False to recover the held-frame behaviour.
     """
 
+    objects_info: bool = False
+    """Report every object in the level, not only the ones on screen.
+
+    The label buffer holds what the camera can see: MEASURED in the fly arena,
+    2.2 of the 39 items present per tic, with 82% of them beyond 85 degrees of
+    straight ahead. Gating the OLFACTORY channel on that is backwards -- odour
+    reaches an animal from behind and around corners, which is most of what
+    makes it worth having -- so the smell channel reads this instead. Vision
+    reads the rendered frames and is untouched by it.
+    """
+
     labels: bool = False
     """Enable the object label buffer. Used for MEASUREMENT ONLY -- M6 needs
     ground-truth enemy positions to ask whether the fly responded to them.
@@ -623,6 +634,8 @@ class DoomSession:
         ])
         if cfg.labels:
             g.set_labels_buffer_enabled(True)
+        if cfg.objects_info:
+            g.set_objects_info_enabled(True)
         # A wide FOV is not cosmetic: at Doom's default 90 deg the fly sees a
         # sliver of its own visual field, and every angular claim downstream
         # inherits this number.
@@ -703,6 +716,28 @@ class DoomSession:
         return (float(self.game.get_game_variable(vz.GameVariable.POSITION_X)),
                 float(self.game.get_game_variable(vz.GameVariable.POSITION_Y)),
                 float(self.game.get_game_variable(vz.GameVariable.ANGLE)))
+
+    def odour_sources(self) -> list[dict]:
+        """Every object in the level, with its distance. For the smell channel.
+
+        No azimuth: the olfactory channel discards direction by construction
+        (see olfaction.py), and not computing it here keeps it that way. No
+        line of sight either, which is the point.
+        """
+        s = self.game.get_state()
+        if s is None or not getattr(s, "objects", None):
+            return []
+        vz = self.vzd
+        px = self.game.get_game_variable(vz.GameVariable.POSITION_X)
+        py = self.game.get_game_variable(vz.GameVariable.POSITION_Y)
+        out = []
+        for ob in s.objects:
+            if ob.name == "DoomPlayer":
+                continue
+            out.append({"name": ob.name,
+                        "distance": math.hypot(ob.position_x - px,
+                                               ob.position_y - py)})
+        return out
 
     def threats(self) -> list[dict]:
         """Enemies visible this tic, with true distance and angular size.

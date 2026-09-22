@@ -83,6 +83,7 @@ def main() -> int:
     ap.add_argument("--render", default="full", choices=["full", "fast"])
     ap.add_argument("--fixed-turn", action="store_true")
     ap.add_argument("--phasic-mdn", action="store_true")
+    ap.add_argument("--smell-all", action="store_true")
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
     ap.add_argument("--yaw-max", type=float, default=None)
@@ -127,6 +128,8 @@ def main() -> int:
         base.append("--fixed-turn")
     if args.phasic_mdn:
         base.append("--phasic-mdn")
+    if args.smell_all:
+        base.append("--smell-all")
     if args.yaw_max is not None:
         base += ["--yaw-max", str(args.yaw_max)]
     if args.forward_max is not None:
