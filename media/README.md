@@ -33,8 +33,13 @@ or just `media/record.sh`, which rebuilds both.
 One level is an illustration, not evidence. The evidence is the 60-level tables in
 [`../paper/data/behav_wide/`](../paper/data/behav_wide).
 
-**Reading the panels.** Top: the three Doom cameras — left, ahead, right —
-which together cover the fly's whole field of view. Bottom left: what the fly
+**Reading the panels.** Top: the world around the fly, 350°, stitched from
+the three cameras onto one grid that is linear in azimuth and elevation — the
+fly's own coordinates, and the same axis as the eye panel below, so a wall
+appears at the same place in both. Laid side by side instead, the three views
+overlap by 85° on each seam and show the same wall two and three times at
+wildly different distortions, because a 170° rectilinear view squeezes what is
+straight ahead into a few percent of its width and magnifies its edges. Bottom left: what the fly
 receives, both eyes, each of the 1,581 lenses drawn at the direction it looks,
 so sky sits above the horizon line and the ground below; the wall stripes show
 as dark bars. Then: firing rates of the nerves that drive the body, the

@@ -15,6 +15,7 @@ over SSH and in CI.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import shutil
 import subprocess
@@ -81,9 +82,11 @@ class Recorder:
     def __init__(self, retina, width: int, height: int, fps: int,
                  out: Path, history_s: float = 4.0,
                  screen_shape: tuple = (240, 320), cameras: tuple = (0.0,),
-                 steer: str = "DNa02", splay_deg: float = 40.0):
+                 steer: str = "DNa02", splay_deg: float = 40.0,
+                 fov_deg: float = 130.0):
         self.fps = fps
         self.steer = steer
+        self.fov_deg = fov_deg
         # With side views the picture is a panorama, left to right, and gets
         # the whole top row; the panels move underneath it.
         self.pano = len(cameras) > 1
@@ -134,24 +137,20 @@ class Recorder:
         # stretch every later frame to it.
         h0, w0 = screen_shape
         if self.pano:
-            h0, w0 = h0 // 2, (w0 // 2) * len(cameras)
+            self._build_panorama_map(screen_shape, cameras)
+            h0, w0 = self._pano_cam.shape
         self.screen = ax.imshow(np.zeros((h0, w0, 3), np.uint8),
                                 interpolation="bilinear", aspect="equal")
         ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_edgecolor(EDGE)
         if self.pano:
-            names = {0.0: "front"}
-            for j, i in enumerate(self.order):
-                c = cameras[i]
-                label = names.get(c, f"{abs(c):.0f}\u00b0 {'right' if c > 0 else 'left'}")
-                ax.text((j + 0.5) * w0 / len(cameras), h0 * 0.985, label,
-                        color=FG, fontsize=8, ha="center", va="bottom",
-                        family="monospace", alpha=0.85)
-                if j:
-                    ax.axvline(j * w0 / len(cameras) - 0.5, color=BG, lw=1.2)
-            ax.set_title("what Doom draws \u00b7 three cameras, one world",
-                         loc="left", color=FG, pad=6)
+            for az, label in ((-90, "left"), (0, "ahead"), (90, "right")):
+                x = (az - self.PANO_AZ[0]) / (self.PANO_AZ[1] - self.PANO_AZ[0]) * w0
+                ax.text(x, h0 * 0.99, label, color=FG, fontsize=8, ha="center",
+                        va="bottom", family="monospace", alpha=0.85)
+            ax.set_title("the world around the fly \u00b7 three cameras, "
+                         "stitched into one view", loc="left", color=FG, pad=6)
         else:
             ax.set_title("what Doom draws", loc="left", color=FG, pad=6)
 
@@ -307,12 +306,54 @@ class Recorder:
             stdin=subprocess.PIPE,
         )
 
+    PANO_AZ = (-175.0, 175.0)
+    PANO_EL = (-72.0, 88.0)
+
+    def _build_panorama_map(self, screen_shape, cameras):
+        """Where each panorama pixel reads from, in which camera.
+
+        Three 170 degree views, 90 degrees apart, overlap by 85 degrees on each
+        seam, so laid side by side they show the same wall two and three times
+        over, each at a different distortion: a rectilinear view that wide
+        squeezes what is straight ahead into a few percent of its width and
+        magnifies its edges enormously. Reprojecting them onto one grid that is
+        linear in azimuth and elevation -- the fly's own coordinates, and the
+        same axis as the eye panel below -- shows every direction exactly once
+        at an even scale. Each pixel is read from whichever camera it sits
+        nearest the middle of. Display only: the retina samples the raw frames.
+        """
+        h, w = screen_shape
+        tan_h = math.tan(math.radians(self.fov_deg / 2.0))
+        tan_v = tan_h * h / w
+        out_w = 1100
+        out_h = int(out_w * (self.PANO_EL[1] - self.PANO_EL[0])
+                    / (self.PANO_AZ[1] - self.PANO_AZ[0]))
+        az = np.linspace(*self.PANO_AZ, out_w)[None, :]
+        el = np.linspace(self.PANO_EL[1], self.PANO_EL[0], out_h)[:, None]
+        cams = np.asarray(cameras)
+        off = (az[..., None] - cams[None, None, :] + 180.0) % 360.0 - 180.0
+        pick = np.argmin(np.abs(off), axis=-1)
+        local = np.take_along_axis(off, pick[..., None], axis=-1)[..., 0]
+        local = np.broadcast_to(local, (out_h, out_w))
+        u = np.tan(np.radians(np.clip(local, -89.0, 89.0)))
+        v = np.tan(np.radians(np.broadcast_to(el, (out_h, out_w)))) / np.cos(
+            np.radians(np.clip(local, -89.0, 89.0)))
+        x = np.clip((w / 2) * (1 + u / tan_h), 0, w - 1).astype(np.int32)
+        y = np.clip((h / 2) * (1 - v / tan_v), 0, h - 1).astype(np.int32)
+        inside = (np.abs(u) <= tan_h) & (np.abs(v) <= tan_v)
+        self._pano_cam = np.broadcast_to(pick, (out_h, out_w)).astype(np.int32)
+        self._pano_y, self._pano_x = y, x
+        self._pano_inside = inside
+
+    def _panorama(self, frames):
+        out = frames[self._pano_cam, self._pano_y, self._pano_x]
+        return np.where(self._pano_inside[..., None], out, 0)
+
     def draw(self, frame, luminance, rates, diff, turn, t, banner,
              pos=None, angle=None, objects=(), smell=None):
         if frame is not None:
             if frame.ndim == 4:
-                frame = np.concatenate([frame[i, ::2, ::2] for i in self.order],
-                                       axis=1)
+                frame = self._panorama(frame)
             self.screen.set_data(frame)
         # No scale fitting: the adapted signal is contrast about 0.5 and the
         # panel is drawn on a fixed 0-1 scale, so a lens's colour means the
@@ -581,7 +622,7 @@ def main() -> int:
                    TICS_PER_SECOND, args.out,
                    screen_shape=(dc.height, dc.width),
                    cameras=agent.vision.cameras, steer=args.yaw_source,
-                   splay_deg=dc.splay_deg)
+                   splay_deg=dc.splay_deg, fov_deg=dc.fov_deg)
     print(f"canvas {rec.size[0]}x{rec.size[1]}")
 
     state = {"n": 0, "episode": 0}
