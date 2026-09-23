@@ -227,13 +227,13 @@ same smoothness, differing only in whether the commands are about anything? Then
 vision two different ways (mirror the eyes, freeze them) and see if the advantage goes.
 
 **The current answer**, with every interface bug in section 6 fixed and the fly walking
-forward, over 60 held-out levels:
+forward, over **120 held-out levels** (the fly-arena columns; the sky arena is 60):
 
 | model minus matched random agent | fly arena: eyes working | mirrored | frozen | sky arena: eyes working |
 |---|---|---|---|---|
-| health collected | **+7.5** | −0.7 | +4.5 | −4.3 |
-| time survived | **+34.0** | −13.1 | +22.6 | −8.2 |
-| ground covered | +1.6 | +1.8 | **+3.2** | −0.2 |
+| health collected | **+5.7** | −0.4 | +3.3 | −4.3 |
+| time survived | **+21.0** | −7.1 | +13.7 | −8.2 |
+| ground covered | +1.3 | +1.1 | **+2.9** | −0.2 |
 
 Bold = the 95% interval excludes zero. In the **fly arena** — striped walls, textured ground,
 a world whose structure the fly can resolve — it collects more health and survives longer
@@ -242,8 +242,14 @@ grey at the fly's resolution, it does no better than chance at all. So: vision h
 only when there is something to see, only on health and survival, and freezing the eyes only
 weakens the effect rather than cleanly removing it.
 
-Two more things it is honest to say. Head to head, no model-versus-model difference in health
-or survival is statistically solid — the effect is in how it beats chance. And with correct
+Three more things it is honest to say. **The first 60 levels oversold it.** That block gave
++7.5 health and +34.0 tics; a fresh 60, run identically, gave +3.8 and +8.0 — half the size,
+and neither one significant on its own. Pooled over all 120 the advantage holds at +5.7 and
++21.0, but sixty levels pinned this effect no better than to a factor of two, and the first
+sixty happened to be the good half. Head to head, no model-versus-model difference in health
+or survival is statistically solid — the effect is in how it beats chance, and doubling the
+levels didn't change that (intact − mirrored health went from +3.0 ± 6.2 to +3.5 ± 4.6; it
+would take roughly 210 levels). And with correct
 geometry the fly's vision **steers it toward walls**: it's stuck more than the mirrored fly
 in both arenas. Real flies are drawn to large dark vertical shapes; in a Doom maze that's a
 trap.

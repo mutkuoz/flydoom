@@ -124,9 +124,11 @@ the looming response is $26.42$ against $26.44$\,Hz at \cell{LC4}: the
 expansion adds nothing measurable. Three errors in the interface --- an eye map
 read with the wrong hexagonal convention, a reversed steering sign, and a walk
 command that ran the agent backwards --- partly produced that advantage.
-Corrected, over sixty seeds, it survives only in an arena rebuilt so the fly can
-resolve its structure ($+7.53\pm6.66$ health, abolished by mirroring, weakened
+Corrected, over 120 seeds, it survives only in an arena rebuilt so the fly can
+resolve its structure ($+5.67\pm4.88$ health, abolished by mirroring, weakened
 by freezing) and vanishes where the walls are finer than its acceptance angle;
+a second block of sixty seeds halves the effect the first reported, so one
+block of sixty pinned it no better than to a factor of two;
 the corrected eye doubles the population direction signal and still produces no
 optomotor response.
 
@@ -1556,19 +1558,23 @@ significant (full minus original eye, health $+4.93\pm6.23$).
 measured through the interface whose errors Sec.~\ref{sec:interface} and the
 Limitations describe, including an agent that walked backwards on $97\%$ of
 tics. We re-ran the full-eye comparison with all of them corrected: the same
-brain configuration, the same sixty seeds and controls, in the sky arena and in
-an arena rebuilt so its walls carry structure at the fly's resolution (Methods).
+brain configuration, the same sixty held-out seeds and controls, in the sky
+arena and in an arena rebuilt so its walls carry structure at the fly's
+resolution (Methods). The fly-arena conditions were then repeated on sixty
+\emph{further} seeds (100--159), and the table reports all $120$; the
+replication is discussed below.
 
 \begin{center}
 \small
 \begin{tabular}{lrrrr}
 \toprule
 model minus matched control & sky: intact & fly: intact & fly: mirrored & fly: frozen\\
+& ($n=60$) & ($n=120$) & ($n=120$) & ($n=120$)\\
 \midrule
-health collected & $-4.27\pm6.79$ & $\mathbf{+7.53\pm6.66}$ & $-0.67\pm7.70$ & $+4.47\pm5.96$\\
-tics survived    & $-8.18\pm26.56$ & $\mathbf{+34.00\pm25.27}$ & $-13.12\pm30.48$ & $+22.63\pm26.86$\\
-tiles visited    & $-0.15\pm1.76$ & $+1.58\pm2.09$ & $+1.80\pm2.46$ & $\mathbf{+3.18\pm2.10}$\\
-stuck fraction   & $+0.02\pm0.05$ & $+0.03\pm0.06$ & $\mathbf{-0.12\pm0.05}$ & $\mathbf{-0.08\pm0.05}$\\
+health collected & $-4.27\pm6.79$ & $\mathbf{+5.67\pm4.88}$ & $-0.40\pm4.72$ & $+3.27\pm4.41$\\
+tics survived    & $-8.18\pm26.56$ & $\mathbf{+21.01\pm19.31}$ & $-7.11\pm18.32$ & $+13.65\pm17.93$\\
+tiles visited    & $-0.15\pm1.76$ & $+1.34\pm1.50$ & $+1.09\pm1.46$ & $\mathbf{+2.93\pm1.38}$\\
+stuck fraction   & $+0.02\pm0.05$ & $+0.02\pm0.04$ & $\mathbf{-0.09\pm0.04}$ & $\mathbf{-0.09\pm0.04}$\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1587,6 +1593,24 @@ structure --- it is stuck more than the mirrored model in both arenas --- which
 is the attraction a fly shows to dark vertical objects, and maladaptive in a
 maze. What survives is a vision-dependent advantage over chance, confined to a
 world whose structure the animal can resolve.
+
+\emph{How well it replicates.} The fly-arena result was first measured on seeds
+40--99 and gave $+7.53\pm6.66$ health and $+34.00\pm25.27$ tics. Sixty fresh
+seeds, run identically, give $+3.80\pm7.16$ and $+8.02\pm29.04$ --- half the
+size, and neither interval excludes zero on its own. Pooled over all $120$ the
+advantage stands ($+5.67\pm4.88$, $+21.01\pm19.31$, both excluding zero) with
+the controls behaving as before, but it is about a quarter smaller than the
+first block implied, and the first block was evidently the favourable half.
+We report the pooled estimate throughout and note that a single block of sixty
+seeds was not enough to pin this effect to better than a factor of two.
+
+Doubling the seeds does not rescue the model-versus-model contrasts, which is
+the limit named above. Intact minus mirrored on health is $+3.50\pm4.63$ at
+$n=120$, against $+3.00\pm6.18$ at $n=60$: the interval narrowed as
+$\sqrt{2}$ predicts and still contains zero. Reaching significance at this
+effect size needs roughly $210$ seeds, and we record the number rather than
+running toward it, since the dissociation the paper rests on is between each
+model and its own matched control, not between models.
 
 Three controls exclude the possibility that the gain in selectivity follows
 from reduced drive alone. Matching the firing rate by lowering gain instead of raising

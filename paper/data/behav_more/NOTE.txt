@@ -25,3 +25,33 @@ READ IT WITH
 which pools these shards with behav_fixed's and prints the same table over the
 combined seeds. Report the pooled n in anything quoted from it, since a partial
 run gives a partial n and the script will happily print it.
+
+RESULT (2026-09-23, all three conditions complete, 60 seeds each)
+
+                       seeds 40-99     seeds 100-159      pooled, n=120
+  health    +7.53 +- 6.66    +3.80 +- 7.16     +5.67 +- 4.88 *
+  tics     +34.00 +-25.27    +8.02 +-29.04    +21.01 +-19.31 *
+
+THE EFFECT REPLICATES, AND IT IS SMALLER THAN THE FIRST BLOCK SAID. Sixty
+fresh seeds give half the effect of the first sixty, and neither of the new
+intervals excludes zero on its own. Pooled over 120 the advantage stands and
+the controls behave as before -- mirrored -0.40 health and -7.11 tics, frozen
++3.27 and +13.65, neither significant -- but the honest estimate is about a
+quarter below what was published, and the first block was the favourable half.
+Sixty seeds pinned this effect no better than to a factor of two. Quote the
+pooled number.
+
+WHAT MORE SEEDS DID NOT BUY. The model-versus-model contrast is still not
+significant. Intact minus mirrored on health is +3.50 +- 4.63 at n=120 against
++3.00 +- 6.18 at n=60: the interval narrowed by exactly the sqrt(2) the extra
+seeds buy, and still contains zero. At this effect size significance needs
+about 210 seeds. That number is recorded rather than chased, because the
+dissociation the project rests on is between each model and its OWN matched
+control, not between models; a contrast that needs 210 seeds is not the
+evidence to lean on.
+
+  n=120, model minus its command-matched random arm, fly arena
+                     health          tics         tiles        stuck
+    intact      +5.67 +-4.88*  +21.01 +-19.31*  +1.34 +-1.50  +0.02 +-0.04
+    mirrored    -0.40 +-4.72    -7.11 +-18.32   +1.09 +-1.46  -0.09 +-0.04*
+    frozen      +3.27 +-4.41   +13.65 +-17.93   +2.93 +-1.38* -0.09 +-0.04*
