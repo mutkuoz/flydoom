@@ -53,6 +53,17 @@ looks like fixation and is not — a fly with a frozen retina does the same, and
 so does one in the cylinder with no bar at all. See
 [`../paper/data/m18_stripe/NOTE.txt`](../paper/data/m18_stripe/NOTE.txt).
 
+**Are these clips current?** `flydoom.mp4`, `mirrored.mp4` and `comparison.mp4`
+were recorded at `c2b67f6` and have not been re-rendered since, because nothing
+since then changes what the model does — the compartment dendrites, the neck and
+the supralinear term are all off by default, and the two synchronisation removals
+are bit-identical. That is checked rather than assumed: `scripts/action_trace.py`
+hashes every action and every descending rate over 120 tics of the configuration
+below, and `c2b67f6` and `HEAD` both give
+`3b6d3072d8600c98d8dfb661abfcf5f9aea243a740a372a4f5586d88e17817f2`. Re-run it
+after any change that could touch behaviour; if the hash moves, the clips are
+stale and `record.sh` rebuilds them.
+
 One level is an illustration, not evidence. The evidence is the 60-level tables in
 [`../paper/data/behav_wide/`](../paper/data/behav_wide).
 
