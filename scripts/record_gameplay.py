@@ -561,6 +561,10 @@ def main() -> int:
                          "arrangement the drum arenas are measured in, and the "
                          "only way to film one: a walking fly leaves the "
                          "centre of the cylinder within a second.")
+    ap.add_argument("--dendrites", type=int, default=0, metavar="N",
+                    help="give each T4/T5 an N-compartment cable (M17); 3 is "
+                         "what was measured. See AgentConfig.dendrite_chain.")
+    ap.add_argument("--g-axial", type=float, default=8.0)
     ap.add_argument("--head", type=float, default=0.0, metavar="DEG",
                     help="let the eyes turn on the neck, up to DEG either side. "
                          "See DoomConfig.head_yaw_max.")
@@ -656,6 +660,8 @@ def main() -> int:
         spiking_t4=args.spiking_t4,
         bias_mv=args.bias,
         touch=args.touch,
+        dendrite_chain=args.dendrites,
+        g_axial=args.g_axial,
     )
     if args.seed is not None:
         akw["seed"] = args.seed

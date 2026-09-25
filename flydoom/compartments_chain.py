@@ -62,6 +62,111 @@ def cells_of_type(graph, ann, name: str) -> np.ndarray:
                      if int(x) in pos], dtype=np.int64)
 
 
+T4T5_SUBTYPES = ("T4a", "T4b", "T4c", "T4d", "T5a", "T5b", "T5c", "T5d")
+
+# Which input line is the DELAYED arm and which the fast one, per pathway. The
+# vector from the fast arm's centre of mass to the slow arm's IS the cell's
+# correlator axis, measured rather than assumed.
+AXIS_ARMS = {"T4": ("Mi9", "Mi1"), "T5": ("Tm9", "Tm1")}
+
+
+def visual_positions(graph, retina):
+    """cell index -> (azimuth, elevation) in degrees, and -> which eye.
+
+    Lives here rather than in the experiment that first needed it, because the
+    closed-loop agent builds the same cable and must place inputs by the same
+    rule; two copies of this would be two chances to disagree.
+    """
+    colxy = {}
+    for side, eye in retina.eyes.items():
+        for cid, az, el in zip(eye.column_ids, eye.azimuth_deg,
+                               eye.elevation_deg):
+            colxy[(side, int(cid))] = (float(az), float(el))
+    ca = pl.read_csv(Path(config.RAW_DIR) / "column_assignment.csv.gz")
+    pos = {int(r): i for i, r in enumerate(graph.root_ids)}
+    out, side = {}, {}
+    for rid, h, cid in zip(ca["root_id"], ca["hemisphere"], ca["column_id"]):
+        i = pos.get(int(rid))
+        pt = colxy.get((str(h), int(cid)))
+        if i is not None and pt is not None:
+            out[i] = pt
+            side[i] = str(h)
+    return out, side
+
+
+def cell_axes(graph, ann, cell_pt):
+    """cell -> (dx, dy): where its delayed arm sits relative to its fast one.
+
+    No cell type appears in the placement rule downstream of this; the axis is
+    read off the wiring, per cell.
+    """
+    from collections import defaultdict
+    inputs = defaultdict(list)
+    w = np.abs(graph.signed_syn)
+    for a, b, c in zip(graph.pre_idx, graph.post_idx, w):
+        if c > 0:
+            inputs[int(b)].append((int(a), float(c)))
+    axes = {}
+    for st in T4T5_SUBTYPES:
+        slow, fast = AXIS_ARMS["T4" if st.startswith("T4") else "T5"]
+        S = set(cells_of_type(graph, ann, slow).tolist())
+        F = set(cells_of_type(graph, ann, fast).tolist())
+        for c in cells_of_type(graph, ann, st):
+            c = int(c)
+            if c not in cell_pt:
+                continue
+            cen = {}
+            for role, pool in (("slow", S), ("fast", F)):
+                sx = sy = sw = 0.0
+                for a, ww in inputs.get(c, ()):
+                    if a in pool and a in cell_pt:
+                        ax, ay = cell_pt[a]
+                        sx += (ax - cell_pt[c][0]) * ww
+                        sy += (ay - cell_pt[c][1]) * ww
+                        sw += ww
+                if sw > 0:
+                    cen[role] = (sx / sw, sy / sw)
+            if len(cen) == 2:
+                axes[c] = (cen["slow"][0] - cen["fast"][0],
+                           cen["slow"][1] - cen["fast"][1])
+    return axes
+
+
+def cached_positions_and_axes(graph, ann, retina):
+    """(cell_pt, cell_side, axes), computed once and cached on disk.
+
+    cell_axes walks all 2.7M edges in Python, which costs seconds. That is
+    nothing in an experiment that runs once, and it is minutes of pure overhead
+    across a sweep that builds one agent per episode, so the result is cached.
+
+    The key includes the eye map, because the column positions the axes are
+    measured in come from the retina, and the two maps place a column
+    differently.
+    """
+    import pickle
+
+    key = f"chain_axes_{retina.eye_map}_{graph.n_neurons}_{len(graph.pre_idx)}"
+    cache = Path(config.PROCESSED_DIR) / f"{key}.pkl"
+    if cache.exists():
+        try:
+            with cache.open("rb") as fh:
+                return pickle.load(fh)
+        except Exception:                                   # noqa: BLE001
+            pass                    # a corrupt cache is not worth a crash
+    cell_pt, cell_side = visual_positions(graph, retina)
+    axes = cell_axes(graph, ann, cell_pt)
+    out = (cell_pt, cell_side, axes)
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache.with_suffix(".pkl.tmp")
+        with tmp.open("wb") as fh:
+            pickle.dump(out, fh)
+        tmp.replace(cache)          # atomic, so concurrent workers cannot
+    except Exception:               # read a half-written file
+        pass
+    return out
+
+
 def _index_to_column(graph, raw_dir) -> dict[int, int]:
     path = Path(raw_dir) / "column_assignment.csv.gz"
     if not path.exists():

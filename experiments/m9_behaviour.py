@@ -272,7 +272,10 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               wide: bool = False,
               eye_map: str = "lattice",
               render: str = "full",
-              smell_all: bool = False) -> tuple[dict, dict]:
+              smell_all: bool = False,
+              dendrites: int = 0,
+              g_axial: float = 8.0,
+              head: float = 0.0) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -280,11 +283,16 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
     mk = dict(motor_kw or {})
     if tau_baseline is not None:
         mk["tau_baseline"] = tau_baseline
+    if head:
+        mk["head_gain"] = 1.0
     agent = FlyDoomAgent(AgentConfig(
         doom=DoomConfig(scenario=scenario, window=False, seed=seed,
                         labels=smell, objects_info=smell and smell_all,
+                        head_yaw_max=head,
                         **(RENDER[render] if wide else {})),
         motor=MotorConfig(**mk),
+        dendrite_chain=dendrites,
+        g_axial=g_axial,
         smell=smell,
         olfaction=(OlfactionConfig(**WHOLE_LEVEL) if smell_all
                    else OlfactionConfig()),
@@ -469,6 +477,17 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--dendrites", type=int, default=0, metavar="N",
+                    help="give each T4/T5 an N-compartment cable with every "
+                         "input placed by its own retinotopic offset (M17). "
+                         "3 is what was measured. See AgentConfig.dendrite_chain.")
+    ap.add_argument("--g-axial", type=float, default=8.0,
+                    help="axial conductance along that cable; 8 is where M17 "
+                         "measured the tenfold gain.")
+    ap.add_argument("--head", type=float, default=0.0, metavar="DEG",
+                    help="let the eyes turn on the neck, up to DEG either "
+                         "side, driven by the same yaw command. See "
+                         "DoomConfig.head_yaw_max.")
     ap.add_argument("--smell-all", action="store_true",
                     help="smell every object in the level, not only what is on screen, with "
                          "the falloff of olfaction.WHOLE_LEVEL. Odour does not "
@@ -571,6 +590,9 @@ def main() -> int:
     record["render"] = args.render
     record["phasic_mdn"] = args.phasic_mdn
     record["smell_all"] = args.smell_all
+    record["dendrites"] = args.dendrites
+    record["g_axial"] = args.g_axial
+    record["head"] = args.head
     record["fixed_turn"] = args.fixed_turn
     record["motor_kw"] = motor_kw
     record["mirror"] = args.mirror
@@ -589,7 +611,8 @@ def main() -> int:
                                     args.touch,
                                     motor_kw, args.mirror, args.blind,
                                     args.wide, args.eye_map, args.render,
-                                    args.smell_all)
+                                    args.smell_all, args.dendrites,
+                                    args.g_axial, args.head)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
@@ -597,7 +620,8 @@ def main() -> int:
                                       args.tau_baseline, args.optic_gain,
                                       args.spiking_t4, args.touch, motor_kw,
                                       args.mirror, args.blind, args.wide,
-                                      args.eye_map, args.render, args.smell_all)
+                                      args.eye_map, args.render, args.smell_all,
+                                      args.dendrites, args.g_axial, args.head)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:

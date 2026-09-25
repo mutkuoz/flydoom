@@ -84,6 +84,9 @@ def main() -> int:
     ap.add_argument("--fixed-turn", action="store_true")
     ap.add_argument("--phasic-mdn", action="store_true")
     ap.add_argument("--smell-all", action="store_true")
+    ap.add_argument("--dendrites", type=int, default=0)
+    ap.add_argument("--g-axial", type=float, default=8.0)
+    ap.add_argument("--head", type=float, default=0.0)
     ap.add_argument("--yaw-source", default="DNa02",
                     choices=["DNa02", "DNp15"])
     ap.add_argument("--yaw-max", type=float, default=None)
@@ -130,6 +133,11 @@ def main() -> int:
         base.append("--phasic-mdn")
     if args.smell_all:
         base.append("--smell-all")
+    if args.dendrites:
+        base += ["--dendrites", str(args.dendrites),
+                 "--g-axial", str(args.g_axial)]
+    if args.head:
+        base += ["--head", str(args.head)]
     if args.yaw_max is not None:
         base += ["--yaw-max", str(args.yaw_max)]
     if args.forward_max is not None:

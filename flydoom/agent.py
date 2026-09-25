@@ -84,6 +84,20 @@ class AgentConfig:
     every result must say which setting produced it. See flydoom/compartments.py
     for why retinotopy assigns the compartments and what that approximates."""
 
+    dendrite_chain: int = 0
+    """How many compartments to give each T4/T5, as a CABLE rather than a
+    pair. 0 keeps the point neuron; 3 is what M17 measured. Must be odd, so one
+    compartment sits at offset zero where the centred excitatory arm is.
+
+    This is the version that moved the number: every input is placed along the
+    cable by its own retinotopic offset projected onto that cell's own measured
+    correlator axis, and T5 mirror-pair separation goes from 0.005 to 0.064.
+    `compartments` above is the two-compartment predecessor, which cannot
+    express an order. Set one or the other, not both.
+
+    Off by default, and it changes the model class, so any result must say
+    which setting produced it. See flydoom/compartments_chain.py."""
+
     g_axial: float = 1.0
     """Axial conductance between the two compartments, in the same units as
     the synaptic conductances. 0 makes them independent; large values collapse
@@ -175,7 +189,31 @@ class FlyDoomAgent:
                 )["root_id"].unique().to_list()
                 if ids_:
                     graded[self.graph.index_of(ids_)] = False
-        if c.compartments:
+        if c.dendrite_chain:
+            if c.compartments:
+                raise ValueError("set dendrite_chain OR compartments, not both")
+            from . import compartments_chain as chain
+            cell_pt, _side, axes = chain.cached_positions_and_axes(
+                self.graph, self.ann, self.retina)
+            # Compartment 0 IS the original neuron and the rest are appended,
+            # so readouts, motor populations and retina injection sites keep
+            # meaning exactly what they meant before; the edge list is
+            # unchanged in count and order, so edge_delay stays aligned.
+            self.compartment_plan = chain.build_chain(
+                self.graph, self.ann, axes, cell_pt,
+                n_comp=c.dendrite_chain, g_axial=c.g_axial)
+            pre_t, _post_t, w_t = self.graph.to_torch(c.device)
+            self.net = LIFNetwork(
+                self.compartment_plan["n_total"], pre_t,
+                torch.as_tensor(self.compartment_plan["post_idx"],
+                                device=c.device),
+                w_t, LIFParams(), c.device, c.seed,
+                edge_delay=edge_delay,
+                graded=chain.extend_graded(graded, self.compartment_plan),
+                axial_edges=self.compartment_plan["axial_edges"],
+                axial_edge_g=self.compartment_plan["axial_edge_g"],
+            )
+        elif c.compartments:
             # dendrites are appended after every existing neuron, so readout,
             # motor and retina indices keep their meaning; edge count and order
             # are untouched, so edge_delay stays aligned

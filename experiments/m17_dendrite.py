@@ -82,58 +82,6 @@ def cells_of_type(graph, ann, name):
                      if int(x) in pos], dtype=np.int64)
 
 
-def visual_positions(graph, retina):
-    """cell index -> (azimuth, elevation), and cell index -> eye."""
-    colxy = {}
-    for side, eye in retina.eyes.items():
-        for cid, az, el in zip(eye.column_ids, eye.azimuth_deg,
-                               eye.elevation_deg):
-            colxy[(side, int(cid))] = (float(az), float(el))
-    ca = pl.read_csv(Path(config.RAW_DIR) / "column_assignment.csv.gz")
-    pos = {int(r): i for i, r in enumerate(graph.root_ids)}
-    out, side = {}, {}
-    for rid, h, cid in zip(ca["root_id"], ca["hemisphere"], ca["column_id"]):
-        i = pos.get(int(rid))
-        pt = colxy.get((str(h), int(cid)))
-        if i is not None and pt is not None:
-            out[i] = pt
-            side[i] = str(h)
-    return out, side
-
-
-def cell_axes(graph, ann, cell_pt):
-    """cell -> (dx, dy): where its delayed arm sits relative to its fast one."""
-    inputs = defaultdict(list)
-    w = np.abs(graph.signed_syn)
-    for a, b, c in zip(graph.pre_idx, graph.post_idx, w):
-        if c > 0:
-            inputs[int(b)].append((int(a), float(c)))
-    axes = {}
-    for st in SUBTYPES:
-        slow, fast = AXIS_ARMS["T4" if st.startswith("T4") else "T5"]
-        S = set(cells_of_type(graph, ann, slow).tolist())
-        F = set(cells_of_type(graph, ann, fast).tolist())
-        for c in cells_of_type(graph, ann, st):
-            c = int(c)
-            if c not in cell_pt:
-                continue
-            cen = {}
-            for role, pool in (("slow", S), ("fast", F)):
-                sx = sy = sw = 0.0
-                for a, ww in inputs.get(c, ()):
-                    if a in pool and a in cell_pt:
-                        ax, ay = cell_pt[a]
-                        sx += (ax - cell_pt[c][0]) * ww
-                        sy += (ay - cell_pt[c][1]) * ww
-                        sw += ww
-                if sw > 0:
-                    cen[role] = (sx / sw, sy / sw)
-            if len(cen) == 2:
-                axes[c] = (cen["slow"][0] - cen["fast"][0],
-                           cen["slow"][1] - cen["fast"][1])
-    return axes
-
-
 def run_grating(net, rig, gext, duration, tf, device, watch, settle=0.5):
     dt = config.DT
     steps = int(round(duration / dt))
@@ -197,8 +145,8 @@ def main() -> int:
                         * optic_gain_multipliers(g, ann, args.optic_gain)
                         ).astype(np.float32)
     retina = Retina.build(g, ann, eye_map=args.eye_map)
-    cell_pt, cell_side = visual_positions(g, retina)
-    axes = cell_axes(g, ann, cell_pt)
+    cell_pt, cell_side = CC.visual_positions(g, retina)
+    axes = CC.cell_axes(g, ann, cell_pt)
     print(f"{len(axes):,} T4/T5 cells have a measurable correlator axis")
 
     graded = g.graded_mask(ann)
