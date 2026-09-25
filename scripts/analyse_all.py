@@ -29,6 +29,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from analyse_behav4 import ci95, load_dir  # noqa: E402
 from analyse_fixed import METRICS, fmt  # noqa: E402
 
+# HOW IT MOVES, which is the question health cannot answer.
+#
+# Collecting medkits is a task the animal has no circuitry for, so scoring a
+# more faithful model by its Doom score is backwards: a fly that moves like a
+# fly has improved even if it collects less. These are the measures of the
+# movement itself. +1 means larger is better, -1 means smaller is.
+#
+# The first four are unambiguous -- a controller that jitters, circles, or sits
+# railed against its own clamp is worse by any standard, biological or not.
+# The rest are arguable and are marked where they are.
+LOCOMOTION = {
+    "yaw_chatter": -1,            # turn command flips sign this often
+    "spin": -1,                   # net rotational bias: is it circling?
+    "yaw_clip_frac": -1,          # fraction of tics railed at the turn clamp
+    "fwd_clip_frac": -1,          # ...and at the walk clamp
+    "collisions_per_1k_tics": -1,
+    "free_run_tics": +1,          # how far it gets between collisions
+    "straightness": +1,           # net displacement / path walked
+    "tiles_per_1k_path": +1,      # ground covered per unit walked
+    "vision_steer_abs_r": +1,     # is the turn coupled to the eyes AT ALL
+}
+
 DATA = Path(__file__).resolve().parent.parent / "paper" / "data"
 PLAIN, ALL = DATA / "behav_fixed", DATA / "behav_all"
 ARMS = ("intact", "mirrored", "frozen")
@@ -36,7 +58,17 @@ ARMS = ("intact", "mirrored", "frozen")
 
 def load(root: Path, arm: str) -> dict:
     d = root / f"fly_{arm}_shards"
-    return (load_dir(d) or {}) if d.exists() else {}
+    per = (load_dir(d) or {}) if d.exists() else {}
+    for seed in per.values():
+        for arm_rec in seed.values():
+            if not isinstance(arm_rec, dict):
+                continue
+            path = arm_rec.get("path", 0.0)
+            arm_rec["straightness"] = (arm_rec.get("net_displacement", 0.0)
+                                       / path if path else 0.0)
+            arm_rec["vision_steer_abs_r"] = abs(arm_rec.get("vision_steer_r",
+                                                            0.0))
+    return per
 
 
 def main() -> int:
@@ -58,7 +90,24 @@ def main() -> int:
             row += fmt(*ci95(v), sign) if v else " " * 25
         print(row)
 
-    print("\n2. each against its OWN command-matched random arm\n")
+    print("\n2. HOW IT MOVES, paired, same seed: all-applied minus plain\n")
+    print(f"{'metric':<24}{'n':>4}  {'difference':>26}   direction")
+    for m, sign in LOCOMOTION.items():
+        per_a, per_b = allon["intact"], plain["intact"]
+        seeds = [s_ for s_ in per_a if s_ in per_b
+                 and "connectome" in per_a[s_] and "connectome" in per_b[s_]]
+        v = [per_a[s_]["connectome"].get(m, 0.0)
+             - per_b[s_]["connectome"].get(m, 0.0) for s_ in seeds]
+        if not v:
+            continue
+        mm, cc = ci95(v)
+        tag = ""
+        if abs(mm) > cc:
+            tag = "BETTER" if mm * sign > 0 else "WORSE"
+        arrow = "lower is better" if sign < 0 else "higher is better"
+        print(f"{m:<24}{len(v):>4}  {mm:+12.4f} +-{cc:9.4f} {tag:<7} {arrow}")
+
+    print("\n3. each against its OWN command-matched random arm\n")
     print(f"{'condition':<22}{'n':>4}  " + "".join(f"{m:<25}" for m in METRICS))
     for label, src in (("plain", plain), ("all applied", allon)):
         for a in ARMS:
@@ -74,7 +123,7 @@ def main() -> int:
                 row += fmt(*ci95(v), sign) if v else " " * 25
             print(row)
 
-    print("\n3. all-applied, connectome vs connectome (first minus second)\n")
+    print("\n4. all-applied, connectome vs connectome (first minus second)\n")
     for x, y in (("intact", "mirrored"), ("intact", "frozen")):
         px, py = allon[x], allon[y]
         seeds = [s for s in px if s in py
