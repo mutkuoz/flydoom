@@ -21,6 +21,7 @@ daylight.
 | `mirrored.mp4` | the same brain with its retina mirrored left-to-right — the control that removes the behavioural advantage |
 | `comparison.mp4` | the two stacked, intact on top |
 | `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
+| `best.mp4` · `best.gif` | the same fly and level with everything applied — dendritic cables, a neck, and odour that passes through walls |
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
@@ -52,6 +53,32 @@ that slides across it, and the fly parks it somewhere and keeps it there. That
 looks like fixation and is not — a fly with a frozen retina does the same, and
 so does one in the cylinder with no bar at all. See
 [`../paper/data/m18_stripe/NOTE.txt`](../paper/data/m18_stripe/NOTE.txt).
+
+## best.mp4 — everything applied
+
+`flydoom.mp4` is the configuration the 120-level tables were measured with.
+Three things built after it were never in those tables, each simply because
+nothing wired them into the agent:
+
+- **dendritic cables** (`--dendrites 3`): each `T4`/`T5` becomes a
+  three-compartment cable with every input placed along it by its own
+  retinotopic offset. Open loop this takes `T5` mirror-pair separation from
+  0.005 to 0.064 — the largest single gain in the project.
+- **a neck** (`--head 20`): the eyes turn up to 20° either side, driven by the
+  same yaw command, so gaze can move without the body having to.
+- **odour through walls** (`--smell-all`): earlier olfaction was gated on what
+  was visible, which hid 82% of the items in the level, and medkits carried a
+  fifth of the odour strength they carry now.
+
+`media/record_best.sh` rebuilds it, on the same arena and seed as `flydoom.mp4`
+so the two are comparable frame for frame.
+
+**Is it actually better?** Unknown as of this clip. One level is an
+illustration and this one dies three times in thirty seconds, which is normal
+for this model (~350 tics a life) and not evidence either way. The measurement
+is `paper/data/behav_all/`, the same 60 seeds and controls as `behav_fixed`
+with exactly these three flags added, so the difference isolates them. Until
+that finishes, `best` is the name of a configuration, not a claim about it.
 
 **Are these clips current?** `flydoom.mp4`, `mirrored.mp4` and `comparison.mp4`
 were recorded at `c2b67f6` and have not been re-rendered since, because nothing
