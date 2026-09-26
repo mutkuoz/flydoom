@@ -1,0 +1,49 @@
+ODOUR ALONE: NOTHING, ANYWHERE
+
+behav_all applied dendritic cables, a neck and whole-level odour together, and
+the vision control collapsed -- a mirrored retina stopped abolishing the
+advantage and a frozen retina beat chance outright. Odour was the obvious
+suspect, and I wrote it into the paper as the cause before running this. It is
+not the cause.
+
+Whole-level odour alone, same 60 seeds, same three arms, nothing else changed:
+
+  model minus its command-matched random arm    health            tics
+    plain        intact                    +7.53 +- 6.66*    +34.00 +- 25.27*
+    plain        mirrored                  -0.67 +- 7.70     -13.12 +- 30.48
+    plain        frozen                    +4.47 +- 5.96     +22.63 +- 26.86
+    odour only   intact                    +3.80 +- 6.73     +12.55 +- 26.98
+    odour only   mirrored                  +0.40 +- 6.51      +2.65 +- 28.12
+    odour only   frozen                    -0.07 +- 6.56      -2.25 +- 24.74
+    all three    intact                    +9.60 +- 7.06*    +28.85 +- 25.51*
+    all three    mirrored                  +6.17 +- 6.96     +25.43 +- 27.75
+    all three    frozen                    +6.53 +- 5.97*    +30.55 +- 22.79*
+
+READING
+
+1. Odour alone produces no advantage in any arm. The frozen arm is the one
+   that matters: a BLIND model with odour reaching every medkit in the level at
+   five times the old strength scores -0.07. Strong smell does not find food.
+   Whatever lifted behav_all's frozen arm to +6.53, it was not this.
+
+2. It makes the intact model WORSE, +3.80 against the plain +7.53. Strengthening
+   the odour channel cost it.
+
+   The reason is in the design of that channel and is worth stating plainly.
+   flydoom/olfaction.py is bilaterally symmetric on purpose -- the concentration
+   is a scalar and every azimuth is discarded, because a direction-carrying
+   odour input would have been the cheat the whole experiment exists to avoid.
+   A scalar cannot steer. Making it stronger therefore cannot help the model
+   FIND anything; it can only add drive that competes with the channel that can.
+   That is what the numbers show, and it is a property of the channel rather
+   than a surprise about flies.
+
+3. By elimination, the cables or the neck broke the control, and the neck has a
+   mechanism the others do not: with a movable head, freezing the FRAME does not
+   freeze the INPUT. The eyes keep turning across the held picture, so the
+   lenses sample a moving window of a static scene and the arm that is supposed
+   to have no vision receives self-generated motion. That would lift the frozen
+   arm specifically, which is the arm that moved. paper/data/behav_neck tests it
+   directly.
+
+    bash paper/data/behav_smell/run.sh
