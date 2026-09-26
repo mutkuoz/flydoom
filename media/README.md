@@ -22,6 +22,7 @@ daylight.
 | `comparison.mp4` | the two stacked, intact on top |
 | `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
 | `best.mp4` · `best.gif` | the same fly and level with everything applied — dendritic cables, a neck, and odour that passes through walls |
+| `forage.mp4` · `forage.gif` | the arena rebuilt to mean to a fly what it looks like: dark food, walls with no bar to walk into |
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
@@ -92,6 +93,54 @@ So watch this clip as the configuration it is, not as an improvement. The
 likely cause is whole-level odour, which reaches every medkit at five times the
 old strength with no line of sight, and which neither mirroring nor freezing
 touches — `paper/data/behav_smell/` isolates that flag to find out.
+
+## forage.mp4 — an arena that means what it looks like
+
+The corrected tables found the model's vision steers it into walls, and we
+excused it as a fly's attraction to dark verticals transferring without the
+wisdom to go with it. That was charitable to the arena. Measured,
+`health_gathering_fly` tiles every wall with a **perfect tall dark bar** — 64 px
+at luminance 205 beside 64 px at 65, uniform down its whole height, 0.56
+contrast — which is the strongest fixation target a fly could be shown. And it
+dresses the food as a pale box. We built the trap, then called the animal
+foolish for walking into it.
+
+`health_gathering_forage` (`scripts/build_forage_arena.py`) moves the darkness
+off the walls and onto the food, and nothing in the brain changes:
+
+- **walls** keep their spatial frequency and lose their vertical coherence.
+  Band-pass noise, mildly anisotropic, with the column mean subtracted: local
+  vertical edges everywhere for the motion detectors, no tall bar anywhere.
+  It also puts 66% of its power at the fly's preferred period against a square
+  grating's 40%, because a square wave wastes most of its energy on harmonics.
+- **food** becomes a small dark blob — the stimulus a fly actually approaches.
+- **poison** becomes pale, which it should not.
+- **wall luminance** is set at mean 175 against the ground's 145, chosen by
+  measuring *through the retina*: separating lenses that look at wall from
+  lenses that look at ground gives d′ 1.86 there, against 0.91 at equal means,
+  while leaving contrast well above what the optomotor response needs.
+
+**What it showed.** The prediction was that moving the darkness onto the food
+would raise health and lower collisions. It did not. Health −1.59 ± 5.81,
+damage −1.07 ± 5.82, both nothing; collisions actually rose, +2.68 ± 2.39. The
+measure that moved was the correlation between what the eyes see and how it
+steers, which **reversed**: +0.05 in the fly arena, −0.08 here, a change of
+−0.14 ± 0.05.
+
+Positive there means "brighter on the left, turn right" — steering toward the
+darker side. In the fly arena the dark things were the walls; here the walls
+are the bright things and the sign flipped with them. **In both arenas it
+steers into the wall.** So the description was wrong: this is not attraction to
+dark verticals, it is attraction to large low-spatial-frequency structure
+*regardless of contrast polarity*, which is what reading unsigned contrast
+energy would give you. A real fly's fixation is polarity-selective; this is not.
+
+Making the food dark and salient also did not raise health, which says vision
+is not what finds the food in either arena. Smell is.
+
+The arena did its job as an instrument even though it did not rescue the
+behaviour: it turned a vague story into a falsifiable claim and falsified it.
+Numbers: [`../paper/data/behav_forage/`](../paper/data/behav_forage).
 
 **Are these clips current?** `flydoom.mp4`, `mirrored.mp4` and `comparison.mp4`
 were recorded at `c2b67f6` and have not been re-rendered since, because nothing
