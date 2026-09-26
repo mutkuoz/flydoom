@@ -68,31 +68,55 @@ BASE = "health_gathering_supreme"
 NAME = "health_gathering_forage"
 
 WALL_PERIOD = 128          # map units, as in the fly arena: 18-37 deg
-BAND_PX = 16               # height of one constant-phase band
+WALL_PERIOD_PX = 64        # texture pixels per cycle at that period
+ANISO = 1.6                # >1 biases toward vertical edges, which yaw needs
+BANDWIDTH = 1.2            # cycles; how tightly power sits on the period
 
 
 def wall_texture(size: int = 128, seed: int = 7) -> Image.Image:
-    """A vertical grating whose phase is re-randomised every BAND_PX rows.
+    """Band-pass noise: local vertical edges everywhere, no tall bar anywhere.
 
-    Locally identical to the fly arena's wall: the same period, the same two
-    luminances, a full-contrast vertical edge everywhere. Globally it carries
-    no tall dark bar, because the dark half of the grating moves sideways every
-    band, so contrast integrated down any column is flat.
+    The wall has to satisfy two things that pull against each other. A yaw
+    motion detector needs LOCAL VERTICAL EDGES, because those are what
+    horizontal motion sweeps across. The fixation drive that walks this model
+    into walls is triggered by GLOBAL VERTICAL COHERENCE. So: edges everywhere,
+    bar nowhere.
+
+    Measured against the alternatives, at the same contrast, scoring vertical
+    coherence (spread of column means, 0 is no bar), the share of horizontal
+    spectral power sitting at the period the motion detectors prefer, and the
+    ratio of vertical to horizontal edge energy:
+
+        square bars (the fly arena)   70.0   40.2%   vertical only
+        phase-staggered bars           0.0   40.2%   0.78
+        pink 1/f noise                 4.0   15.5%   1.00
+        band-pass noise               10.8   67.4%   1.02
+        THIS: band-pass, aniso 1.6,
+              column mean removed      0.0   66.3%   1.24
+
+    Two things earn their place. A square wave spends most of its energy in
+    harmonics it does not need -- band-pass noise puts two thirds of its power
+    at the preferred period against the grating's two fifths, so it drives the
+    detectors HARDER while looking like something a fly might actually see.
+    And subtracting the column mean removes exactly the tall-bar component and
+    nothing else: local structure is untouched, coherence goes to zero.
+
+    The anisotropy squeezes vertical frequency, which moves energy into
+    horizontal frequency, which is vertical EDGES. Pushed the other way it
+    starves the yaw detectors -- a first attempt at 2.5 came out at 0.37, all
+    horizontal banding, and would have quietly removed the drive this arena
+    exists to preserve.
     """
     rng = np.random.default_rng(seed)
-    x = np.arange(size)
-    img = np.zeros((size, size))
-    n_band = size // BAND_PX
-    # Phases EVENLY SPACED over the period, in a shuffled order. Random draws
-    # leave a residue -- eight of them still gave a column-mean spread of 33
-    # against the fly arena's 70 -- because nothing makes them balance. Spread
-    # them evenly and every column is dark in exactly half its bands, so
-    # contrast integrated down a column is flat to the last bit, while each
-    # band is still a full-contrast grating at the original period.
-    phases = rng.permutation(np.arange(n_band) * (size // n_band))
-    for k, y0 in enumerate(range(0, size, BAND_PX)):
-        stripe = np.where(((x + int(phases[k])) % size) < size // 2, 205.0, 65.0)
-        img[y0:y0 + BAND_PX, :] = stripe
+    f0 = size / WALL_PERIOD_PX          # cycles per texture at the preferred period
+    fy, fx = np.meshgrid(np.fft.fftfreq(size) * size,
+                         np.fft.fftfreq(size) * size, indexing="ij")
+    ring = np.exp(-((np.hypot(fy * ANISO, fx) - f0) ** 2) / (2 * BANDWIDTH ** 2))
+    phase = rng.uniform(0, 2 * np.pi, (size, size))
+    img = np.real(np.fft.ifft2(ring * np.exp(1j * phase)))
+    img -= img.mean(axis=0, keepdims=True)      # kill the tall-bar component
+    img = (img - img.min()) / (np.ptp(img) + 1e-9)   # NumPy 2: no .ptp method
+    img = 65.0 + img * 140.0                    # the fly arena's luminance range
     rgb = np.stack([img * 0.55, img, img * 0.75], axis=-1)   # green-weighted
     return Image.fromarray(rgb.clip(0, 255).astype("uint8"))
 
