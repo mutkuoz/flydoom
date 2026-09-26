@@ -1,0 +1,64 @@
+EVERYTHING APPLIED AT ONCE, AND THE CONTROL THAT BROKE
+
+Three things built after the 120-seed tables had never been run in closed loop,
+each because nothing wired them into the agent: three-compartment dendritic
+cables with inputs placed by retinotopic offset (M17), a neck that turns the
+eyes up to 20 degrees, and whole-level odour in place of odour gated on what is
+visible. This is all three at once, on the SAME 60 seeds as behav_fixed's fly
+arena, so every comparison is paired and the difference isolates the three.
+
+1. THE TASK SCORE DOES NOT MOVE. Paired against the plain configuration, health
+   -0.13 +- 6.85 and survival -3.53 +- 26.85. Nothing.
+
+2. THE MOVEMENT GETS WORSE. Collecting medkits is a task the animal has no
+   circuitry for, so the movement itself is the fairer measure. Paired:
+
+     turn-command chatter    +0.149 +- 0.015   WORSE
+     collisions per 1k tics  +5.11  +- 2.70    WORSE
+     tics between collisions -18.2  +- 15.7    WORSE
+     vision-to-steering |r|  -0.034 +- 0.027   WORSE
+     ground per unit walked  +1.31  +- 0.76    better
+     time railed at the clamp -0.001 +- 0.0005 better, and trivially
+
+   It jitters more, hits things sooner, and steers less by what it sees. The
+   one measure that improves is the one the mirrored and frozen controls have
+   always scored well on, which is what wandering looks like.
+
+3. THE VISION DEPENDENCE IS GONE. This is the result that matters.
+
+     model minus its command-matched random arm, health / tics
+       plain        intact    +7.53*  / +34.00*
+       plain        mirrored  -0.67   / -13.12     <- control works
+       plain        frozen    +4.47   / +22.63
+       all applied  intact    +9.60*  / +28.85*
+       all applied  mirrored  +6.17   / +25.43     <- control FAILS
+       all applied  frozen    +6.53*  / +30.55*    <- and so does this one
+
+     all applied, intact minus mirrored  -0.50 +- 7.73
+     all applied, intact minus frozen    +0.53 +- 7.10
+
+   In the plain configuration a mirrored retina abolishes the advantage, which
+   is the entire basis for calling it vision-dependent. With all three applied
+   it abolishes nothing, and a model whose retina is FROZEN ON ONE FRAME beats
+   chance significantly. The agent scores slightly higher and no longer needs
+   its eyes to do it. That is not an improvement; it is the effect changing its
+   source.
+
+WHAT DID IT. Whole-level odour is the obvious candidate: mirroring flips
+retinal geometry and freezing stops the frame, and neither touches odour, which
+now reaches every medkit in the level at five times the old strength with no
+line of sight required. Following an odour gradient to a medkit needs no eyes.
+
+A CONTROL-VALIDITY BUG THE NECK INTRODUCES, worth more than this run. With the
+head on, "frozen retina" no longer means frozen retinal input: the frame is
+held, but the eyes still turn across it, so the lenses sample a moving window
+of a static picture and the model receives self-generated visual motion. Any
+experiment that freezes the frame as its no-vision control must also pin the
+head (head_yaw_max 0), or freeze the sampled luminance rather than the frame.
+The frozen arm above carries this confound and its number should be read with
+that in mind.
+
+paper/data/behav_smell isolates the odour flag on its own.
+
+    bash paper/data/behav_all/run.sh
+    python scripts/analyse_all.py
