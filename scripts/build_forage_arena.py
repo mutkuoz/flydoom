@@ -72,6 +72,29 @@ WALL_PERIOD_PX = 64        # texture pixels per cycle at that period
 ANISO = 1.6                # >1 biases toward vertical edges, which yaw needs
 BANDWIDTH = 1.2            # cycles; how tightly power sits on the period
 
+# Wall luminance, chosen by what the LENSES receive rather than by what the
+# texture file contains. Measured through the real retina, separating lenses
+# that look at wall (elevation 3-25 deg) from lenses that look at ground
+# (-12 to -45), as d-prime between the two luminance distributions against the
+# contrast left in the wall band for the motion detectors:
+#
+#     mean 145 (as the floor)  d' 0.91   contrast 0.603
+#     mean 175                 d' 1.86   contrast 0.381   <- chosen
+#     mean 195                 d' 2.66   contrast 0.278
+#
+# 175 is the knee: it roughly doubles how separable wall is from ground while
+# leaving contrast far above anything the optomotor response needs. Pushing to
+# 195 costs a quarter of the contrast to buy separability that is already
+# sufficient. The period barely moves d-prime at all (1.84 to 1.96 across 40 to
+# 96 px), so it stays where the motion detectors want it rather than being
+# spent on this.
+#
+# Note the floor reads DARKER than the wall on the retina even at equal texture
+# means (0.433 against 0.260), because the ground is seen at a grazing angle.
+# The texture files being equal was never the whole story.
+WALL_MEAN = 175.0
+WALL_HALF = 70.0
+
 
 def wall_texture(size: int = 128, seed: int = 7) -> Image.Image:
     """Band-pass noise: local vertical edges everywhere, no tall bar anywhere.
@@ -115,8 +138,8 @@ def wall_texture(size: int = 128, seed: int = 7) -> Image.Image:
     phase = rng.uniform(0, 2 * np.pi, (size, size))
     img = np.real(np.fft.ifft2(ring * np.exp(1j * phase)))
     img -= img.mean(axis=0, keepdims=True)      # kill the tall-bar component
-    img = (img - img.min()) / (np.ptp(img) + 1e-9)   # NumPy 2: no .ptp method
-    img = 65.0 + img * 140.0                    # the fly arena's luminance range
+    img = img / (np.abs(img).max() + 1e-9)
+    img = WALL_MEAN + img * WALL_HALF           # brighter than the ground
     rgb = np.stack([img * 0.55, img, img * 0.75], axis=-1)   # green-weighted
     return Image.fromarray(rgb.clip(0, 255).astype("uint8"))
 
