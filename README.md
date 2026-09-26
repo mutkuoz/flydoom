@@ -242,6 +242,16 @@ grey at the fly's resolution, it does no better than chance at all. So: vision h
 only when there is something to see, only on health and survival, and freezing the eyes only
 weakens the effect rather than cleanly removing it.
 
+**Applying every later improvement at once made it worse, and broke the control.**
+Dendritic cables, a neck, and odour that reaches the whole level, run together
+on the same 60 levels: the score doesn't move (health −0.1 ± 6.9), the movement
+degrades (turn chatter +0.149, collisions +5.1 per 1k tics, vision-to-steering
+coupling −0.034), and — the part that matters — **a fly with its retina frozen
+on one frame now beats chance too** (+6.5 ± 6.0 health). Mirroring the eyes
+stops removing the advantage. Strong whole-level odour lets it find medkits
+without seeing, so the dissociation the project rests on dissolves. Details:
+[`paper/data/behav_all/NOTE.txt`](paper/data/behav_all/NOTE.txt).
+
 Three more things it is honest to say. **The first 60 levels oversold it.** That block gave
 +7.5 health and +34.0 tics; a fresh 60, run identically, gave +3.8 and +8.0 — half the size,
 and neither one significant on its own. Pooled over all 120 the advantage holds at +5.7 and

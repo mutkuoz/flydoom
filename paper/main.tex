@@ -1604,6 +1604,43 @@ first block implied, and the first block was evidently the favourable half.
 We report the pooled estimate throughout and note that a single block of sixty
 seeds was not enough to pin this effect to better than a factor of two.
 
+\emph{Applying every later improvement at once removes the vision dependence.}
+Three changes developed after these tables --- \cell{T4}/\cell{T5} as
+three-compartment cables (Sec.~\ref{sec:dendrite}), a neck that turns the eyes
+up to $20^\circ$ on the same yaw command, and odour delivered from the whole
+level rather than gated on what is visible --- were run together on the same
+sixty seeds, so the comparison is paired and isolates them.
+
+The task score does not move: health $-0.13\pm6.85$ against the plain
+configuration. The movement is worse on every measure of control we record:
+turn-command chatter $+0.149\pm0.015$, collisions $+5.11\pm2.70$ per
+$1000$ tics, tics between collisions $-18.2\pm15.7$, and the correlation
+between retinal left--right luminance and the turn command $-0.034\pm0.027$.
+The only measure that improves, ground covered per unit walked
+($+1.31\pm0.76$), is the one the mirrored and frozen controls have always
+scored well on.
+
+The control is what matters. In the plain configuration a mirrored retina
+abolishes the advantage over chance ($-0.67\pm7.70$ health, against
+$+7.53\pm6.66$ intact), which is the basis for calling that advantage
+vision-dependent. With all three applied it abolishes nothing: intact minus
+mirrored is $-0.50\pm7.73$, and a model whose retina is \emph{frozen on a
+single frame} beats its matched control outright ($+6.53\pm5.97$ health,
+$+30.55\pm22.79$ tics). The agent scores slightly higher and no longer requires
+its eyes. We attribute this to the whole-level odour, which reaches every
+medkit at five times the previous strength with no line of sight, and which
+neither mirroring nor freezing perturbs; an odour gradient is sufficient to
+find a medkit without vision. The behavioural tables above therefore retain the
+vision-gated olfaction, and whole-level odour is used only where odour itself
+is the variable.
+
+One methodological consequence generalises. With a movable head, freezing the
+frame is no longer a no-vision control: the frame is held, but the eyes
+continue to turn across it, so the lenses sample a moving window of a static
+scene and the model receives self-generated visual motion. Any frozen-frame
+control must also pin the head, or freeze the sampled per-lens luminance rather
+than the frame. The frozen arm quoted above carries this confound.
+
 Doubling the seeds does not rescue the model-versus-model contrasts, which is
 the limit named above. Intact minus mirrored on health is $+3.50\pm4.63$ at
 $n=120$, against $+3.00\pm6.18$ at $n=60$: the interval narrowed as

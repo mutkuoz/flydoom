@@ -73,12 +73,25 @@ nothing wired them into the agent:
 `media/record_best.sh` rebuilds it, on the same arena and seed as `flydoom.mp4`
 so the two are comparable frame for frame.
 
-**Is it actually better?** Unknown as of this clip. One level is an
-illustration and this one dies three times in thirty seconds, which is normal
-for this model (~350 tics a life) and not evidence either way. The measurement
-is `paper/data/behav_all/`, the same 60 seeds and controls as `behav_fixed`
-with exactly these three flags added, so the difference isolates them. Until
-that finishes, `best` is the name of a configuration, not a claim about it.
+**Is it actually better? No — and the file name is a request, not a finding.**
+The measurement is in [`../paper/data/behav_all/NOTE.txt`](../paper/data/behav_all/NOTE.txt):
+60 seeds, the same ones and the same controls as the plain configuration, so
+the comparison is paired and isolates exactly these three changes.
+
+- **The task score does not move.** Health −0.13 ± 6.85 against the plain fly.
+- **The movement gets worse.** Turn-command chatter +0.149 ± 0.015, collisions
+  +5.11 ± 2.70 per 1k tics, tics between collisions −18.2 ± 15.7, and the
+  correlation between what the eyes see and how it steers −0.034 ± 0.027. It
+  jitters more, hits things sooner, and steers less by vision.
+- **The vision control breaks.** A mirrored retina abolishes the plain fly's
+  advantage over chance; here it abolishes nothing, and a fly with its retina
+  **frozen on one frame** beats chance outright (+6.53 ± 5.97 health). It
+  scores marginally higher and no longer needs its eyes to do it.
+
+So watch this clip as the configuration it is, not as an improvement. The
+likely cause is whole-level odour, which reaches every medkit at five times the
+old strength with no line of sight, and which neither mirroring nor freezing
+touches — `paper/data/behav_smell/` isolates that flag to find out.
 
 **Are these clips current?** `flydoom.mp4`, `mirrored.mp4` and `comparison.mp4`
 were recorded at `c2b67f6` and have not been re-rendered since, because nothing
