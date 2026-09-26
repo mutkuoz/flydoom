@@ -44,10 +44,39 @@ arena, so every comparison is paired and the difference isolates the three.
    its eyes to do it. That is not an improvement; it is the effect changing its
    source.
 
-WHAT DID IT. Whole-level odour is the obvious candidate: mirroring flips
-retinal geometry and freezing stops the frame, and neither touches odour, which
-now reaches every medkit in the level at five times the old strength with no
-line of sight required. Following an odour gradient to a medkit needs no eyes.
+WHAT DID IT -- NOT WHAT I FIRST WROTE HERE. Whole-level odour was the obvious
+candidate: mirroring flips retinal geometry and freezing stops the frame, and
+neither touches odour, which now reaches every medkit at five times the old
+strength with no line of sight. I wrote that attribution down as though it were
+established. The decomposition says it is wrong.
+
+paper/data/behav_smell runs that flag ALONE on the same seeds:
+
+  model minus its matched random arm      health            tics
+    plain          intact            +7.53 +- 6.66*    +34.00 +- 25.27*
+    plain          mirrored          -0.67 +- 7.70     -13.12 +- 30.48
+    odour only     intact            +3.80 +- 6.73     +12.55 +- 26.98
+    odour only     mirrored          +0.40 +- 6.51      +2.65 +- 28.12
+    all three      intact            +9.60 +- 7.06*    +28.85 +- 25.51*
+    all three      mirrored          +6.17 +- 6.96     +25.43 +- 27.75
+    all three      frozen            +6.53 +- 5.97*    +30.55 +- 22.79*
+
+Odour on its own produces NO advantage to break -- intact falls to +3.80 and
+stops being significant -- and its mirrored arm sits at +0.40, which is the
+plain configuration's behaviour, not the broken one. So whole-level odour is
+not sufficient for what behav_all shows, and the cables or the neck are
+necessary to it.
+
+The neck is the mechanistic candidate, and the reason is the control-validity
+bug below: with the head on, a frozen frame is not frozen input. The eyes keep
+turning across the held picture, so the model receives self-generated visual
+motion, and the arm that is supposed to have no vision has some. That would
+lift the frozen arm specifically, which is what happened. paper/data/behav_neck
+tests it.
+
+The lesson for me is the one the project keeps relearning: the obvious
+mechanism, written down before the experiment that separates it, is a
+hypothesis wearing a conclusion's clothes.
 
 A CONTROL-VALIDITY BUG THE NECK INTRODUCES, worth more than this run. With the
 head on, "frozen retina" no longer means frozen retinal input: the frame is

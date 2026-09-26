@@ -248,8 +248,9 @@ on the same 60 levels: the score doesn't move (health −0.1 ± 6.9), the moveme
 degrades (turn chatter +0.149, collisions +5.1 per 1k tics, vision-to-steering
 coupling −0.034), and — the part that matters — **a fly with its retina frozen
 on one frame now beats chance too** (+6.5 ± 6.0 health). Mirroring the eyes
-stops removing the advantage. Strong whole-level odour lets it find medkits
-without seeing, so the dissociation the project rests on dissolves. Details:
+stops removing the advantage. We guessed strong odour was letting it find medkits without
+seeing — running that flag alone disproves it (no advantage at all, mirrored
++0.4), so the cause is the cables or the neck and is still open. Details:
 [`paper/data/behav_all/NOTE.txt`](paper/data/behav_all/NOTE.txt).
 
 Three more things it is honest to say. **The first 60 levels oversold it.** That block gave
