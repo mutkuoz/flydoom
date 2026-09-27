@@ -1,0 +1,41 @@
+THE CABLES ALONE
+
+The last arm of the behav_all decomposition. Plain configuration plus
+--dendrites 3 --g-axial 8 and nothing else, on behav_fixed's own 60 seeds and
+controls, so the difference is the cables.
+
+    against its matched random arm      health            tics
+      plain          intact       +7.53 +- 6.66*   +34.00 +- 25.27*
+      odour only     intact       +3.80 +- 6.73    +12.55 +- 26.98
+      neck only      intact       +2.67 +- 7.02     -4.75 +- 25.53
+      CABLES only    intact       +7.60 +- 6.53*   +26.52 +- 26.80
+      all three      intact       +9.60 +- 7.06*   +28.85 +- 25.51*
+
+THE COMPONENTS SPLIT CLEANLY. The cables are the only one of the three that
+preserves the advantage over chance -- +7.60 against plain's +7.53, unchanged.
+Odour and the neck each destroy it. Together, the cables supply the performance
+and the other two supply a route to it that survives mirroring and freezing,
+which is why behav_all scores well and fails its control.
+
+AND THE JITTER IS THEIRS. Paired against plain on the same seeds:
+
+    yaw chatter             +0.157 +- 0.015   WORSE
+    collisions per 1k        +5.00 +- 2.94    WORSE
+    tics between collisions -20.91 +- 13.66
+    straightness            +0.101 +- 0.076   BETTER
+    ground per unit walked   +0.975 +- 0.720  BETTER
+    time railed at the clamp -0.0012 +- 0.0005 BETTER
+
+behav_all's chatter was +0.149 and its collisions +5.11 for all three together.
+The cables account for essentially all of both. I had attributed the jitter to
+the neck, on the grounds that it was the only component adding a feedback loop
+and that gaze loops oscillate. Plausible, and wrong.
+
+What the cables buy is therefore mixed rather than bad: a fifth straighter
+path and more ground covered, with a markedly jitterier turn command and a
+third more collisions. Worth knowing before anyone turns them on by default --
+they were measured open loop on grating selectivity, where none of this is
+visible.
+
+    bash paper/data/behav_cables/run.sh
+    python scripts/analyse_movement.py behav_fixed behav_cables

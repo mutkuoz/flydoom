@@ -86,11 +86,28 @@ the broken-control pattern. Together the advantage returns, +9.60, and it no
 longer needs eyes. That is an interaction, not a sum, and the compartment
 cables are the one component never run on their own.
 
-What can be said without another run: the dissociation is real, it is destroyed
-by both of these changes individually, and the configuration that restores
-performance restores it through a route that survives mirroring and freezing.
-What cannot: which component supplies that route. A cables-only arm settles it
-and is the obvious next run.
+THE CABLES ALONE, which settles it. 60 seeds, plain plus --dendrites 3:
+
+    cables only   intact  +7.60 +- 6.53*   tics +26.52 +- 26.80
+
+That is the plain configuration's advantage intact (+7.53), where odour and the
+neck each destroyed it. So the components split cleanly:
+
+    the CABLES carry the performance -- they are the only one of the three that
+        preserves the advantage over chance
+    ODOUR and the NECK each destroy it on their own, and together with the
+        cables they leave an advantage that no longer needs eyes
+
+AND THE CHATTER IS THE CABLES, NOT THE NECK. Paired against plain, cables alone
+give yaw chatter +0.157 +- 0.015 and collisions +5.00 +- 2.94 -- against
+behav_all's +0.149 and +5.11 for all three together. The jitter is entirely
+theirs. I attributed it to the neck on the grounds that it was the only
+component adding a feedback loop, and that gaze loops oscillate. It was a good
+story and it was wrong.
+
+The cables also make it walk STRAIGHTER (+0.101 +- 0.076) and cover more ground
+per unit walked (+0.975 +- 0.720), so what they buy is not simply worse: a
+straighter path with a jitterier turn command and more collisions.
 
 The lesson for me is the one the project keeps relearning: the obvious
 mechanism, written down before the experiment that separates it, is a
