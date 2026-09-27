@@ -1,0 +1,80 @@
+IS THE CENTRAL COMPLEX STARVED, OR BROKEN?
+
+M20 localised this project's repeated failures to one junction: vision leaves
+the optic lobe at 150-365 Hz and stops at the central complex, where ER fires
+0.00 Hz, Delta7 0.00 and EPG 0.30. The obvious question is whether that is a
+gain problem -- a circuit starved of drive by one uniform synaptic scale --
+and the obvious test is to turn the drive up and sweep it.
+
+WHAT THE CONNECTOME SAYS FIRST. ER receives excitation 24,903 against
+inhibition 104,173, a ratio of 4.18 to 1, and almost all of that inhibition is
+ER onto ER: the mutual inhibition that makes a ring attractor a ring attractor.
+Its excitatory drive is TuBu, +14,560, the anterior optic tubercle relay. EPG
+is 2.26 to 1 inhibited, and its largest single input is ER at -25,853.
+
+That last number matters and it is the reason the first experiment failed.
+
+EXPERIMENT 1: scale the excitatory input to ER, the visual gateway.
+
+  gain      ER     EPG     PEN  Delta7     T4a     LC4   DNa02
+     1    0.00    0.30    2.62    0.00  111.88  241.85  368.29
+     4    7.83    0.03    2.73    0.00  113.85  242.64  369.17
+    16   38.28    0.00    1.93    0.00  114.09  242.58  370.22
+    64   92.69    0.00    0.88    0.00  113.69  240.82  369.01
+   256  150.55    0.00    0.24    0.00  114.40  242.30  370.88
+
+WAKING ER SILENCES THE COMPASS. ER goes from 0 to 150 Hz and EPG goes from 0.30
+to exactly zero, PEN with it. Of course it does: ER is EPG's inhibition. The
+ring neurons are what carve the non-preferred directions out of a bump, not
+what drives it. Turning the visual gateway up 256-fold makes the compass
+monotonically worse, and the rest of the brain does not move at all -- T4a,
+LC4 and DNa02 are flat across the sweep, so the manipulation is well localised
+and the result is not a side effect.
+
+EXPERIMENT 2: scale the excitatory input to EPG and PEN, the recurrent loop
+that has to sustain a bump.
+
+  gain      ER     EPG     PEN  Delta7   heading r    null
+     1    0.00    0.30    2.62    0.00
+     4    8.79  336.34  383.26   50.03      -0.190  -0.171
+    16    8.92  383.00  398.63   51.65      +0.283  +0.032
+    64    8.94  397.83  399.13   51.88      +0.010  +0.001
+   256    8.95  399.36  399.39   51.88      -0.010  -0.010
+
+THE WHOLE CIRCUIT IGNITES AT ONCE. EPG, PEN, ER and Delta7 all wake together
+from a single scalar on the loop, and the rest of the brain stays where it was.
+So the silence is one recurrent loop failing to ignite rather than a diffuse
+shortage of drive, which is a much more specific claim than M20 could make.
+
+AND IT IS STILL NOT A COMPASS. At gain 16, run properly through M19 with its
+controls -- five seeds, preferred headings fitted on half an episode and tested
+on the other half:
+
+    intact EPG    +0.086 +- 0.162    shifted null -0.063    384 Hz
+    random optic  +0.331 +- 0.168                 -0.220    147 Hz
+    random any    +0.269 +- 0.299                 -0.089     98 Hz
+    frozen        +0.056 +- 0.114                 -0.048    384 Hz
+    shuffled      +0.039 +- 0.229                 +0.102    375 Hz
+
+EPG carries LESS heading information than 51 cells drawn at random. The
+single-seed +0.283 that prompted this run was noise, which is what a result
+appearing at one gain on one seed usually is.
+
+The reason is visible in the rates: 384 Hz is the refractory ceiling. A ring
+attractor is a SPATIAL pattern -- a bump somewhere and silence elsewhere -- and
+a population firing flat out everywhere has no pattern to read. Note the bump
+index reads 1.000 both here and in the original near-silent condition; it is
+uninformative at both extremes and should not be quoted on its own.
+
+CONCLUSION. The compass failure is structural, not a gain problem. Two
+pathway manipulations, each swept over 256-fold, each well localised, and
+neither produces a heading signal: driving the visual gateway silences the
+compass because that gateway is inhibitory, and driving the recurrent loop
+saturates it. What a ring attractor needs is a balance between recurrent
+excitation and patterned inhibition, and a single scalar per pathway cannot
+produce a balance -- which is, in miniature, exactly the per-cell-type gain
+problem this project exists to report.
+
+    python experiments/m21_ring.py --target ER  --gains 1 4 16 64 256
+    python experiments/m21_ring.py --target EPG PEN --gains 1 4 16 64 256
+    python experiments/m19_compass.py --seeds 5 --loop-gain 16

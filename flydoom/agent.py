@@ -84,6 +84,23 @@ class AgentConfig:
     every result must say which setting produced it. See flydoom/compartments.py
     for why retinotopy assigns the compartments and what that approximates."""
 
+    pathway_gain: tuple = ()
+    """Scale the EXCITATORY synapses arriving onto a named cell type, as
+    (prefix, factor) pairs -- e.g. (("ER", 16.0),).
+
+    Why this exists, and what it is not. M20 localised this project's failures
+    to one junction: vision leaves the optic lobe at 150-365 Hz and stops dead
+    at the central complex, where ER fires 0.00 Hz. The connectome says why --
+    ER takes excitation 24,903 against inhibition 104,173, a ratio of 4.18 to 1,
+    almost all of it ring neurons inhibiting each other. At one uniform synaptic
+    gain that silences the population.
+
+    This is a scalar on one pathway, in the same class as the regional
+    inhibitory scale the paper reports, and it is meant to be SWEPT rather than
+    fitted -- the question is whether any value wakes the circuit, not which
+    value flatters a result. Off by default; every result before this used
+    none."""
+
     wind: "wind.WindConfig | None" = None
     """Airflow over the arena, or None for still air, which is every result
     before this. See flydoom/wind.py: it makes odour directional as PHYSICS --
@@ -186,6 +203,20 @@ class FlyDoomAgent:
                 self.graph.signed_syn
                 * optic_gain_multipliers(self.graph, self.ann, c.optic_gain)
             ).astype(np.float32)
+
+        for prefix, factor in (c.pathway_gain or ()):
+            # same shape as the optic gain above: scale the graph before the
+            # network is built from it, because the step reads CSR matrices
+            # compiled at construction and not the weight vector afterwards
+            import polars as _pl2
+            tgt = self.ann.df.filter(
+                _pl2.col("primary_type").str.starts_with(prefix))
+            want = {int(r) for r in tgt["root_id"].to_list()}
+            keep = np.array([int(self.graph.root_ids[i]) in want
+                             for i in self.graph.post_idx])
+            sel = keep & (self.graph.signed_syn > 0)
+            self.graph.signed_syn = self.graph.signed_syn.copy()
+            self.graph.signed_syn[sel] *= float(factor)
 
         graded = self.graph.graded_mask(self.ann) if c.graded else None
         if graded is not None and c.spiking_t4:

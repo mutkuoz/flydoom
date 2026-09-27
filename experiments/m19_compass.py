@@ -81,7 +81,8 @@ def cells_of(graph, ann, prefix):
 
 
 def run_episode(seed, tics, device, mirror=False, blind=False, shuffled=False,
-                cells="EPG", scenario="health_gathering_fly"):
+                cells="EPG", pathway_gain=(),
+                scenario="health_gathering_fly"):
     """Returns (rates [tics, n_epg], heading [tics] in radians)."""
     from flydoom.agent import AgentConfig, FlyDoomAgent
     from flydoom.doom import DoomConfig
@@ -96,7 +97,8 @@ def run_episode(seed, tics, device, mirror=False, blind=False, shuffled=False,
                           phasic_mdn=True, forward_gain=0.16),
         mechano=MechanoConfig(front_only=True),
         eye_map="anatomical", seed=seed, optic_gain=16.0, spiking_t4=True,
-        touch=True, shuffle_graph=shuffled, device=device))
+        touch=True, shuffle_graph=shuffled, pathway_gain=pathway_gain,
+        device=device))
     if mirror:
         agent.vision.mirror()
     agent.reset()
@@ -179,10 +181,15 @@ def main() -> int:
     ap.add_argument("--arms", nargs="+",
                     default=["intact", "rand_optic", "rand_any",
                              "frozen", "shuffled"])
+    ap.add_argument("--loop-gain", type=float, default=0.0,
+                    help="scale excitatory input to EPG and PEN, the recurrent "
+                         "loop that must sustain a bump. See M21.")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--device", default=os.environ.get("FLYDOOM_DEVICE", "cuda"))
     args = ap.parse_args()
 
+    G = ((("EPG", args.loop_gain), ("PEN", args.loop_gain))
+         if args.loop_gain else ())
     ARMS = {"intact": {}, "mirrored": {"mirror": True},
             "frozen": {"blind": True}, "shuffled": {"shuffled": True},
             "rand_optic": {"cells": "optic"}, "rand_any": {"cells": "any"}}
@@ -197,7 +204,7 @@ def main() -> int:
         rows = []
         for s in range(args.seeds):
             rates, head, epg = run_episode(40 + s, args.tics, args.device,
-                                           **ARMS[arm])
+                                           pathway_gain=G, **ARMS[arm])
             d = decode(rates, head)
             if d:
                 rows.append(d)
