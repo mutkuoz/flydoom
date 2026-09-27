@@ -139,8 +139,9 @@ arriving at the Johnston's organ afferents already present in the connectome
 sign across seeds, and reduces the model's net rotational bias by a quarter
 while straightening its path by a fifth. It does not orient the animal to the
 wind (resultant $0.639$ with airflow against $0.549$ without) and does not help
-it find food. It stabilises course, which is the function optic flow serves in
-a fly and which this model's motion pathway cannot provide.
+it find food. It steadies the turning, and it does so only with the retina
+intact: mirrored and frozen arms show neither effect, so airflow works
+\emph{with} the visual course signal rather than substituting for it.
 
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
@@ -1808,11 +1809,18 @@ movement tells a different story. Paired on the same seeds, with the same
 odour, a steady wind reduces the net rotational bias from $0.167$ to $0.128$
 ($-0.039\pm0.030$) and raises path straightness from $0.462$ to $0.562$
 ($+0.100\pm0.074$): a quarter less circling and a fifth straighter walking,
-from a non-visual cue, with nothing in the model changed. A fly stabilises its
-course on optic flow; this model cannot, and airflow partly substitutes for the
-sense that fails.
+from a non-visual cue, with nothing in the model changed. Both hold up per seed rather than resting on
+outliers: 40 of 60 seeds improve on spin (sign test $p=0.007$) and 39 of 60 on
+straightness ($p=0.014$), with trimmed means matching.
 
-It is stabilisation and not steering, which the control establishes. Measuring
+The arm controls bound the claim, and correct a natural reading of it. Neither
+effect appears with the retina mirrored ($+0.009\pm0.035$ spin) or frozen
+($-0.034\pm0.037$). A purely non-visual course reference would steady those
+arms too, so airflow is not substituting for the optic flow this model lacks;
+it acts together with whatever visual course signal survives, and does nothing
+without it.
+
+It is stabilisation and not steering, which a further control establishes. Measuring
 how tightly heading concentrates relative to the wind gives a mean resultant of
 $0.639$ with airflow and $0.549$ without it --- no difference. A model whose
 loop settles on zero net turning holds a concentrated heading whether or not

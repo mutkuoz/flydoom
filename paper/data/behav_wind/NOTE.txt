@@ -74,12 +74,27 @@ KEPT at 0.032 -- the standing DNp15 asymmetry then swamps everything and the
 animal simply spins. The baseline subtraction is what makes any orientation
 possible at all, not what prevents it.
 
-WHAT IT MEANS. A real fly stabilises its course on optic flow. This model
-cannot -- direction selectivity is 2% of a fly's -- and the optomotor response
-is absent in every test. Wind gives it a non-visual course reference that
-partly substitutes, and the substitution is worth about a fifth of its path
-straightness. That is a positive result about a sensory channel this project
-had built and never used, and it is invisible in the health column.
+THE ARM CONTROLS BOUND IT, and correct the obvious reading. Neither effect
+survives without vision:
+
+    intact    spin -0.0391 +- 0.0296*   straightness +0.0998 +- 0.0742*
+    mirrored  spin +0.0091 +- 0.0350    straightness +0.0171 +- 0.0598
+    frozen    spin -0.0338 +- 0.0367    straightness +0.0026 +- 0.0787
+
+The intact effect is not outlier-driven: 40 of 60 seeds improve on spin (sign
+test p = 0.007) and 39 of 60 on straightness (p = 0.014), with trimmed means
+matching the means.
+
+A purely non-visual course reference would steady the mirrored and frozen arms
+too. It does not. So airflow is NOT substituting for the optic flow this model
+lacks, which is how I first wrote it up; it works together with whatever visual
+course signal survives, and does nothing without it. That is a narrower claim
+and the one the data supports.
+
+WHAT IT MEANS. A sensory channel this project had built and never used reaches
+behaviour, changes how the animal moves by about a fifth, and is invisible in
+the health column. It is also the only addition in this work that improves
+behaviour rather than costing it.
 
 CAVEAT. Wind WITHOUT odour is worse than useless: -10.95 health and -70.42
 +- 42.31 tics against its control. Airflow adds drive to the steering channel,
