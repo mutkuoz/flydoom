@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-from . import compartments, config
+from . import compartments, config, wind
 from .cells import AnnotationTable
 from .doom import DoomConfig, DoomSession, DoomVision
 from .graph import ConnectomeGraph
@@ -83,6 +83,15 @@ class AgentConfig:
     inputs re-routed distally. Off by default: it changes the model class, so
     every result must say which setting produced it. See flydoom/compartments.py
     for why retinotopy assigns the compartments and what that approximates."""
+
+    wind: "wind.WindConfig | None" = None
+    """Airflow over the arena, or None for still air, which is every result
+    before this. See flydoom/wind.py: it makes odour directional as PHYSICS --
+    a fly upwind of a source cannot smell it -- and delivers the flow direction
+    to the antennal afferents the touch channel already uses, because those are
+    Johnston's organ, which is the fly's own wind sensor. Requires
+    DoomConfig.objects_info for the plume geometry, and touch for the
+    antennae."""
 
     dendrite_chain: int = 0
     """How many compartments to give each T4/T5, as a CABLE rather than a
@@ -385,19 +394,36 @@ class FlyDoomAgent:
             )
         self.last_luminance = column_lum
 
+        wind_cfg = self.cfg.wind
+        blowing = wind_cfg is not None and wind_cfg.speed > 0.0
+
         if self.smell is not None:
             # Sources are every object in the level when the engine reports
             # them, since odour does not need line of sight, and otherwise
             # only what is on screen. Any azimuth is discarded inside — see
             # olfaction.py for why that is the point.
-            self.smell.on_tic(self.doom.odour_sources() if self.cfg.doom.objects_info
-                              else self.doom.threats())
+            sources = (self.doom.odour_sources() if self.cfg.doom.objects_info
+                       else self.doom.threats())
+            if blowing:
+                # PHYSICS, not a hint. Odour travels downwind, so a source the
+                # fly sits upwind of barely reaches it however close it is.
+                # This scales the scalar concentration; the bearing it is
+                # computed from never reaches the network. What direction the
+                # flow comes from is the antennae's business, below.
+                for o in sources:
+                    b = o.get("bearing_deg")
+                    if b is not None:
+                        o["plume"] = wind.plume_weight(b, o["distance"],
+                                                       wind_cfg)
+            self.smell.on_tic(sources)
 
         if self.touch is not None:
             # contact is derived from motion against the command, so it needs
             # the position NOW against the command issued last tic
             x, y, ang = self.doom.pose()
-            self.touch.on_tic(x, y, ang, self._last_fwd)
+            self.touch.on_tic(x, y, ang, self._last_fwd,
+                              wind=(wind.antennal_deflection(ang, wind_cfg)
+                                    if blowing else (0.0, 0.0)))
 
         # ---- 57 substeps; the frame ramps across them unless held ----
         for sub in range(self.substeps):

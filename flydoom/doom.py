@@ -788,9 +788,14 @@ class DoomSession:
     def odour_sources(self) -> list[dict]:
         """Every object in the level, with its distance. For the smell channel.
 
-        No azimuth: the olfactory channel discards direction by construction
-        (see olfaction.py), and not computing it here keeps it that way. No
-        line of sight either, which is the point.
+        `bearing_deg` is the WORLD bearing from the fly to the source, and it
+        exists for one purpose: deciding whether the fly is downwind of that
+        source and can smell it at all (flydoom/wind.py). It never reaches the
+        olfactory drive, which is a scalar concentration with direction
+        discarded by construction -- see olfaction.py for why that is the
+        point. Physics may use the geometry; the animal may not be told it.
+
+        No line of sight either, which is also the point.
         """
         s = self.game.get_state()
         if s is None or not getattr(s, "objects", None):
@@ -802,9 +807,10 @@ class DoomSession:
         for ob in s.objects:
             if ob.name == "DoomPlayer":
                 continue
+            dx, dy = ob.position_x - px, ob.position_y - py
             out.append({"name": ob.name,
-                        "distance": math.hypot(ob.position_x - px,
-                                               ob.position_y - py)})
+                        "distance": math.hypot(dx, dy),
+                        "bearing_deg": math.degrees(math.atan2(dy, dx))})
         return out
 
     def threats(self) -> list[dict]:

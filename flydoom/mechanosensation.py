@@ -120,6 +120,7 @@ class Antennae:
 
         self._prev = None          # (x, y) at the previous tic
         self.contact = {"left": 0.0, "right": 0.0}   # target deflection 0..1
+        self.wind = (0.0, 0.0)                      # airflow's share of it
         self.sensed = {"left": 0.0, "right": 0.0}    # after adaptation
         self.touching = False
         self.n_contacts = 0
@@ -136,15 +137,22 @@ class Antennae:
     # -- per Doom tic ----------------------------------------------------
 
     def on_tic(self, x: float, y: float, angle_deg: float,
-               commanded_fwd: float) -> None:
+               commanded_fwd: float,
+               wind: tuple[float, float] = (0.0, 0.0)) -> None:
         """Derive contact and its side from motion against the command.
 
         `commanded_fwd` is the forward component the motor decoder asked for
         this tic, in the same map units the position is measured in.
         """
         c = self.cfg
+        # Airflow deflects the same antennae that contact does, which is why it
+        # arrives here rather than in a channel of its own: Johnston's organ
+        # reports how far the arista has moved, not what moved it. Wind is the
+        # floor the contact signal sits on top of. See flydoom/wind.py.
+        self.wind = (float(wind[0]), float(wind[1]))
         prev, self._prev = self._prev, (float(x), float(y))
         if prev is None:
+            self.contact["left"], self.contact["right"] = self.wind
             return
 
         dx, dy = float(x) - prev[0], float(y) - prev[1]
@@ -155,7 +163,7 @@ class Antennae:
         self.touching = bool(pushing and step < c.stuck_move)
 
         if not self.touching:
-            self.contact["left"] = self.contact["right"] = 0.0
+            self.contact["left"], self.contact["right"] = self.wind
             return
         if not was_touching:
             self.n_contacts += 1
@@ -171,14 +179,16 @@ class Antennae:
         slide = hx * dy - hy * dx            # z of heading x displacement
         lateral = abs(slide) / max(step, 1e-6) if step > 1e-6 else 0.0
 
+        wl, wr = self.wind
         if lateral < c.slide_frac:
-            self.contact["left"] = self.contact["right"] = deflection
+            self.contact["left"] = max(deflection, wl)
+            self.contact["right"] = max(deflection, wr)
         elif slide > 0.0:                     # sliding left -> wall on right
-            self.contact["right"] = deflection
-            self.contact["left"] = 0.0
+            self.contact["right"] = max(deflection, wr)
+            self.contact["left"] = wl
         else:
-            self.contact["left"] = deflection
-            self.contact["right"] = 0.0
+            self.contact["left"] = max(deflection, wl)
+            self.contact["right"] = wr
 
     # -- per simulation substep ------------------------------------------
 

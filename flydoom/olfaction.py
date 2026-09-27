@@ -226,13 +226,21 @@ class Olfaction:
 
     # -- per Doom tic ----------------------------------------------------
 
-    def _concentration(self, distances: list[float],
-                       strength: float = 1.0) -> float:
-        """Summed, saturating concentration from a set of sources."""
+    def _concentration(self, distances, strength: float = 1.0) -> float:
+        """Summed, saturating concentration from a set of sources.
+
+        Each entry is a distance, or a (distance, weight) pair. The weight is
+        how much of that source's odour reaches the fly at all, which with wind
+        is the plume: a fly upwind of a medkit smells almost nothing however
+        close it is. It scales the CONCENTRATION and carries no direction of
+        its own, so the channel stays the scalar it is meant to be.
+        """
         c = self.cfg
         total = 0.0
-        for r in distances:
-            total += strength / (1.0 + (max(r, 1.0) / c.r_half) ** c.falloff_power)
+        for d in distances:
+            r, w = d if isinstance(d, tuple) else (d, 1.0)
+            total += w * strength / (
+                1.0 + (max(r, 1.0) / c.r_half) ** c.falloff_power)
         return min(total, 1.0)
 
     def on_tic(self, objects: list[dict]) -> None:
@@ -249,18 +257,22 @@ class Olfaction:
             name = o.get("name", "")
             if name in NOT_A_SOURCE:
                 continue
+            entry = (o["distance"], float(o.get("plume", 1.0)))
             if name in FOOD_NAMES:
-                foods.append(o["distance"])
+                foods.append(entry)
             elif name in THREAT_NAMES:
-                threats.append(o["distance"])
+                threats.append(entry)
             # anything else emits nothing -- see the allowlist note above
         self.raw["threat"] = self._concentration(threats) * self.cfg.threat_gain
         self.raw["food"] = (self._concentration(foods, self.cfg.food_strength)
                             * self.cfg.food_gain)
         # WHETHER a source is present is a different fact from HOW STRONG it
         # is, and the plume memory below applies only to the first.
-        self.seen["threat"] = bool(threats)
-        self.seen["food"] = bool(foods)
+        # Presence means presence OF A SMELL, so a source whose plume does not
+        # reach the fly does not count as seen. Without wind every plume weight
+        # is 1 and this is the old behaviour exactly.
+        self.seen["threat"] = any(w > 0.5 for _r, w in threats)
+        self.seen["food"] = any(w > 0.5 for _r, w in foods)
 
     # -- per simulation substep ------------------------------------------
 

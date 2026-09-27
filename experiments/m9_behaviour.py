@@ -59,6 +59,7 @@ from flydoom import config  # noqa: E402
 from flydoom.agent import AgentConfig, FlyDoomAgent  # noqa: E402
 from flydoom.doom import DoomConfig, DoomSession  # noqa: E402
 from flydoom.motor import MotorConfig  # noqa: E402
+from flydoom.wind import WindConfig  # noqa: E402
 from flydoom.olfaction import OlfactionConfig, WHOLE_LEVEL  # noqa: E402
 from flydoom.mechanosensation import MechanoConfig  # noqa: E402
 
@@ -275,7 +276,9 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               smell_all: bool = False,
               dendrites: int = 0,
               g_axial: float = 8.0,
-              head: float = 0.0) -> tuple[dict, dict]:
+              head: float = 0.0,
+              wind_speed: float = 0.0,
+              wind_dir: float = 0.0) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -293,6 +296,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         motor=MotorConfig(**mk),
         dendrite_chain=dendrites,
         g_axial=g_axial,
+        wind=(WindConfig(direction_deg=wind_dir, speed=wind_speed)
+              if wind_speed > 0 else None),
         smell=smell,
         olfaction=(OlfactionConfig(**WHOLE_LEVEL) if smell_all
                    else OlfactionConfig()),
@@ -477,6 +482,16 @@ def main() -> int:
     ap.add_argument("--touch", action="store_true",
                     help="antennal mechanosensation: wall contact drives the "
                          "wind/gravity afferents. See mechanosensation.py.")
+    ap.add_argument("--wind", type=float, default=0.0, metavar="SPEED",
+                    help="airflow over the arena at SPEED (0-1 antennal "
+                         "deflection at a full headwind). Makes odour "
+                         "directional AS PHYSICS -- a fly upwind of a source "
+                         "cannot smell it -- and delivers the flow direction "
+                         "to the Johnston's organ afferents the touch channel "
+                         "already uses. Needs --touch and --smell-all. "
+                         "See flydoom/wind.py.")
+    ap.add_argument("--wind-dir", type=float, default=0.0, metavar="DEG",
+                    help="the direction the wind blows TOWARD, world frame.")
     ap.add_argument("--dendrites", type=int, default=0, metavar="N",
                     help="give each T4/T5 an N-compartment cable with every "
                          "input placed by its own retinotopic offset (M17). "
@@ -590,6 +605,8 @@ def main() -> int:
     record["render"] = args.render
     record["phasic_mdn"] = args.phasic_mdn
     record["smell_all"] = args.smell_all
+    record["wind"] = args.wind
+    record["wind_dir"] = args.wind_dir
     record["dendrites"] = args.dendrites
     record["g_axial"] = args.g_axial
     record["head"] = args.head
@@ -612,7 +629,8 @@ def main() -> int:
                                     motor_kw, args.mirror, args.blind,
                                     args.wide, args.eye_map, args.render,
                                     args.smell_all, args.dendrites,
-                                    args.g_axial, args.head)
+                                    args.g_axial, args.head, args.wind,
+                                    args.wind_dir)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
@@ -621,7 +639,8 @@ def main() -> int:
                                       args.spiking_t4, args.touch, motor_kw,
                                       args.mirror, args.blind, args.wide,
                                       args.eye_map, args.render, args.smell_all,
-                                      args.dendrites, args.g_axial, args.head)
+                                      args.dendrites, args.g_axial, args.head,
+                                      args.wind, args.wind_dir)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:
