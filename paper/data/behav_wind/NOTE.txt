@@ -1,0 +1,65 @@
+WIND: THE CHANNEL WORKS, AND IT STABILISES COURSE RATHER THAN FINDING FOOD
+
+WHY. Whole-level odour at five times strength bought a blind model -0.07
+against its matched control. Odour alone cannot find food here, and the reason
+is structural: olfaction.py is a scalar with every azimuth discarded, by
+construction, so that a direction-carrying chemical input cannot become the
+confound the study exists to avoid. A scalar cannot steer. A real fly has the
+same problem and uses odour as a GATE and airflow as the steering cue.
+
+flydoom/wind.py adds that as physics: a source's odour reaches only a fly
+downwind of it, and the flow direction arrives as a left-right difference at
+the Johnston's organ afferents already in the connectome and already driven by
+touch. Nothing is told to the network.
+
+THE CHANNEL WORKS. Clamping the antennae open-loop and reading the steering
+pair, airflow from the right against airflow from the left moves DNp15's
+left-right differential by about 8 Hz, same sign in 3 seeds of 3:
+
+    seed 40  left -1.19   right +6.73
+    seed 41  left -4.41   right +6.78
+    seed 42  left +1.18   right +5.75
+
+That is larger and far more consistent than antennal contact (m11: the right
+sign in 1 seed of 3) and six times the optomotor drum's +1.22 Hz. It is the
+first sensory channel in this project to reach the steering neurons with a
+consistent sign across seeds.
+
+IT DOES NOT FIND FOOD. Against the matched random arm, whole-level odour alone
+gives +3.80 +- 6.73 health; adding wind gives +1.40 +- 9.25; adding a
+MEANDERING wind gives +3.40 +- 7.75. Nothing separates them.
+
+IT DOES STABILISE COURSE, AND THAT IS THE RESULT. Health is the wrong
+measurable for a model of an animal with no circuitry for collecting medkits.
+Paired on the same seeds, same odour, steady wind against still air:
+
+    spin (net rotational bias)  0.167 -> 0.128   -0.039 +- 0.030   BETTER
+    straightness                0.462 -> 0.562   +0.100 +- 0.074   BETTER
+
+A quarter less circling and a fifth straighter walking, from a non-visual cue,
+with nothing in the brain changed. That is course stabilisation: a steady
+bilateral reference the animal can hold against.
+
+AND THE MEANDERING WIND DOES NOT DO IT: spin -0.019 +- 0.034, straightness
++0.038 +- 0.079, neither significant. Which is the right way round, and was
+not what I predicted. I expected the meander to be necessary, because the
+decoder removes a 3 s baseline from the yaw channel and a steady signal is
+exactly the DC it deletes. That reasoning was about STEERING TOWARD something.
+Course holding needs the opposite: a reference that does not move. A wind
+swinging 35 degrees every four seconds is useless to hold against, and the
+measurement says so.
+
+WHAT IT MEANS. A real fly stabilises its course on optic flow. This model
+cannot -- direction selectivity is 2% of a fly's -- and the optomotor response
+is absent in every test. Wind gives it a non-visual course reference that
+partly substitutes, and the substitution is worth about a fifth of its path
+straightness. That is a positive result about a sensory channel this project
+had built and never used, and it is invisible in the health column.
+
+CAVEAT. Wind WITHOUT odour is worse than useless: -10.95 health and -70.42
++- 42.31 tics against its control. Airflow adds drive to the steering channel,
+and with no odour to gate anything it is drive without information.
+
+    bash paper/data/behav_wind/run.sh     # steady
+    bash paper/data/behav_wind2/run.sh    # meandering
+    python scripts/analyse_movement.py behav_smell behav_wind behav_wind2
