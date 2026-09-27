@@ -17,6 +17,36 @@ Odour and the neck each destroy it. Together, the cables supply the performance
 and the other two supply a route to it that survives mirroring and freezing,
 which is why behav_all scores well and fails its control.
 
+AND THE CABLES ARE WHAT BREAK THE VISION CONTROL. All three arms:
+
+    cables only   intact +7.60 +- 6.53*   mirrored +7.53 +- 5.12*
+                  frozen +2.07 +- 6.61
+    intact minus mirrored, same seeds:  -2.27 +- 6.27  (plain: +3.00 +- 6.18)
+
+A model with its retina MIRRORED scores +7.53, identical to intact and
+significant in its own right. The dissociation the project rests on is gone,
+and it is gone with the cables alone -- not from odour, not from the neck, and
+not from an interaction between them, which is what the behav_all note said
+before this arm existed.
+
+WHY, AND IT WAS PREDICTED OPEN LOOP. M17 measured that what the compartment
+chain buys is ELECTROTONIC placement of inhibition, not retinotopic order: four
+shuffled cables retain 0.047-0.050 of the ordered cable's 0.064, and the
+REVERSED cable is better than either. A benefit that does not depend on the
+retinotopic ordering of a cell's inputs has no reason to depend on the
+handedness of the retina either. Mirroring the eye leaves the cable's
+electrotonic geometry untouched, so it leaves the benefit untouched. The
+closed-loop result is what the open-loop mechanism predicts.
+
+That is worth stating plainly, because it is the first time in this project
+that an open-loop mechanism predicted a closed-loop behavioural result in
+advance rather than being reconciled with it afterwards.
+
+WHAT THE NECK ADDS. behav_all's frozen arm was +6.53*, where cables alone give
++2.07 (ns). So the frozen-arm lift is the neck's, and by the mechanism already
+recorded: with a movable head the frame is held but the eyes keep turning
+across it, so the "no vision" arm receives self-generated motion.
+
 AND THE JITTER IS THEIRS. Paired against plain on the same seeds:
 
     yaw chatter             +0.157 +- 0.015   WORSE

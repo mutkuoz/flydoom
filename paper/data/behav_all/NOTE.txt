@@ -86,17 +86,24 @@ the broken-control pattern. Together the advantage returns, +9.60, and it no
 longer needs eyes. That is an interaction, not a sum, and the compartment
 cables are the one component never run on their own.
 
-THE CABLES ALONE, which settles it. 60 seeds, plain plus --dendrites 3:
+THE CABLES ALONE, which settles it, and not as an interaction. 60 seeds:
 
-    cables only   intact  +7.60 +- 6.53*   tics +26.52 +- 26.80
+    cables only   intact  +7.60 +- 6.53*   mirrored +7.53 +- 5.12*
+                  frozen  +2.07 +- 6.61
+    intact minus mirrored: -2.27 +- 6.27, against plain's +3.00 +- 6.18
 
-That is the plain configuration's advantage intact (+7.53), where odour and the
-neck each destroyed it. So the components split cleanly:
+The cables keep the advantage AND make it vision-independent on their own: a
+mirrored retina scores the same as an intact one. Everything above about this
+being an interaction rather than a sum was written before this arm existed and
+is wrong. The components split cleanly:
 
-    the CABLES carry the performance -- they are the only one of the three that
-        preserves the advantage over chance
-    ODOUR and the NECK each destroy it on their own, and together with the
-        cables they leave an advantage that no longer needs eyes
+    the CABLES carry the performance AND break the control -- they are the
+        only one of the three that preserves the advantage over chance, and
+        with them a mirrored retina does just as well
+    the NECK lifts the FROZEN arm specifically, by the mechanism already
+        recorded: with a movable head the frame is held but the eyes keep
+        turning across it, so the no-vision arm is not a no-vision arm
+    ODOUR does nothing in any arm
 
 AND THE CHATTER IS THE CABLES, NOT THE NECK. Paired against plain, cables alone
 give yaw chatter +0.157 +- 0.015 and collisions +5.00 +- 2.94 -- against
