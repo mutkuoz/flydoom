@@ -45,13 +45,23 @@ attractor; it is a near-silent population where one or two active cells make
 the population vector trivially "sharp", and it should not be read as
 structure.
 
-THAT IS NOW THREE. LC10a is silent and fixation fails. LPLC2 is silent and
-looming fails. EPG is silent and the compass fails. The pattern across them is
-not about any one circuit: activity in this model concentrates in the optic
-lobe, at 100-150 Hz, and does not arrive at the deep populations that would
-have to do the computing. Whatever the reason -- and the per-cell-type gains
-the connectome does not specify are the obvious suspect -- it is the same
-reason three times, and it is a better description of the model's limit than
-three separate circuit stories.
+WHY EPG IS SILENT -- MEASURED, and not what I first wrote here.
+
+I first wrote that this was the third of three silent populations and that
+activity concentrates in the optic lobe without reaching the deep cells. M20
+measured it and that is wrong. The deep VISUAL cells are the most active
+population in the model: visual projection neurons average 155 Hz, LC11 fires
+at 365 and LC4 at 242. Vision leaves the optic lobe perfectly well.
+
+It stops at one junction, and the junction is upstream of EPG. ER -- the ring
+neurons that carry visual input into the ellipsoid body -- fire at 0.00 Hz.
+Delta7, the inhibition that sharpens a bump, fires at 0.00 Hz. PEN is 2.62.
+
+So the compass is not a circuit that fails to compute. It is a circuit that is
+never driven: nothing crosses from a visual system running at 150-365 Hz into
+the ring neurons that would anchor a heading to a landmark. That is a sharper
+claim than the one it replaces, it explains the result completely, and it
+predicts that anything needing the central complex fails the same way. See
+paper/data/m20_silence_NOTE.txt.
 
     python experiments/m19_compass.py --seeds 5

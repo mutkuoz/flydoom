@@ -1,0 +1,68 @@
+WHERE DOES THE ACTIVITY STOP?
+
+Three circuits had been asked to do their job and could not, and each got its
+own explanation: LC10a silent so fixation fails, LPLC2 silent so looming fails,
+EPG silent so the compass fails. Three stories is worse than one measurement,
+and the hypothesis was one sentence -- activity concentrates in the optic lobe
+and never arrives at the deep populations that would do the computing.
+
+Measured over one closed-loop episode in the configuration the behaviour tables
+use, 22,800 substeps, every neuron, accumulated per SUBSTEP rather than per
+Doom tic because sampling once a tic undercounts by up to 57 and would
+manufacture the silence being tested for:
+
+  super class            cells    mean Hz   median   % silent   % over 1 Hz
+  sensory               16,938       0.64     0.00      96.0%          4.0%
+  optic                 77,873     140.15   182.97      11.4%         85.1%
+  visual_projection      7,684     155.18   117.68      32.2%         60.4%
+  central               32,381      18.22     0.00      85.3%         14.1%
+  visual_centrifugal       522     185.15   171.58      29.3%         69.2%
+  ascending              1,750       0.52     0.00      98.7%          1.1%
+  descending             1,305      49.66     0.00      65.8%         31.2%
+
+  population   cells   mean Hz
+  LC4            207    241.85
+  LC11           127    364.85
+  LPLC2          210    207.06
+  T5a          1,483    183.89
+  T4a          1,457    111.88
+  L1           1,775     96.06
+  LC10a          237      8.77
+  PEN             42      2.62
+  EPG             51      0.30
+  ER             278      0.00
+  Delta7          42      0.00
+
+THE HYPOTHESIS IS WRONG, AND WHAT REPLACES IT IS BETTER.
+
+Activity does NOT stop at the optic lobe. The visual projection neurons are the
+most active population in the model -- 155 Hz on average, LC11 at 365, LC4 at
+242 -- and they are exactly the deep visual cells the hypothesis said were
+starved. Vision propagates out of the optic lobe perfectly well.
+
+It stops at the CENTRAL COMPLEX, and it stops at one identifiable junction. ER,
+the ring neurons that carry visual input into the ellipsoid body, fire at 0.00
+Hz. Delta7, the inhibition that sharpens a heading bump, fires at 0.00 Hz. EPG
+is 0.30 and PEN 2.62. The compass is not broken; IT IS NEVER DRIVEN. Nothing
+crosses from a visual system running at 150-365 Hz into the ring neurons that
+are supposed to anchor a heading to a landmark.
+
+A CORRECTION I OWE. I have written in several places that LPLC2 is silent. In
+the closed loop it fires at 207 Hz. The 0.00 Hz figure is from M4's synthetic
+looming rig, under different drive, and generalising it to "LPLC2 is silent"
+was wrong. The looming failure is that LPLC2 does not DISCRIMINATE expansion
+from a size-matched static disc, not that it says nothing.
+
+LC10a at 8.77 Hz is genuinely low -- thirty times quieter than LC4 and LC11 in
+the same episode -- so M7's account survives, but as "quiet relative to its
+neighbours" rather than "silent".
+
+WHAT THIS IS WORTH. A claim about a junction is more useful than a claim about
+three circuits: it explains the compass failure completely, it predicts that
+anything requiring the central complex will fail the same way, and it names
+where to look. The obvious suspect is the one the study already names -- the
+per-cell-type gains the connectome does not specify -- but this localises the
+question to the visual-projection-to-ring-neuron synapses rather than leaving
+it spread across the brain.
+
+    python experiments/m20_silence.py --tics 400
