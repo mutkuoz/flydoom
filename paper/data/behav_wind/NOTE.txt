@@ -49,6 +49,31 @@ Course holding needs the opposite: a reference that does not move. A wind
 swinging 35 degrees every four seconds is useless to hold against, and the
 measurement says so.
 
+IT DOES NOT ORIENT TO THE WIND, AND THE CONTROL IS THE POINT. Holding the
+configuration fixed and measuring how tightly the heading concentrates relative
+to the wind direction, over 500 tics and three seeds:
+
+    wind ON   mean vector length 0.639
+    wind OFF  mean vector length 0.549
+
+No difference. The model holds a stable heading whether or not there is any air
+moving, because the loop's fixed point is still "stop turning" -- the same
+thing the bar-fixation experiment found, where a frozen retina held a bar as
+tightly as a seeing one. A concentrated heading is not evidence of anemotaxis
+and this control is the only thing that separates them.
+
+So the two halves of this result are consistent and should be stated together:
+wind makes the turning STEADIER without making the animal point anywhere in
+particular. It is a stabilising input, not a steering one.
+
+A prediction that was wrong on the way here, recorded because the reasoning was
+seductive. The yaw channel has a 3 s baseline removed, so I expected DC removal
+to forbid sustained orientation and the meander to be necessary. Toggling the
+centring directly: with it removed the heading concentrates at 0.639, with it
+KEPT at 0.032 -- the standing DNp15 asymmetry then swamps everything and the
+animal simply spins. The baseline subtraction is what makes any orientation
+possible at all, not what prevents it.
+
 WHAT IT MEANS. A real fly stabilises its course on optic flow. This model
 cannot -- direction selectivity is 2% of a fly's -- and the optomotor response
 is absent in every test. Wind gives it a non-visual course reference that
