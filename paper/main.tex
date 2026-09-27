@@ -132,6 +132,16 @@ block of sixty pinned it no better than to a factor of two;
 the corrected eye doubles the population direction signal and still produces no
 optomotor response.
 
+One sensory addition does reach behaviour. Airflow, delivered as physics --- a
+source's odour reaching only a fly downwind of it, and the flow direction
+arriving at the Johnston's organ afferents already present in the connectome
+--- moves \cell{DNp15}'s left--right differential by $8$\,Hz with consistent
+sign across seeds, and reduces the model's net rotational bias by a quarter
+while straightening its path by a fifth. It does not orient the animal to the
+wind (resultant $0.639$ with airflow against $0.549$ without) and does not help
+it find food. It stabilises course, which is the function optic flow serves in
+a fly and which this model's motion pathway cannot provide.
+
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
 behaves differently samples a different stimulus; command-matched controls and
@@ -1791,12 +1801,33 @@ differential by about 8\,Hz with the same sign in three seeds of three --- a
 larger and more consistent response than either antennal contact or the
 optomotor drum produces.
 
-That signal does not reach behaviour, and the reason is the decoder rather than
-the channel: the yaw command has a 3\,s running baseline removed
-(Sec.~\ref{sec:readout}), so a steady wind is precisely the constant it
-deletes. This is the same obstacle the optomotor drum met, and the same remedy
-applies --- real wind meanders, and a direction swinging at $0.25$\,Hz sits
-clear of the decoder's corner.
+It does not find food: against a matched random agent, whole-level odour gives
+$+3.80\pm6.73$ health and adding wind $+1.40\pm9.25$. But health is the wrong
+measurable for an animal with no circuitry for collecting medkits, and the
+movement tells a different story. Paired on the same seeds, with the same
+odour, a steady wind reduces the net rotational bias from $0.167$ to $0.128$
+($-0.039\pm0.030$) and raises path straightness from $0.462$ to $0.562$
+($+0.100\pm0.074$): a quarter less circling and a fifth straighter walking,
+from a non-visual cue, with nothing in the model changed. A fly stabilises its
+course on optic flow; this model cannot, and airflow partly substitutes for the
+sense that fails.
+
+It is stabilisation and not steering, which the control establishes. Measuring
+how tightly heading concentrates relative to the wind gives a mean resultant of
+$0.639$ with airflow and $0.549$ without it --- no difference. A model whose
+loop settles on zero net turning holds a concentrated heading whether or not
+there is a cue, exactly as the frozen retina held a bar in
+Sec.~\ref{sec:fixation}, so a concentrated heading is not evidence of
+anemotaxis. Airflow makes the turning steadier without making the animal point
+anywhere in particular.
+
+Two negative controls bound it. A wind that meanders at $0.25$\,Hz, introduced
+on the expectation that a steady signal would be removed by the decoder's
+baseline, stabilises nothing ($-0.019\pm0.034$ spin): holding a course requires
+a reference that does not move. And removing the baseline subtraction
+altogether collapses heading concentration from $0.639$ to $0.032$, the
+standing \cell{DNp15} asymmetry then dominating, so that subtraction is what
+makes orientation possible rather than what prevents it.
 
 \subsection{Where the activity stops}
 \label{sec:silence}
