@@ -74,9 +74,29 @@ motion, and the arm that is supposed to have no vision has some. That would
 lift the frozen arm specifically, which is what happened. paper/data/behav_neck
 tests it.
 
+THE NECK ALONE DOES NOT DO IT EITHER. 60 seeds, plain configuration plus
+--head 20 and nothing else:
+
+    neck only   intact   +2.67 +- 7.02    mirrored +3.67 +- 7.28
+                frozen   +0.53 +- 6.64
+
+So neither single flag reproduces behav_all. Each ALONE costs the advantage --
++7.53 falls to +3.80 with odour and +2.67 with the neck -- and neither produces
+the broken-control pattern. Together the advantage returns, +9.60, and it no
+longer needs eyes. That is an interaction, not a sum, and the compartment
+cables are the one component never run on their own.
+
+What can be said without another run: the dissociation is real, it is destroyed
+by both of these changes individually, and the configuration that restores
+performance restores it through a route that survives mirroring and freezing.
+What cannot: which component supplies that route. A cables-only arm settles it
+and is the obvious next run.
+
 The lesson for me is the one the project keeps relearning: the obvious
 mechanism, written down before the experiment that separates it, is a
-hypothesis wearing a conclusion's clothes.
+hypothesis wearing a conclusion's clothes. I have now been wrong twice in the
+same afternoon -- odour by measurement, the neck by measurement -- and both
+times the guess was the physically plausible one.
 
 A CONTROL-VALIDITY BUG THE NECK INTRODUCES, worth more than this run. With the
 head on, "frozen retina" no longer means frozen retinal input: the frame is
