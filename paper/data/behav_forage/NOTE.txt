@@ -1,0 +1,67 @@
+AN ARENA THAT MEANS TO A FLY WHAT IT LOOKS LIKE
+
+The corrected tables found the model's vision steers it into walls, and excused
+it as a fly's attraction to dark verticals transferring without the wisdom to
+go with it. That was charitable to the arena. Measured,
+health_gathering_fly's wall texture is 64 px at luminance 205 beside 64 px at
+65, uniform down its whole height: a perfect tall dark bar at 0.56 contrast,
+tiled across every wall, which is the strongest fixation target a fly could be
+shown. The food, meanwhile, is a pale box engaging no approach drive the animal
+has. We built the trap and then called the animal foolish for walking into it.
+
+health_gathering_forage (scripts/build_forage_arena.py) moves the darkness off
+the walls and onto the food. Nothing in the brain changes, and the seeds and
+controls are behav_fixed's, so the difference is the arena alone.
+
+  walls   band-pass noise, mildly anisotropic, column mean subtracted: local
+          vertical edges everywhere for the motion detectors, no tall bar
+          anywhere. Chosen by measurement -- it also puts 66% of its power at
+          the fly's preferred period against a square grating's 40%, because a
+          square wave wastes most of its energy on harmonics.
+  light   wall mean 175 against the ground's 145, set by what the LENSES
+          receive: d' 1.86 between wall-looking and ground-looking lenses,
+          against 0.91 at equal means, with contrast still far above what the
+          optomotor response needs.
+  food    a small dark blob, the stimulus a fly approaches.
+  poison  pale, which it should not.
+
+THE PREDICTION, recorded before the run: if the model approaches large dark
+structure, moving the darkness onto the food raises health and lowers
+collisions.
+
+WRONG, and informatively so.
+
+  paired, same seeds, only the arena changed
+    health              21.07 -> 18.20    -2.87 +- 5.96
+    collisions per 1k   14.12 -> 16.67    +2.55 +- 2.32   WORSE
+    vision -> steer r   +0.05 -> -0.08    -0.13 +- 0.04   REVERSED
+
+  against its matched random arm
+    intact    -5.00 +- 7.13
+    mirrored  +5.13 +- 7.36
+    frozen    +2.67 +- 7.24
+
+1. THE STEERING SIGN REVERSED. Positive r means "brighter on the left, turn
+   right", i.e. toward the darker side. In the fly arena the dark things were
+   the walls; here the walls are the bright things and the sign flipped with
+   them. In BOTH arenas it steers into the wall. So the description was wrong:
+   this is not attraction to dark verticals, it is attraction to large
+   low-spatial-frequency structure REGARDLESS of contrast polarity, which is
+   what reading unsigned contrast energy would give. A real fly's fixation is
+   polarity-selective. This is not.
+
+2. MIRRORING NO LONGER ABOLISHES -- IT INVERTS. Intact -5.00, mirrored +5.13.
+   The intact model is worse than chance and reversing its eyes makes it
+   better, a swing of ten in health. That is the strongest vision-dependence
+   evidence in the project: everywhere else mirroring merely removes an
+   advantage, which a sceptic can put down to disruption. Only a genuine,
+   signed visual steering signal can flip a sign.
+
+3. DARK FOOD DID NOT HELP. Health fell. Vision is not what finds the food in
+   either arena; smell is, and the model's smell carries no direction (see
+   behav_smell).
+
+The arena did its job as an instrument even though it did not rescue the
+behaviour: it turned a story into a falsifiable claim and falsified it.
+
+    bash paper/data/behav_forage/run.sh
