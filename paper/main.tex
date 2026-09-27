@@ -1751,6 +1751,104 @@ error, and a confidence interval computed across seeds would be fiction. In a
 deterministic arena the unit of replication is the stimulus --- rotation
 direction, rate, bar width --- and not the random seed.
 
+\subsection{A heading signal, and the wind that would use it}
+\label{sec:compass}
+
+Asked how a fly finds its way, the answer is mostly not by seeing food. It
+stabilises course on optic flow, avoids collisions by expansion, and holds a
+direction with a compass: the ellipsoid body carries a ring attractor whose
+\cell{EPG} bump encodes heading, anchored to landmarks and updated by
+self-motion. Two of this project's failures need not apply --- direction
+selectivity and looming are computations over temporal order, which this model
+loses, whereas a compass is a persistent state. Every component is in the
+connectome: 51 \cell{EPG}, 42 \cell{PEN}, 20 \cell{PEG}, 278 \cell{ER}, 42
+\cell{Delta7}.
+
+It is not there. Fitting each cell's preferred heading on the first half of an
+episode and decoding the second gives a circular correlation of
+$+0.129\pm0.277$, \emph{below} the $+0.211$ scored by the same decode against a
+deliberately mismatched heading trace, and no better than 51 neurons drawn at
+random ($+0.075$). That last control is the one the measurement needs: in a
+fixed arena heading determines what is on the retina, so any visually driven
+cell correlates with heading and decoding one demonstrates nothing.
+
+Odour cannot substitute. The olfactory input here is bilaterally symmetric by
+construction --- a scalar concentration with azimuth discarded, so that a
+direction-carrying chemical channel cannot become the confound the study exists
+to avoid --- and a scalar cannot steer. Measured, whole-level odour at five
+times strength leaves a blind model at $-0.07\pm6.56$ against its matched
+control.
+
+A fly solves exactly this problem with a different sensor: in turbulent air an
+odour gradient points nowhere, so the animal uses odour as a gate and airflow
+as the steering cue, casting across the wind and surging upwind on contact with
+a plume. We added that as physics rather than as a hint: a source's odour
+reaches only a fly downwind of it, and the flow direction arrives as a
+left--right difference at the Johnston's organ afferents already present in the
+connectome and already driven by the touch channel. Clamping the antennae, flow
+from the right against flow from the left moves \cell{DNp15}'s left--right
+differential by about 8\,Hz with the same sign in three seeds of three --- a
+larger and more consistent response than either antennal contact or the
+optomotor drum produces.
+
+That signal does not reach behaviour, and the reason is the decoder rather than
+the channel: the yaw command has a 3\,s running baseline removed
+(Sec.~\ref{sec:readout}), so a steady wind is precisely the constant it
+deletes. This is the same obstacle the optomotor drum met, and the same remedy
+applies --- real wind meanders, and a direction swinging at $0.25$\,Hz sits
+clear of the decoder's corner.
+
+\subsection{Where the activity stops}
+\label{sec:silence}
+
+Three circuits have now been asked for a computation and failed, and each was
+explained separately: \cell{LC10a} silent so fixation fails, \cell{LPLC2}
+unresponsive so looming fails, \cell{EPG} silent so the compass fails
+(Sec.~\ref{sec:compass}). One measurement is worth more than three accounts.
+Over a closed-loop episode in the configuration the behavioural tables use,
+accumulating every neuron's output per simulation substep rather than per game
+tic, the distribution is:
+
+\begin{center}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+super class & cells & mean (Hz) & median & silent\\
+\midrule
+sensory            & 16{,}938 & 0.64 & 0.00 & 96.0\%\\
+optic              & 77{,}873 & 140.15 & 182.97 & 11.4\%\\
+visual projection  & 7{,}684 & 155.18 & 117.68 & 32.2\%\\
+central            & 32{,}381 & 18.22 & 0.00 & 85.3\%\\
+ascending          & 1{,}750 & 0.52 & 0.00 & 98.7\%\\
+descending         & 1{,}305 & 49.66 & 0.00 & 65.8\%\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Vision leaves the optic lobe without difficulty. The visual projection neurons
+are the \emph{most} active population in the model: \cell{LC11} at 365\,Hz,
+\cell{LC4} at 242, \cell{LPLC2} at 207. What fails is the crossing into the
+central complex, and it fails at an identifiable junction. \cell{ER}, the ring
+neurons that carry visual input into the ellipsoid body, fire at $0.00$\,Hz;
+\cell{Delta7}, the inhibition that sharpens a heading bump, at $0.00$;
+\cell{EPG} at $0.30$ and \cell{PEN} at $2.62$. The compass is therefore not a
+circuit that computes the wrong thing --- it is a circuit that is never driven.
+
+This localises the per-cell-type gain question the study raises. Rather than a
+diffuse claim that unspecified gains hold the model back everywhere, the
+measurement points at the synapses from visual projection neurons onto ring
+neurons, and predicts that any behaviour requiring the central complex ---
+menotaxis, path integration, visual place learning --- will fail in the same
+way and for the same reason.
+
+It also corrects a claim made earlier in this work. We have described
+\cell{LPLC2} as silent; that figure comes from the synthetic looming rig, and
+in closed loop the population fires at 207\,Hz. The looming failure is a
+failure to \emph{discriminate} expansion from a size-matched static disc
+(Table~\ref{tab:looming}), not an absence of activity. \cell{LC10a} at
+$8.77$\,Hz remains genuinely quiet, some thirty-fold below its neighbours in
+the same episode, so the fixation account stands as written.
+
 \subsection{Two interface errors, and what correcting them changes}
 \label{sec:interface}
 
