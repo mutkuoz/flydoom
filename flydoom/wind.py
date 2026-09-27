@@ -72,6 +72,24 @@ class WindConfig:
     """How far downwind a source can still be smelled, in map units. Beyond it
     the plume has dispersed."""
 
+    meander_deg: float = 0.0
+    """How far the wind swings either side of `direction_deg`. 0 is a
+    steady wind, which is what the first run used and why it produced nothing.
+
+    MEASURED, and it is the same trap M12 fell into with the optomotor drum.
+    The airflow signal reaches DNp15 at about 8 Hz of left-right differential,
+    consistently across seeds -- the channel works. But the motor decoder
+    removes a 3 s running baseline from the yaw command, so a CONSTANT
+    differential is exactly the DC it exists to delete. A fly settled on a
+    heading in a steady wind therefore commands nothing, however clear the
+    signal at the neuron. M12 solved this for the drum by reversing it on a
+    square wave inside the decoder's passband; real wind meanders on its own,
+    so this is physics rather than a contrivance."""
+
+    meander_period_s: float = 4.0
+    """Seconds per swing. 4 s is 0.25 Hz, well clear of the decoder's
+    0.05 Hz corner, which is the band M12 used for the same reason."""
+
     plume_floor: float = 0.05
     """What a source contributes when the fly is NOT in its plume. Not zero:
     still air and eddies leave a little odour everywhere, and a hard zero would
@@ -82,7 +100,16 @@ def _wrap(a: float) -> float:
     return (a + 180.0) % 360.0 - 180.0
 
 
-def antennal_deflection(heading_deg: float, cfg: WindConfig) -> tuple[float, float]:
+def direction_at(t_s: float, cfg: WindConfig) -> float:
+    """Where the wind blows toward at time `t_s`, meander included."""
+    if not cfg.meander_deg or cfg.meander_period_s <= 0:
+        return cfg.direction_deg
+    return cfg.direction_deg + cfg.meander_deg * math.sin(
+        2.0 * math.pi * t_s / cfg.meander_period_s)
+
+
+def antennal_deflection(heading_deg: float, cfg: WindConfig,
+                        t_s: float = 0.0) -> tuple[float, float]:
     """(left, right) antennal deflection, 0 to 1, for a fly facing `heading_deg`.
 
     The wind comes FROM `direction_deg + 180`. Each antenna is exposed by the
@@ -92,7 +119,7 @@ def antennal_deflection(heading_deg: float, cfg: WindConfig) -> tuple[float, flo
     """
     if cfg.speed <= 0.0:
         return 0.0, 0.0
-    comes_from = _wrap(cfg.direction_deg + 180.0 - heading_deg)
+    comes_from = _wrap(direction_at(t_s, cfg) + 180.0 - heading_deg)
     s = math.radians(cfg.antenna_splay_deg)
     b = math.radians(comes_from)
     left = max(0.0, math.cos(b - s)) * cfg.speed
@@ -100,7 +127,8 @@ def antennal_deflection(heading_deg: float, cfg: WindConfig) -> tuple[float, flo
     return min(left, 1.0), min(right, 1.0)
 
 
-def plume_weight(bearing_deg: float, distance: float, cfg: WindConfig) -> float:
+def plume_weight(bearing_deg: float, distance: float, cfg: WindConfig,
+                 t_s: float = 0.0) -> float:
     """How much of a source's odour reaches a fly that sees it at
     `bearing_deg` (world frame, fly to source) and `distance` away.
 
@@ -112,7 +140,7 @@ def plume_weight(bearing_deg: float, distance: float, cfg: WindConfig) -> float:
         return 1.0                      # no wind: the old, isotropic odour
     if distance > cfg.plume_length:
         return cfg.plume_floor
-    off = abs(_wrap(bearing_deg + 180.0 - cfg.direction_deg))
+    off = abs(_wrap(bearing_deg + 180.0 - direction_at(t_s, cfg)))
     if off >= cfg.plume_half_angle_deg:
         return cfg.plume_floor
     # cosine taper across the plume rather than a hard edge

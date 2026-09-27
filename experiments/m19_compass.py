@@ -81,7 +81,7 @@ def cells_of(graph, ann, prefix):
 
 
 def run_episode(seed, tics, device, mirror=False, blind=False, shuffled=False,
-                scenario="health_gathering_fly"):
+                cells="EPG", scenario="health_gathering_fly"):
     """Returns (rates [tics, n_epg], heading [tics] in radians)."""
     from flydoom.agent import AgentConfig, FlyDoomAgent
     from flydoom.doom import DoomConfig
@@ -111,6 +111,21 @@ def run_episode(seed, tics, device, mirror=False, blind=False, shuffled=False,
         agent.doom.frame = frozen
 
     epg = cells_of(agent.graph, agent.ann, "EPG")
+    if cells != "EPG":
+        # SIZE-MATCHED CONTROL, and the one this experiment turned out to need.
+        # In a fixed arena heading determines what is on the retina, so ANY
+        # visually driven cell correlates with heading and decoding one proves
+        # nothing about a compass. The question is whether EPG does it BETTER
+        # than an arbitrary population of the same size.
+        rng = np.random.default_rng(1000 + seed)
+        if cells == "optic":
+            pool = np.flatnonzero(agent.graph.graded_mask(agent.ann)) \
+                if hasattr(agent.graph, "graded_mask") else None
+            if pool is None or len(pool) < len(epg):
+                pool = np.arange(agent.graph.n_neurons)
+        else:
+            pool = np.arange(agent.graph.n_neurons)
+        epg = rng.choice(pool, size=len(epg), replace=False)
     import torch
     idx = torch.as_tensor(epg, device=agent.net.device)
     rates, head = [], []
@@ -162,19 +177,21 @@ def main() -> int:
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--tics", type=int, default=700)
     ap.add_argument("--arms", nargs="+",
-                    default=["intact", "mirrored", "frozen", "shuffled"])
+                    default=["intact", "rand_optic", "rand_any",
+                             "frozen", "shuffled"])
     ap.add_argument("--json", type=Path)
     ap.add_argument("--device", default=os.environ.get("FLYDOOM_DEVICE", "cuda"))
     args = ap.parse_args()
 
     ARMS = {"intact": {}, "mirrored": {"mirror": True},
-            "frozen": {"blind": True}, "shuffled": {"shuffled": True}}
+            "frozen": {"blind": True}, "shuffled": {"shuffled": True},
+            "rand_optic": {"cells": "optic"}, "rand_any": {"cells": "any"}}
     print("M19 -- is heading decodable from EPG?\n")
     print("  preferred headings fitted on the first half of each episode and")
     print("  tested on the second. `shifted` is the same decode against a")
     print("  rolled heading trace: that is what fitting alone scores.\n")
-    print(f"{'arm':<10}{'seeds':>6}{'circ corr (held out)':>24}"
-          f"{'shifted null':>16}{'bump':>8}{'EPG Hz':>9}")
+    print(f"{'arm':<12}{'seeds':>6}{'circ corr (held out)':>24}"
+          f"{'shifted null':>16}{'bump':>8}{'Hz':>9}")
     record = {}
     for arm in args.arms:
         rows = []
@@ -191,7 +208,7 @@ def main() -> int:
         record[arm] = {"n": len(rows), "test": m("test"), "shifted": m("shifted"),
                        "bump": m("bump"), "mean_rate": m("mean_rate"),
                        "test_sd": sd("test")}
-        print(f"{arm:<10}{len(rows):>6}{m('test'):+14.3f} +-{sd('test'):5.3f}"
+        print(f"{arm:<12}{len(rows):>6}{m('test'):+14.3f} +-{sd('test'):5.3f}"
               f"{m('shifted'):+16.3f}{m('bump'):8.3f}{m('mean_rate'):9.2f}")
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)

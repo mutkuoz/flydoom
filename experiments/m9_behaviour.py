@@ -278,7 +278,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
               g_axial: float = 8.0,
               head: float = 0.0,
               wind_speed: float = 0.0,
-              wind_dir: float = 0.0) -> tuple[dict, dict]:
+              wind_dir: float = 0.0,
+              wind_meander: float = 0.0) -> tuple[dict, dict]:
     """One connectome (or shuffled-connectome) episode.
 
     Returns (metrics, command distribution) -- the latter feeds the random arm.
@@ -296,7 +297,8 @@ def run_agent(scenario: str, seed: int, tics: int, shuffled: bool,
         motor=MotorConfig(**mk),
         dendrite_chain=dendrites,
         g_axial=g_axial,
-        wind=(WindConfig(direction_deg=wind_dir, speed=wind_speed)
+        wind=(WindConfig(direction_deg=wind_dir, speed=wind_speed,
+                         meander_deg=wind_meander)
               if wind_speed > 0 else None),
         smell=smell,
         olfaction=(OlfactionConfig(**WHOLE_LEVEL) if smell_all
@@ -492,6 +494,11 @@ def main() -> int:
                          "See flydoom/wind.py.")
     ap.add_argument("--wind-dir", type=float, default=0.0, metavar="DEG",
                     help="the direction the wind blows TOWARD, world frame.")
+    ap.add_argument("--wind-meander", type=float, default=0.0, metavar="DEG",
+                    help="how far the wind swings either side of --wind-dir. A "
+                         "steady wind is invisible to the decoder, which "
+                         "removes the DC from the yaw channel; see "
+                         "flydoom/wind.py.")
     ap.add_argument("--dendrites", type=int, default=0, metavar="N",
                     help="give each T4/T5 an N-compartment cable with every "
                          "input placed by its own retinotopic offset (M17). "
@@ -607,6 +614,7 @@ def main() -> int:
     record["smell_all"] = args.smell_all
     record["wind"] = args.wind
     record["wind_dir"] = args.wind_dir
+    record["wind_meander"] = args.wind_meander
     record["dendrites"] = args.dendrites
     record["g_axial"] = args.g_axial
     record["head"] = args.head
@@ -630,7 +638,7 @@ def main() -> int:
                                     args.wide, args.eye_map, args.render,
                                     args.smell_all, args.dendrites,
                                     args.g_axial, args.head, args.wind,
-                                    args.wind_dir)
+                                    args.wind_dir, args.wind_meander)
             per_arm["connectome"].append(m_int)
             if "shuffled" in per_arm:
                 m_shuf, _ = run_agent(scen, seed, args.tics, True, args.device,
@@ -640,7 +648,7 @@ def main() -> int:
                                       args.mirror, args.blind, args.wide,
                                       args.eye_map, args.render, args.smell_all,
                                       args.dendrites, args.g_axial, args.head,
-                                      args.wind, args.wind_dir)
+                                      args.wind, args.wind_dir, args.wind_meander)
                 per_arm["shuffled"].append(m_shuf)
             rng = np.random.default_rng(seed)
             if "random" in per_arm:

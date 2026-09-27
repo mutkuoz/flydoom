@@ -413,8 +413,8 @@ class FlyDoomAgent:
                 for o in sources:
                     b = o.get("bearing_deg")
                     if b is not None:
-                        o["plume"] = wind.plume_weight(b, o["distance"],
-                                                       wind_cfg)
+                        o["plume"] = wind.plume_weight(
+                            b, o["distance"], wind_cfg, tic_index / 35.0)
             self.smell.on_tic(sources)
 
         if self.touch is not None:
@@ -422,8 +422,9 @@ class FlyDoomAgent:
             # the position NOW against the command issued last tic
             x, y, ang = self.doom.pose()
             self.touch.on_tic(x, y, ang, self._last_fwd,
-                              wind=(wind.antennal_deflection(ang, wind_cfg)
-                                    if blowing else (0.0, 0.0)))
+                              wind=(wind.antennal_deflection(
+                                  ang, wind_cfg, tic_index / 35.0)
+                                  if blowing else (0.0, 0.0)))
 
         # ---- 57 substeps; the frame ramps across them unless held ----
         for sub in range(self.substeps):

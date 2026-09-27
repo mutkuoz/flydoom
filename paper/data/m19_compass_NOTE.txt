@@ -1,0 +1,57 @@
+IS THERE A COMPASS?
+
+Asked how a fly finds its way, the honest answer is that it mostly does not do
+it by seeing food. It stabilises course on optic flow, moves in straight bouts
+between saccades, avoids collisions by expansion, finds food by casting in
+wind -- and it holds a direction with a COMPASS. The ellipsoid body carries a
+ring attractor: a bump of EPG activity whose position encodes heading, updated
+by self-motion and anchored to visual landmarks. Walking a fixed angle to that
+bump is menotaxis, and it is how an insect crosses ground that offers no other
+reference.
+
+Every part is in this connectome and none had ever been driven or read: 51 EPG,
+42 PEN, 20 PEG, 278 ER ring neurons carrying visual input, 42 Delta7.
+
+Worth trying because this project's two big failures may not apply. Direction
+selectivity and looming are computations on temporal ORDER, which this model
+loses. A compass is a persistent STATE, which is a different thing to ask.
+
+THE MEASUREMENT. Per-neuron EPG rates and true heading over a closed-loop
+episode. Preferred headings are fitted on the FIRST half and the SECOND half is
+decoded from them by population vector, so 51 directions are fitted on 350 tics
+and tested on 350 it never saw.
+
+THE CONTROL THIS NEEDED, and the first pass did not have. In a fixed arena
+heading determines what is on the retina, so ANY visually driven cell
+correlates with heading and decoding one proves nothing. The question is
+whether EPG does better than an arbitrary population of the same size.
+
+  arm            seeds   circ corr (held out)   shifted null   bump      Hz
+  intact EPG         5      +0.129 +- 0.277        +0.211     0.994    0.44
+  random optic       5      -0.117 +- 0.354        -0.111     1.000  148.72
+  random any         5      +0.075 +- 0.286        +0.066     0.999   96.65
+  frozen retina      5      +0.073 +- 0.080        -0.045     0.999    0.58
+  shuffled graph     5      -0.138 +- 0.048        +0.075     1.000  158.02
+
+NO. The intact decode, +0.129, is BELOW its own shifted null of +0.211 -- the
+same decode against a deliberately mismatched heading trace does better. The
+spread across seeds, +-0.277, swamps both. EPG carries no heading signal this
+method can find, and it does not beat 51 cells picked at random.
+
+WHY, AND IT IS THE SAME REASON AS EVERY OTHER SILENT POPULATION HERE. EPG fires
+at 0.44 Hz. Random optic-lobe cells in the same episodes fire at 149 Hz and
+random cells anywhere at 97 Hz. The bump index near 1.0 is not a ring
+attractor; it is a near-silent population where one or two active cells make
+the population vector trivially "sharp", and it should not be read as
+structure.
+
+THAT IS NOW THREE. LC10a is silent and fixation fails. LPLC2 is silent and
+looming fails. EPG is silent and the compass fails. The pattern across them is
+not about any one circuit: activity in this model concentrates in the optic
+lobe, at 100-150 Hz, and does not arrive at the deep populations that would
+have to do the computing. Whatever the reason -- and the per-cell-type gains
+the connectome does not specify are the obvious suspect -- it is the same
+reason three times, and it is a better description of the model's limit than
+three separate circuit stories.
+
+    python experiments/m19_compass.py --seeds 5

@@ -86,6 +86,7 @@ def main() -> int:
     ap.add_argument("--smell-all", action="store_true")
     ap.add_argument("--wind", type=float, default=0.0)
     ap.add_argument("--wind-dir", type=float, default=0.0)
+    ap.add_argument("--wind-meander", type=float, default=0.0)
     ap.add_argument("--dendrites", type=int, default=0)
     ap.add_argument("--g-axial", type=float, default=8.0)
     ap.add_argument("--head", type=float, default=0.0)
@@ -136,7 +137,8 @@ def main() -> int:
     if args.smell_all:
         base.append("--smell-all")
     if args.wind:
-        base += ["--wind", str(args.wind), "--wind-dir", str(args.wind_dir)]
+        base += ["--wind", str(args.wind), "--wind-dir", str(args.wind_dir),
+                 "--wind-meander", str(args.wind_meander)]
     if args.dendrites:
         base += ["--dendrites", str(args.dendrites),
                  "--g-axial", str(args.g_axial)]
