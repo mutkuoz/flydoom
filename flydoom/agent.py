@@ -84,6 +84,20 @@ class AgentConfig:
     every result must say which setting produced it. See flydoom/compartments.py
     for why retinotopy assigns the compartments and what that approximates."""
 
+    inhib_gain: tuple = ()
+    """Scale the INHIBITORY synapses arriving onto a named cell type, as
+    (prefix, factor) pairs. The counterpart to `pathway_gain`, and the two
+    together let a population's excitation/inhibition RATIO be set rather than
+    its total.
+
+    That distinction is the point. M21 swept a scalar on one pathway over 256
+    fold and could not make a heading bump: too little drive leaves the circuit
+    silent, too much saturates it, and a bump is neither. A bump is a
+    RELATIONSHIP -- activity in one place and suppression everywhere else --
+    and no single number can create a relationship. Ring attractor theory says
+    what balance is wanted, so sweeping the ratio is a test of that theory
+    rather than a fit to an outcome."""
+
     pathway_gain: tuple = ()
     """Scale the EXCITATORY synapses arriving onto a named cell type, as
     (prefix, factor) pairs -- e.g. (("ER", 16.0),).
@@ -203,6 +217,17 @@ class FlyDoomAgent:
                 self.graph.signed_syn
                 * optic_gain_multipliers(self.graph, self.ann, c.optic_gain)
             ).astype(np.float32)
+
+        for prefix, factor in (c.inhib_gain or ()):
+            import polars as _pl3
+            tgt = self.ann.df.filter(
+                _pl3.col("primary_type").str.starts_with(prefix))
+            want = {int(r) for r in tgt["root_id"].to_list()}
+            keep = np.array([int(self.graph.root_ids[i]) in want
+                             for i in self.graph.post_idx])
+            sel = keep & (self.graph.signed_syn < 0)
+            self.graph.signed_syn = self.graph.signed_syn.copy()
+            self.graph.signed_syn[sel] *= float(factor)
 
         for prefix, factor in (c.pathway_gain or ()):
             # same shape as the optic gain above: scale the graph before the

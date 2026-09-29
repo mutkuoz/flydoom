@@ -1,0 +1,68 @@
+A BUMP IS A RATIO, AND THE RATIO CAN BE SET
+
+M21 swept a scalar on one pathway over 256 fold, twice, and could not produce a
+heading signal: driving the visual gateway silenced the compass because ER is
+EPG's inhibition, and driving the recurrent loop saturated it at the refractory
+ceiling. The conclusion was that a bump is not an AMOUNT of activity but a
+RELATIONSHIP, and that no single number can create a relationship.
+
+That was a claim with an obvious test. Scale excitation onto EPG and PEN by
+g_e, scale inhibition onto EPG by g_i, and sweep them INDEPENDENTLY so the
+ratio moves rather than the total. The prediction was fixed before the run: a
+bump should appear over a RANGE of ratios and fail on both sides, which is a
+signature no magnitude sweep can produce.
+
+  g_e   g_i   ratio   EPG Hz   PEN Hz   ER Hz    bump
+   16   0.5    1:0.03  384.24   399.76    8.97   0.000   saturated
+    4   0.1    1:0.03  342.01   384.65    8.92   0.020   saturated
+    4   8      1:2     237.19   371.57    7.91   0.165   saturated
+    2   8      1:4      29.25   183.23    1.87   0.784   LOCALISED
+    4  32      1:8      20.64   304.25    2.10   0.856   LOCALISED
+    2  32      1:16      0.99   154.81    0.57     --    silent
+    4 128      1:32      2.22   296.80    1.55     --    silent
+    1   8      1:8       0.17     3.48    0.00     --    silent
+
+THE SIGNATURE APPEARED. Between ratios of about 1:4 and 1:8, with enough
+absolute excitation to matter, 78 to 86 percent of the ring falls quiet while
+the population runs at 20 to 29 Hz. Above that ratio it goes silent, below it
+saturates. That is a window, it fails on both sides, and it is the first time
+anything in this model's central complex has held the right KIND of state
+rather than switching between dead and flat out.
+
+Note that the ratio alone is not sufficient: g_e 1 with g_i 8 is the same 1:8
+and is silent. Both the balance and the absolute level have to be right, which
+is what makes this two numbers rather than one.
+
+AND IT IS STILL NOT A COMPASS. In both localised regimes the heading
+correlation is nothing -- -0.175 at 1:4 and -0.038 at 1:8. The bump does not
+encode where the animal is facing.
+
+The reason is in the same table. ER sits at 1.87 and 2.10 Hz in those regimes:
+the visual anchor is still silent. A ring attractor with no input holds A bump,
+which drifts; it takes landmark input to hold a bump that means something about
+the world. And M21 already showed that ER cannot be driven into life without
+killing EPG, because the synapses that would wake it are the same ones that
+inhibit the compass.
+
+So the account is complete, and it is a two-part failure rather than one:
+
+  the ATTRACTOR can be repaired by setting a ratio -- two numbers, not one
+  the ANCHOR cannot, because ER's drive and its inhibition of EPG are the same
+      connection scaled together, and no scalar separates them
+
+TWO LIMITS I CANNOT ARGUE AWAY.
+
+Localisation is not contiguity. This measures that few cells are active, not
+that the active cells sit NEXT TO EACH OTHER around the ring, which is what
+makes a bump a bump. Testing that needs each EPG's wedge position, which the
+annotation does not carry. What is shown is a localised pattern, not a proven
+spatial bump.
+
+And the bump metric needed a floor. Without one, a population with a single
+cell firing at 0.2 Hz has 50 of 51 cells "quiet" and scores 0.98 -- the same
+degeneracy that made M19's population-vector sharpness read 1.000 for a silent
+ring. Any sharpness measure is meaningless when there is nothing to be sharp.
+The rows marked silent above are exactly the rows that scored 0.98 before the
+floor was added, and they are not bumps.
+
+    python experiments/m22_balance.py --ge 1 2 4 --gi 8 32 128
