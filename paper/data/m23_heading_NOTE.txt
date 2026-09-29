@@ -1,0 +1,63 @@
+IS HEADING REPRESENTED ANYWHERE?
+
+M19 asked one population, because EPG is where a fly keeps its compass, and the
+answer was no. That leaves the larger question unasked: is the compass simply
+in the wrong place in this model, or is heading absent from the brain
+altogether?
+
+This asks all 434 cell types with at least 20 cells at once, with M19's
+discipline on each: preferred headings fitted on the first half of an episode
+and scored on the second, every type compared against RANDOM cells drawn in the
+same number, and a rolled-heading null. The size-matched control is not
+optional -- in a fixed arena heading determines what is on the retina, so any
+visually driven cell correlates with heading, and without the control the
+answer is "everything encodes heading", which is true and useless.
+
+THE RANKED LIST LOOKS LIKE A FINDING AND IS NOT.
+
+  type          cells   heading r   random   margin
+  Tm8b            126      +0.489   -0.440   +0.929
+  Tm5e            506      +0.666   -0.203   +0.869
+  TmY11           377      +0.534   -0.260   +0.794
+  ...
+  EPG              47      +0.265   -0.268   +0.533   (rank 15 of 434)
+
+Two things give it away. The random controls are systematically NEGATIVE, which
+they should not be -- a random population ought to score near zero -- so the
+margins are inflated by unlucky draws rather than by real signal. And 434 tests
+were run, so the largest of them is impressive by construction.
+
+THE TEST THAT SETTLES IT.
+
+  margin across all 434 types   mean +0.036   sd 0.261   median +0.035
+  largest observed margin       +0.929        3.4 sd above the mean
+  expected largest of 434 draws +0.947
+  types with positive margin    239 of 434
+
+The biggest number in the list sits where the biggest of 434 noisy numbers is
+expected to sit -- slightly BELOW it. Half the types are positive, which is
+what a distribution centred on nothing gives. There is no outlier, so there is
+no finding.
+
+NO. Heading is not represented anywhere in this brain above chance. That is a
+stronger statement than M19's and it is the one worth carrying: the compass is
+not misplaced, the quantity is absent.
+
+It also sharpens what M21 and M22 showed. M22 can produce a localised bump by
+setting the excitation/inhibition ratio, and that bump encodes nothing; M23
+says no other population is encoding it either. So the model is not computing
+heading somewhere else and failing to route it to the ellipsoid body. Nothing
+in it knows which way it is facing.
+
+EPG at rank 15 of 434 is worth one sentence and no more. The 97th percentile
+of 434 tests contains about 22 types by chance, so being in it is not
+evidence. It is mentioned because leaving it out of a ranked list would be
+selective, not because it means anything.
+
+METHOD, worth keeping. With hundreds of simultaneous tests, the question is
+never whether the top score is large -- it is whether the top score is larger
+than the top score of that many draws from the same noise. mean + sd *
+sqrt(2 ln n) is the quick form of that check and it took one line to refute
+this whole table.
+
+    python experiments/m23_headingsearch.py --seeds 3 --min-cells 20
