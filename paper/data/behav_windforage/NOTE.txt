@@ -1,0 +1,56 @@
+WIND IN THE ARENA THAT MEANS WHAT IT LOOKS LIKE
+
+Two interventions in this project have done something. Wind steadies the
+turning -- a quarter less circling and a fifth straighter walking, the only
+addition that improves behaviour rather than costing it. The forage arena
+removed the tall dark bar the model kept walking into, which turned "it
+approaches dark verticals" into the sharper "it approaches large structure of
+either polarity".
+
+They had never been combined, and there was a reason to expect more than the
+sum: wind's benefit is course stabilisation, it steadies HOW the animal turns,
+and in the fly arena that steadiness was spent walking more reliably into a
+wall. Remove the wall's pull and a steadier course has somewhere better to go.
+
+Isolated properly: identical to behav_forage -- same arena, same 60 seeds, same
+vision-gated odour, same controls -- with wind and nothing else added.
+
+THE GROUP MEANS LOOKED LIKE A RESULT.
+
+    vs matched random arm        intact            mirrored
+      forage, no wind         -5.00 +- 7.13      +5.13 +- 7.36
+      forage + wind           +3.93 +- 8.14      +0.93 +- 7.60
+
+    intact minus mirrored, same seeds
+      forage, no wind         -3.47 +- 7.36    (inverted)
+      forage + wind           +3.40 +- 9.57    (normal order)
+
+Wind appears to lift the intact arm by nine points, push the mirrored arm down
+by four, and flip the inverted dissociation back to the direction it has
+everywhere else in this project. Four measures all moving the same way.
+
+THE PER-SEED DISTRIBUTION REFUTES IT. The right test for "wind restores the
+dissociation" is a difference in differences: per seed, the wind effect on the
+intact model minus the wind effect on the mirrored one.
+
+    health          +6.87 +- 11.03    21 of 60 seeds positive, sign test p=0.993
+    tics survived  +27.70 +- 36.97    26 of 60 seeds positive, p=0.877
+    damage taken    +4.83 +- 10.04    22 of 60 seeds positive, p=0.986
+
+The mean is positive and the MEDIAN IS NEGATIVE. Only a third of seeds show the
+effect at all; the group mean is carried by a handful of large ones. A sign
+test at p=0.993 is not a near miss, it is the opposite direction dominating.
+
+NULL. Wind and the forage arena do not combine. The movement measures agree --
+paired against behav_forage, chatter +0.002 +- 0.012, spin -0.016 +- 0.025,
+collisions -0.64 +- 2.11, none significant -- so this is not a case of the
+health column missing something the movement column would show, which is the
+failure mode this project has already had once.
+
+WORTH KEEPING FOR THE METHOD. A mean of +6.87 with 21 of 60 seeds positive is
+exactly what an outlier-driven non-result looks like, and quoting the mean
+alone would have made it a finding. Report the per-seed sign alongside any
+paired mean in this project; the seeds are levels, and levels differ enough
+that a few can carry an average on their own.
+
+    bash paper/data/behav_windforage/run.sh
