@@ -39,3 +39,12 @@ S="--scenarios health_gathering_forage"
 $PY $RS $S $COMMON                --json $OUT/fly_intact.json
 $PY $RS $S $COMMON --mirror       --json $OUT/fly_mirrored.json
 $PY $RS $S $COMMON --blind        --json $OUT/fly_frozen.json
+
+# NOTE, 2026-09-29. Eleven shards from the first pass were discarded and re-run.
+# While this sweep was going, the arena wad was swapped out for two minutes to
+# measure the pre-fix version for a before/after comparison, and ViZDoom loads
+# the wad when an engine starts -- so any episode beginning in that window ran
+# against the broken arena and would have been indistinguishable in the output.
+# Shards touched in that window were deleted by mtime and refilled. Do not
+# measure an old build by swapping files under a live sweep; copy the wad
+# somewhere else and point a separate scenario at it.
