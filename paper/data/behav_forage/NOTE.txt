@@ -1,5 +1,15 @@
 AN ARENA THAT MEANS TO A FLY WHAT IT LOOKS LIKE
 
+    *** SUPERSEDED, 2026-09-29. THIS ARENA WAS BROKEN. Its walls and its
+    *** ground had contrast 0.126 and 0.122 and the same dominant spatial
+    *** period -- identical to an eye that adapts the mean away. The d' of
+    *** 1.86 quoted below separates MEAN LUMINANCE, which is exactly what
+    *** adaptation removes, so it certified an arena carrying no usable wall
+    *** signal (d' in the drive: 0.54 here, 1.01 once fixed).
+    ***
+    *** Point 2 below is WITHDRAWN -- see the retraction note against it.
+    *** The rebuilt arena and what replaces this is behav_forage2/NOTE.txt.
+
 The corrected tables found the model's vision steers it into walls, and excused
 it as a fly's attraction to dark verticals transferring without the wisdom to
 go with it. That was charitable to the arena. Measured,
@@ -56,6 +66,18 @@ WRONG, and informatively so.
    evidence in the project: everywhere else mirroring merely removes an
    advantage, which a sceptic can put down to disruption. Only a genuine,
    signed visual steering signal can flip a sign.
+
+   *** WITHDRAWN. The inversion is an artifact of the broken walls. Where the
+   *** visual signal is noise, using it hurts and scrambling it helps, which
+   *** is all this was. Rebuild the walls so wall and ground separate in the
+   *** drive and the inversion disappears: intact +4.07, frozen +3.33,
+   *** mirrored +1.87, the same ordering the striped arena gives.
+   ***
+   *** The real vision-dependence result is in behav_forage2: the intact
+   *** model collides 43% less than its mirrored self, 87 up / 31 down over
+   *** two arenas, p = 2.5e-07 -- and exactly 30/30, p = 1.000, in THIS
+   *** arena, where the walls carry nothing to see. That null is what makes
+   *** the other two mean something.
 
 3. DARK FOOD DID NOT HELP. Health fell. Vision is not what finds the food in
    either arena; smell is, and the model's smell carries no direction (see

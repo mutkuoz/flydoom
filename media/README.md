@@ -38,7 +38,23 @@ daylight.
 | `comparison.mp4` | the two stacked, intact on top |
 | `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
 | `best.mp4` · `best.gif` | the same fly and level with everything applied — dendritic cables, a neck, and odour that passes through walls |
-| `forage.mp4` · `forage.gif` | the arena rebuilt to mean to a fly what it looks like: dark food, walls with no bar to walk into |
+| `forage.mp4` · `forage.gif` | the arena rebuilt to mean to a fly what it looks like: dark food, walls with no bar to walk into, **and walls it can tell from the ground** |
+| `forage_vision.mp4` | **the vision result.** Intact on top, mirrored retina below, same level. The lower fly collides 43% more |
+
+## Why some clips still have striped walls
+
+`flydoom.mp4`, `mirrored.mp4`, `comparison.mp4` and `best.mp4` are filmed in
+`health_gathering_fly`, whose walls are a tall dark bar tiled edge to edge. That
+arena is criticised at length below — it is the strongest fixation target a fly
+could be shown, and we built it and then called the animal foolish for walking
+into it. The clips stay because **that is the arena the 120-level tables were
+measured in**, and a clip that does not match the numbers it illustrates is
+worse than an ugly one.
+
+The arena to look at is the forage one, and as of 2026-09-29 its walls are
+finally readable — the earlier version had walls and ground a fly could not
+tell apart, which is why `forage.mp4` was re-recorded. The result that matters
+most in the project is in `forage_vision.mp4`, and it is not in a striped room.
 
 ```bash
 .venv/bin/python scripts/record_gameplay.py --seconds 30 \
@@ -140,6 +156,67 @@ Details in [`../paper/data/behav_plainwind/NOTE.txt`](../paper/data/behav_plainw
 which answers the question these clips raise: which single configuration is the
 best model of a fly.
 
+## forage_vision.mp4 — the strongest result in the project
+
+Two flies, same brain, same level, same seed. The only difference is that the
+lower one's retina is mirrored left-to-right. Over 60 levels that mirror makes
+it collide **43% more often** — 14.46 against 20.67 per 1k tics, 42 up / 16
+down, `p = 0.00086`. That test was then written down and run again on sixty
+**fresh** seeds, and it replicates almost exactly: 42 up / 17 down,
+`p = 0.0016`. The striped arena gives the same thing independently
+(45/15, `p = 0.000135`). Grand pool over 180 levels: **129 up / 48 down,
+`p = 9.3e-10`**.
+
+Worth putting beside this project's own record. The *health* advantage in the
+striped arena halved between its first and second block of seeds (+7.53 then
++3.80), and we wrote at the time that the first block had evidently been the
+favourable half. The collision effect does nothing of the kind — −6.21 then
+−5.23, sign counts 42/16 then 42/17. It is the more stable measurement, not
+just the more significant one.
+
+The reason this is worth more than the health tables is the control. The
+standing objection to any mirroring result is that scrambling a retina is a
+lesion, and lesions degrade things generally. But in the **broken** version of
+this arena — where wall and ground had the same contrast and the same spatial
+period, and differed only in a brightness offset that photoreceptors adapt away
+— the identical mirror in the identical brain on the identical task cost
+**exactly nothing**: 30 up, 30 down, `p = 1.000`. Remove the information and the
+lesion stops mattering. So it is not disruption; it is the loss of a signal that
+was being used.
+
+Two checks that had to pass: the command-matched random agent cannot tell the
+mirror is there (`p = 0.435` and `p = 0.791`), as it must not, since it never
+reads the retina; and `free_run_tics` gives the same 42/16 but correlates with
+collisions at `r = -0.871`, so it is the same measurement reported once, not
+two results.
+
+At 120 seeds the whole panel separates, including the two measures that were
+flat at 60:
+
+| intact vs mirrored, fixed arena, n=120 | | | sign test |
+|---|---|---|---|
+| collisions per 1k | 14.64 | 20.36 | 84/33, `p = 2.7e-06` |
+| free-run tics | 82.90 | 61.76 | 84/33, same split |
+| stuck fraction | 0.25 | 0.30 | 75/45, `p = 0.0079` |
+| health | 21.80 | 14.00 | 52/31, `p = 0.028` |
+| survival (tics) | 445.1 | 420.6 | 53/36, `p = 0.089` |
+
+That health line retires a published limitation. In the striped arena this
+contrast was +3.50 at n=120 and we estimated ~210 seeds to resolve it, and said
+so rather than running toward the number. Here it is +7.80 at n=120 and already
+significant — twice as large, because the striped arena's tall dark bar traps
+the intact and the mirrored model about equally and so compresses exactly the
+difference the contrast exists to measure. The obstacle was the room and the
+measure, not the sample size.
+
+Numbers and the full argument:
+[`../paper/data/behav_forage2/NOTE.txt`](../paper/data/behav_forage2/NOTE.txt).
+
+Filmed on **seed 52, not 40** — every other clip uses seed 40, which sits at the
+35th percentile of this effect and would undersell it. Seed 52 is the level
+closest to the **median** of the first sixty, chosen to be typical rather than
+favourable.
+
 ## forage.mp4 — an arena that means what it looks like
 
 The corrected tables found the model's vision steers it into walls, and we
@@ -166,6 +243,21 @@ off the walls and onto the food, and nothing in the brain changes:
   lenses that look at ground gives d′ 1.86 there, against 0.91 at equal means,
   while leaving contrast well above what the optomotor response needs.
 
+> **That last bullet was the bug, and it took two months to notice.** d′ 1.86
+> separates *mean luminance*, which is precisely the quantity a photoreceptor
+> adapts away — the right statistic computed on the wrong variable. Measured
+> properly, the walls carried contrast 0.126 against the ground's 0.122 with the
+> same dominant spatial period: to the model there was no boundary between the
+> surface it walked on and the surface it walked into. It was caught by someone
+> watching the clip and saying the walls and the floor look the same. They did.
+>
+> Fixed 2026-09-29 by setting the two textures to explicit and *different*
+> contrasts — wall 0.22 against ground 0.08 — rather than to amplitudes that
+> happened to collide. In the units the network actually receives: forage broken
+> d′ 0.54, striped arena 0.59, forage fixed **1.01**. `forage.mp4` has been
+> re-recorded against the fixed arena; everything in the paragraph below was
+> measured in the broken one.
+
 **What it showed.** The prediction was that moving the darkness onto the food
 would raise health and lower collisions. It did not. Health −1.59 ± 5.81,
 damage −1.07 ± 5.82, both nothing; collisions actually rose, +2.68 ± 2.39. The
@@ -187,6 +279,34 @@ is not what finds the food in either arena. Smell is.
 The arena did its job as an instrument even though it did not rescue the
 behaviour: it turned a vague story into a falsifiable claim and falsified it.
 Numbers: [`../paper/data/behav_forage/`](../paper/data/behav_forage).
+
+**What survived the wall fix, and what did not.** Rebuilding the walls so the
+fly can see them recovers the absolute numbers completely — health 18.20 →
+21.93, collisions 16.67 → 14.46, stuck 0.311 → 0.242, which is as good as the
+striped arena or better. But paired seed by seed the health difference is 23 up
+/ 24 down, `p = 1.0000`: the means rose, not any particular level. And the model
+still does not out-heal chance here (`p = 0.511`) — because the *random* agent
+also improves, 13.53 → 17.87. A forage arena with no tall dark bar is kinder to
+a random walker, so the headroom between chance and competence falls from 7.5
+health to 4.1 and sixty seeds stops resolving it. The model did not get worse;
+the floor came up.
+
+The steering-sign reversal described above is **real but was over-read**. The
+claim that "mirroring no longer abolishes, it inverts" was called the strongest
+vision-dependence evidence in the project; it is withdrawn. The inversion was an
+artifact of an arena where the visual signal was noise — using noise hurts
+(intact 18.20, five *below* random's 23.20) and scrambling it helps (mirrored
+21.67). Fix the walls and the arm ordering returns to the striped arena's:
+
+| against matched random | intact | frozen | mirrored |
+|---|---|---|---|
+| fly arena, striped | +7.53 | +4.47 | −0.67 |
+| forage, broken walls | −5.00 | +2.67 | **+5.13** ← inverted |
+| forage, walls fixed | +4.07 | +3.33 | +1.87 |
+
+The genuine vision-dependence result is the collision one, above — and the
+broken arena earns its keep after all, as the negative control that makes it
+mean something.
 
 **Are these clips current?** `flydoom.mp4`, `mirrored.mp4` and `comparison.mp4`
 were recorded at `c2b67f6` and have not been re-rendered since, because nothing

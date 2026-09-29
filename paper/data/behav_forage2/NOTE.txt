@@ -1,0 +1,152 @@
+WALLS THE FLY CAN TELL FROM THE GROUND
+
+behav_forage built an arena meant to be honest to a fly and got a strange
+result: the intact model scored FIVE BELOW its matched random agent while the
+mirrored one scored five above it, and that inversion was written up as "the
+strongest vision-dependence evidence in the project -- only a genuine, signed
+visual steering signal can flip a sign."
+
+It was not. The arena was broken, and this run says so.
+
+WHAT WAS BROKEN
+
+Someone watched the video and said the walls and the floor look the same.
+Measured, they were: contrast 0.126 against 0.122, the same dominant spatial
+period, differing only by a brightness offset. A photoreceptor adapts the mean
+away, so to the model there was no boundary between the surface it walked on
+and the surface it walked into.
+
+The d' of 1.86 quoted when that arena was built measured separability of MEAN
+LUMINANCE between wall-looking and ground-looking lenses -- precisely the
+quantity adaptation removes. It was the right statistic computed on the wrong
+variable, and it certified an arena that carried no usable wall signal at all.
+
+Re-measured in the units the network actually receives (drive after
+adaptation), the three arenas separate wall from ground at:
+
+    forage, broken walls    d' = 0.54
+    fly arena, striped      d' = 0.59
+    forage, walls fixed     d' = 1.01
+
+THE FIX. Set the two textures to explicit and different contrasts rather than
+to amplitudes that happened to collide: wall 0.22 against ground 0.08, a factor
+of 2.7, with mean 174 against 106 and six times the local detail. Three cues,
+two of which survive adaptation. Same seeds, same controls, same brain, same
+everything else as behav_forage -- the arena is the only difference.
+
+WHAT IT DID NOT DO
+
+It did not make the model out-heal chance. Against its matched random agent,
+intact health is +4.07 (21 up / 16 down of the 37 seeds that moved, p = 0.511).
+And against the broken arena, paired seed by seed, the health difference is 23
+up / 24 down, p = 1.0000 -- the absolute means rose (18.20 -> 21.93) but not
+reliably on any given level.
+
+The absolute recovery is real and is worth stating, because the fixed forage
+arena is now as good a room for this model as the striped one, or better:
+
+                        fly arena    forage broken    forage fixed
+    health                 21.07          18.20           21.93
+    survival (tics)        445.7          431.2           445.3
+    collisions per 1k      14.12          16.67           14.46
+    stuck fraction         0.343          0.311           0.242
+
+But health does not separate the model from chance here, for a reason visible
+in the baseline rather than the model: the RANDOM agent scores 13.53 in the
+striped arena and 17.87 here. The forage arena is simply kinder to a random
+walker -- no tall dark bar to be trapped against -- so the headroom between
+chance and competence falls from 7.5 health to 4.1, and sixty seeds no longer
+resolves it. The model did not get worse. The floor came up.
+
+WHAT IT DID DO, AND THIS IS THE RESULT
+
+Health was never the right benchmark. Mirroring the retina and asking whether
+the model still moves well is, and it answers cleanly. Connectome against
+itself, paired by seed, no random baseline involved:
+
+    collisions per 1k tics, intact vs mirrored
+      fly arena, striped       14.12 -> 20.12    45 up / 15 down   p = 0.000135
+      forage, BROKEN walls     16.67 -> 16.96    30 up / 30 down   p = 1.000000
+      forage, walls fixed      14.46 -> 20.67    42 up / 16 down   p = 0.000862
+      pooled over the two readable arenas        87 up / 31 down   p = 2.5e-07
+
+Reversing the retina left-to-right makes the model hit things about 43% more
+often. It replicates across two arenas that share no texture, no geometry and
+no food appearance, and in the arena where wall and ground were indistinguish-
+able it does exactly nothing -- 30 up, 30 down, a dead heat to the seed.
+
+That null is the control this project has wanted. The standing objection to
+every mirroring result is that scrambling a retina is a lesion, and lesions
+degrade things generally. Here the identical lesion in the identical brain on
+the identical task costs nothing at all the moment the walls stop carrying
+information. The effect is not disruption. It is the loss of a signal that was
+being used.
+
+Two further checks, both of which had to pass and did:
+
+  - The random arm cannot tell the mirror is there (19.94 -> 19.46, p = 0.435
+    striped; 19.21 -> 19.71, p = 0.791 forage-fixed), as it must not, since it
+    never reads the retina. So the metric is not picking up something about the
+    mirrored levels themselves.
+  - free_run_tics gives p = 0.001 with the same 42/16 split, but it correlates
+    with collisions at r = -0.871. It is the same measurement and is reported,
+    not counted twice. Stuck fraction moves the same way independently,
+    0.24 -> 0.30, 38 up / 22 down, p = 0.052.
+
+WHAT THIS RETRACTS
+
+behav_forage/NOTE.txt point 2 -- "mirroring no longer abolishes, it inverts...
+the strongest vision-dependence evidence in the project" -- is withdrawn. The
+inversion was an artifact of an arena in which the visual signal was noise. In
+that situation using the signal hurts (intact 18.20, five below random's
+23.20), and scrambling it helps (mirrored 21.67), which is what was observed
+and what was over-read. Fix the walls and the arm ordering returns to what the
+striped arena gives:
+
+    against matched random      intact   frozen   mirrored
+      fly arena, striped         +7.53    +4.47     -0.67
+      forage, broken walls       -5.00    +2.67     +5.13    <- inverted
+      forage, walls fixed        +4.07    +3.33     +1.87
+
+The general lesson is the one that produced the bug in the first place: verify
+an arena in the units the network receives, not in the units of the image file.
+A cue the photoreceptors adapt away is not a cue.
+
+THE REPLICATION, PRE-STATED AND THEN RUN
+
+Before seeds 100-159 were run, the claim under test was written down: the model
+collides less than its mirrored self in the fixed forage arena, tested by the
+ties-excluded sign test on collisions_per_1k_tics. It replicates almost exactly.
+
+    block 1, seeds  40- 99    intact 14.46   mirrored 20.67   42 up / 16 down   p = 8.6e-04
+    block 2, seeds 100-159    intact 14.81   mirrored 20.04   42 up / 17 down   p = 1.6e-03
+    both blocks, n = 120                                      84 up / 33 down   p = 2.7e-06
+
+    grand pool with the striped arena, n = 180               129 up / 48 down   p = 9.3e-10
+
+Worth noting against this project's own history: the health advantage in the
+striped arena HALVED on replication, +7.53 on the first sixty seeds and +3.80 on
+the next sixty, and we recorded that the first block had evidently been the
+favourable half. The collision effect does nothing of the kind -- -6.21 then
+-5.23, with the sign counts landing on 42/16 and 42/17. It is a more stable
+measurement, not merely a more significant one.
+
+At n = 120 the whole panel moves, including the two measures that had been flat:
+
+    intact vs mirrored, fixed forage arena, n = 120
+      collisions per 1k   14.64 -> 20.36    84 up /  33 down, 3 tied   p = 2.7e-06
+      free-run tics       82.90 -> 61.76    84 up /  33 down, 3 tied   p = 2.7e-06
+      stuck fraction       0.25 ->  0.30    75 up /  45 down           p = 7.9e-03
+      health              21.80 -> 14.00    52 up /  31 down, 37 tied  p = 2.8e-02
+      survival (tics)    445.07 -> 420.56   53 up /  36 down, 31 tied  p = 8.9e-02
+
+The health line retires a limitation recorded in the paper. Measured in the
+striped arena, intact-minus-mirrored health was +3.50 +- 4.63 at n = 120 and we
+calculated that roughly 210 seeds would be needed to resolve it, declining to
+run toward that number. In this arena the same contrast is +7.80 at n = 120 and
+already significant. The effect was twice as large here all along; the striped
+arena's tall dark bar hurts the intact and mirrored models about equally, which
+compresses exactly the difference the contrast is trying to measure.
+
+    bash paper/data/behav_forage2/run.sh        # seeds  40- 99
+    bash paper/data/behav_forage2/run_ext.sh    # seeds 100-159

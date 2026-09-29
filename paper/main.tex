@@ -132,6 +132,23 @@ block of sixty pinned it no better than to a factor of two;
 the corrected eye doubles the population direction signal and still produces no
 optomotor response.
 
+Scoring movement rather than task score changes what can be resolved. Comparing
+the model against itself with the retina mirrored --- no matched control
+involved --- the mirror costs it $43\%$ more collisions ($14.6$ against $20.4$
+per $1$k tics), which replicates on a pre-registered second block of sixty
+seeds ($42/16$ then $42/17$) where the health advantage had halved, and holds
+in a second arena sharing no texture, geometry or food appearance
+($129$ up / $48$ down over $180$ levels, $p=9.3\times10^{-10}$). The control
+that makes this interpretable is an arena we built wrongly: its walls and
+ground carried the same contrast and spatial period, differing only in a mean
+luminance that photoreceptor adaptation discards, and there the identical
+mirror in the identical brain costs exactly nothing ($30$ up, $30$ down). A
+lesion account predicts a cost in all three arenas; what is observed is a cost
+that appears and disappears with the availability of the information. The error
+itself generalises: the arena had been validated by a $d'$ computed on mean
+luminance, the right statistic on the one variable the first stage of the model
+removes.
+
 A further result bears on how such models should be assembled. Five additions
 were tested, each defensible as biology: odour delivered from the whole level
 rather than gated on sight, \cell{T4}/\cell{T5} as three-compartment dendritic
@@ -146,7 +163,10 @@ left--right differential by $8$\,Hz with consistent sign across seeds, the only
 channel here to reach the steering neurons, and yet added to the plain
 configuration it destroys the advantage: 16 seeds up against 18 down
 ($p=0.86$), from 28 against 10 ($p=0.005$). All five together fail to beat
-chance at all ($p=0.743$).
+chance at all ($p=0.743$). The arena is the one qualified entry: in its broken
+build it cost health outright, and repaired it neither helps nor hurts the
+advantage over chance ($+4.07$, $p=0.51$, the matched random agent improving
+alongside the model) while making the vision dependence far easier to see.
 
 The most anatomically faithful configuration is therefore not the
 best-performing one, and the configuration we report is not an ablation but
@@ -1718,7 +1738,11 @@ $n=120$, against $+3.00\pm6.18$ at $n=60$: the interval narrowed as
 $\sqrt{2}$ predicts and still contains zero. Reaching significance at this
 effect size needs roughly $210$ seeds, and we record the number rather than
 running toward it, since the dissociation the paper rests on is between each
-model and its own matched control, not between models.
+model and its own matched control, not between models. That estimate is
+superseded by Sec.~\ref{sec:forage}, and in two ways: scored on collisions the
+same contrast resolves at $n=60$ in two separate arenas, and scored on health in
+an arena without the tall dark bar it resolves at $n=120$. The obstacle was the
+measure and the room, not the sample size.
 
 Three controls exclude the possibility that the gain in selectivity follows
 from reduced drive alone. Matching the firing rate by lowering gain instead of raising
@@ -1742,6 +1766,157 @@ at any value between $0.5$ and $3$, despite rescaling $467{,}082$ edges, which
 is a further specificity control. Every higher-scoring point the search located
 lay outside the feasible region, failing the olfactory constraint in the manner
 described for row (ii).
+
+\subsection{An arena the model can read, and a control that finally separates}
+\label{sec:forage}
+
+The behavioural tables above are all measured in one room, and that room was
+built badly. Its wall texture is $64$\,px at luminance $205$ beside $64$\,px at
+$65$, uniform down its whole height: a tall dark bar at $0.56$ contrast, tiled
+across every wall, which is close to the strongest fixation target a fly can be
+shown. The medkits, meanwhile, are pale boxes engaging no approach drive the
+animal has. The conclusion drawn above --- that the model's vision steers it
+into large dark structure, which is maladaptive in a maze --- was therefore
+drawn about an arena constructed to elicit exactly that.
+
+We rebuilt it. \texttt{health\_gathering\_forage} moves the darkness off the
+walls and onto the food: walls become band-pass noise, mildly anisotropic, with
+the column mean subtracted, so local vertical edges are everywhere and no tall
+bar is anywhere; food becomes a small dark blob; nothing in the brain changes
+and the seeds and controls are held fixed, so the arena is the only difference.
+
+\emph{The first version of this arena was broken, and the error is instructive.}
+Wall luminance was set to mean $175$ against the ground's $145$ and validated by
+measuring through the retina: lenses looking at wall separated from lenses
+looking at ground with $d'=1.86$. That is the right procedure applied to the
+wrong variable. Photoreceptors adapt to the local mean, so mean luminance is
+precisely the quantity the first stage of the model discards. Measured in the
+quantity that survives, the two surfaces carried contrast $0.126$ and $0.122$
+with the same dominant spatial period --- to the model, no boundary at all
+between the surface it walked on and the surface it walked into. The error was
+found not by analysis but by watching a recording and noticing that the walls
+and the floor look the same.
+
+Setting the two textures to explicit and different contrasts --- wall $0.22$
+against ground $0.08$, a factor of $2.7$, with six times the local detail ---
+repairs it. Scored in the drive the network actually receives, wall-ground
+separability is $d'=0.54$ in the broken arena, $0.59$ in the striped one, and
+$1.01$ once fixed. We report the broken arena rather than discarding it,
+because it turns out to be the control the rest of this section needs.
+
+\emph{On task score the rebuilt arena settles nothing, for a reason that lies in
+the baseline.} Absolute performance recovers completely (health $18.20\to21.93$,
+collisions per $1$k $16.67\to14.46$, stuck fraction $0.311\to0.242$, matching
+the striped arena or bettering it), but against the broken arena paired seed by
+seed the health difference is $23$ up against $24$ down, $p=1.0000$: the means
+moved, no individual level reliably did. And the model does not out-heal its
+matched random agent here ($+4.07$, $p=0.511$). The reason is that the random
+agent improves too, $13.53\to17.87$ --- an arena with no tall dark bar to be
+trapped against is kinder to a random walker, so the headroom between chance and
+competence falls from $7.5$ health to $4.1$ and sixty seeds no longer resolves
+it. The model did not get worse; the floor came up.
+
+\emph{On movement it separates cleanly, and this is the strongest result in the
+paper.} Comparing the model against \emph{itself} with the retina mirrored ---
+no random baseline involved --- the mirror costs it collisions:
+
+\begin{center}
+\small
+\begin{tabular}{lrrl}
+\toprule
+collisions per $1$k tics & intact & mirrored & sign test, ties excluded\\
+\midrule
+fly arena, striped ($n=60$) & $14.12$ & $20.12$ & $45$ up / $15$ down, $p=1.35\times10^{-4}$\\
+forage, \emph{broken} walls ($n=60$) & $16.67$ & $16.96$ & $30$ up / $30$ down, $p=1.000$\\
+forage fixed, seeds 40--99 & $14.46$ & $20.67$ & $42$ up / $16$ down, $p=8.6\times10^{-4}$\\
+forage fixed, seeds 100--159 & $14.81$ & $20.04$ & $42$ up / $17$ down, $p=1.6\times10^{-3}$\\
+\midrule
+grand pool, the readable arenas ($n=180$) & & & $129$ up / $48$ down, $p=9.3\times10^{-10}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Reversing the retina left to right makes the model collide about $43\%$ more
+often. It replicates across two arenas sharing no texture, no geometry and no
+food appearance. The middle row is what makes the other two mean something: in
+the arena where wall and ground were indistinguishable, the identical mirror in
+the identical brain on the identical task costs \emph{exactly nothing}, $30$ up
+and $30$ down to the seed. The standing objection to any mirroring result is
+that scrambling a retina is a lesion and lesions degrade behaviour generally;
+that objection predicts a cost in all three rows. What is observed instead is a
+cost that appears and disappears with the availability of the information, which
+is the signature of a signal being used rather than a system being damaged.
+
+Two further checks. The command-matched random agent cannot detect the mirror
+($19.94\to19.46$, $p=0.435$ striped; $19.21\to19.71$, $p=0.791$ forage-fixed),
+as it must not, since it never reads the retina --- so the effect is not a
+property of the mirrored levels. And \texttt{free\_run\_tics} gives the same
+$42/16$ split at $p=0.001$, but correlates with collisions at $r=-0.871$; it is
+the same measurement and is reported once. Stuck fraction moves independently
+and weakly ($0.24\to0.30$, $38$ up / $22$ down, $p=0.052$). Health moves nowhere
+in any arena ($p=0.28$ to $0.77$).
+
+The collision metric was examined after health failed to separate, on data
+already collected, and is therefore post-hoc; the family of movement measures
+holds about four effectively independent members, so the Bonferroni-corrected
+value for the first block is $p=3.4\times10^{-3}$. We accordingly wrote the test
+down --- the ties-excluded sign test on collisions, intact against mirrored ---
+and ran a second block of sixty seeds ($100$--$159$) against it. It replicates
+almost exactly: $42$ up / $17$ down, $p=1.6\times10^{-3}$, with the effect at
+$-5.23$ against the first block's $-6.21$.
+
+That stability is worth weighing against this paper's own record. The health
+advantage in the striped arena halved between its first and second blocks
+($+7.53$ then $+3.80$), and we concluded there that a single block of sixty had
+not pinned the effect to better than a factor of two. The collision effect does
+not behave that way, landing on $42/16$ and then $42/17$. It is the more stable
+measurement as well as the more significant one.
+
+Pooled at $n=120$ in the fixed arena the whole panel separates, including the
+two measures that were flat at $n=60$: collisions $14.64\to20.36$
+($p=2.7\times10^{-6}$), free-run tics $82.90\to61.76$ (the same split), stuck
+fraction $0.25\to0.30$ ($p=7.9\times10^{-3}$), health $21.80\to14.00$
+($p=0.028$), survival $445.1\to420.6$ ($p=0.089$).
+
+The health line retires the limitation recorded above. Measured in the striped
+arena, intact minus mirrored on health was $+3.50\pm4.63$ at $n=120$ and we
+estimated roughly $210$ seeds to resolve it, declining to run toward the number.
+In this arena the same contrast is $+7.80$ at $n=120$ and already significant.
+The effect was twice as large here throughout: the striped arena's tall dark bar
+traps the intact and the mirrored model about equally, which compresses
+precisely the difference that contrast exists to measure. The obstacle was the
+room and the measure, not the sample size.
+
+One caveat remains. The three arenas are not independent evidence in the strong
+sense, since the same model and the same seed generator appear in all of them;
+what the second block establishes is out-of-sample stability, not independence.
+
+\emph{One earlier claim is withdrawn.} The broken forage arena produced an
+inversion --- the intact model scored $5.00$ \emph{below} its matched random
+agent while the mirrored one scored $5.13$ above it ($p=0.017$) --- and we
+described this as the strongest vision-dependence evidence in the project, on
+the reasoning that disruption can remove an advantage but only a genuine signed
+steering signal can reverse one. That reading does not survive the repair. Where
+the visual signal is noise, using it is harmful and scrambling it is protective,
+which produces an inversion with no signed steering signal required. With the
+walls fixed the arm ordering returns to the striped arena's:
+
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+\toprule
+health, model minus matched random & intact & frozen & mirrored\\
+\midrule
+fly arena, striped      & $+7.53$ & $+4.47$ & $-0.67$\\
+forage, broken walls    & $-5.00$ & $+2.67$ & $\mathbf{+5.13}$\\
+forage, walls fixed     & $+4.07$ & $+3.33$ & $+1.87$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The general lesson is the one that caused the error: an environment must be
+validated in the units the network receives, not the units of the image file.
+A cue the photoreceptors adapt away is not a cue.
 
 \subsection{Bar fixation, and a control that passes}
 \label{sec:fixation}

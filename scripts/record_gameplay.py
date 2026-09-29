@@ -84,7 +84,9 @@ class Recorder:
                  out: Path, history_s: float = 4.0,
                  screen_shape: tuple = (240, 320), cameras: tuple = (0.0,),
                  steer: str = "DNa02", splay_deg: float = 40.0,
-                 fov_deg: float = 130.0, shadow: tuple | None = None):
+                 fov_deg: float = 130.0, shadow: tuple | None = None,
+                 label: str | None = None):
+        self.label = label
         self.fps = fps
         self.steer = steer
         self.fov_deg = fov_deg
@@ -313,6 +315,13 @@ class Recorder:
             0.955, 0.025,
             "139,255 neurons \u00b7 2.7M edges \u00b7 nothing trained",
             fontsize=7.5, color=MUTED, family="monospace", ha="right")
+        # --label, right-aligned on the title line. It says which condition the
+        # clip shows, which matters most when two are stacked and the panels are
+        # otherwise identical; until 2026-09-29 the flag was parsed and then
+        # silently dropped, so every caption ever passed went nowhere.
+        if self.label:
+            self.fig.text(0.988, 0.950, self.label, fontsize=11, color=FG,
+                          family="monospace", ha="right", va="baseline")
 
 
         self.fig.canvas.draw()
@@ -697,7 +706,8 @@ def main() -> int:
                    screen_shape=(dc.height, dc.width),
                    cameras=agent.vision.cameras, steer=args.yaw_source,
                    splay_deg=dc.splay_deg, fov_deg=dc.fov_deg,
-                   shadow=(480, 640) if shadow else None)
+                   shadow=(480, 640) if shadow else None,
+                   label=args.label)
     print(f"canvas {rec.size[0]}x{rec.size[1]}")
 
     state = {"n": 0, "episode": 0}
