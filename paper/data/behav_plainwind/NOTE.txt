@@ -1,0 +1,65 @@
+PLAIN + WIND, AND THE ANSWER TO "WHICH ONE CONFIGURATION"
+
+The question this run was built to settle: a real fly is one animal, not a menu
+of flags, so which single configuration is the best model of it?
+
+Wind was the candidate addition. It is the only component measured in this
+project that improved behaviour rather than costing it -- a quarter less
+circling and a fifth straighter walking -- and it had never been run on the
+plain configuration, only on top of whole-level odour, which is itself a
+handicap. The prediction was recorded in run.sh before the data: keep plain's
+advantage (sign test near p=0.005) and gain the stabilisation (spin near
+-0.04).
+
+BOTH HALVES FAILED.
+
+  connectome minus its matched random arm, health, sign test over seeds that
+  moved (ties excluded -- health is quantised and a third of seeds tie exactly)
+
+    plain        intact     28 up, 10 down, 22 tied     p = 0.005
+    plain        mirrored   21 up, 21 down, 18 tied     p = 1.000
+    plain+wind   intact     16 up, 18 down, 26 tied     p = 0.864
+    plain+wind   mirrored   13 up, 21 down, 26 tied     p = 0.230
+
+  movement, paired against plain on the same seeds
+    spin           -0.008 +- 0.029    27 up, 33 down    p = 0.519
+    straightness   +0.032 +- 0.065    not significant
+    chatter        -0.001 +- 0.014    not significant
+
+Wind destroys the advantage -- 16 up against 18 down is a coin flip where plain
+is 28 against 10 -- and it does not stabilise anything here.
+
+WHICH MEANS THE WIND RESULT WAS NARROWER THAN REPORTED. Its stabilisation was
+measured against behav_smell, which carries whole-level odour, and it does not
+reproduce against plain. So the effect requires whole-level odour to be present
+as well, having already been shown to require the retina intact. A result that
+needs two other conditions to appear is a three-way interaction, not the
+general course-stabilisation mechanism the paper claimed. The abstract and the
+wind section are corrected accordingly.
+
+THE ANSWER. The plain corrected configuration is the model to ship:
+
+    --wide --eye-map anatomical --fixed-turn --phasic-mdn
+    --spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch --smell
+
+Every addition tested over the last three days costs something measurable:
+
+    whole-level odour     +7.53 -> +3.80; a direction-free scalar, so more of
+                          it is drive without information
+    dendritic cables      keeps the score, removes the dependence on vision --
+                          a mirrored retina then scores the same as an intact
+                          one
+    a neck                lifts the frozen arm by turning the eyes across a
+                          held frame, so the no-vision control stops being one
+    wind                  destroys the advantage on plain; its benefit exists
+                          only alongside whole-level odour
+    all of them together  p = 0.743 against chance, i.e. nothing
+
+That is the finding, and it is worth more than any single component: the most
+anatomically faithful configuration is not the best-working one. Each addition
+is defensible as biology and each costs performance, interpretability, or both.
+The plain configuration is not a compromise or an ablation -- it is what
+survives measurement.
+
+    bash paper/data/behav_plainwind/run.sh
+    python scripts/sign_test.py behav_plainwind intact healed

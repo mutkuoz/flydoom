@@ -132,16 +132,25 @@ block of sixty pinned it no better than to a factor of two;
 the corrected eye doubles the population direction signal and still produces no
 optomotor response.
 
-One sensory addition does reach behaviour. Airflow, delivered as physics --- a
-source's odour reaching only a fly downwind of it, and the flow direction
-arriving at the Johnston's organ afferents already present in the connectome
---- moves \cell{DNp15}'s left--right differential by $8$\,Hz with consistent
-sign across seeds, and reduces the model's net rotational bias by a quarter
-while straightening its path by a fifth. It does not orient the animal to the
-wind (resultant $0.639$ with airflow against $0.549$ without) and does not help
-it find food. It steadies the turning, and it does so only with the retina
-intact: mirrored and frozen arms show neither effect, so airflow works
-\emph{with} the visual course signal rather than substituting for it.
+A further result bears on how such models should be assembled. Five additions
+were tested, each defensible as biology: odour delivered from the whole level
+rather than gated on sight, \cell{T4}/\cell{T5} as three-compartment dendritic
+cables, a movable head, airflow at the antennae, and an arena rebuilt to fly
+ecology. Every one costs something measurable. Whole-level odour takes the
+advantage from $+7.53$ to $+3.80$, being a direction-free scalar that adds
+drive without information. The cables preserve the score and remove its
+dependence on vision --- a mirrored retina then scores $+7.53$ against an
+intact $+7.60$. The head lifts the frozen-retina arm by turning the eyes across
+a held frame, so that control ceases to be one. Airflow moves \cell{DNp15}'s
+left--right differential by $8$\,Hz with consistent sign across seeds, the only
+channel here to reach the steering neurons, and yet added to the plain
+configuration it destroys the advantage: 16 seeds up against 18 down
+($p=0.86$), from 28 against 10 ($p=0.005$). All five together fail to beat
+chance at all ($p=0.743$).
+
+The most anatomically faithful configuration is therefore not the
+best-performing one, and the configuration we report is not an ablation but
+what survives measurement.
 
 Three results generalise. Any stimulus manipulation is an invalid closed-loop
 control, as degree-preserving shuffles already are, because an arm that
@@ -1825,7 +1834,9 @@ odour, a steady wind reduces the net rotational bias from $0.167$ to $0.128$
 ($+0.100\pm0.074$): a quarter less circling and a fifth straighter walking,
 from a non-visual cue, with nothing in the model changed. Both hold up per seed rather than resting on
 outliers: 40 of 60 seeds improve on spin (sign test $p=0.007$) and 39 of 60 on
-straightness ($p=0.014$), with trimmed means matching.
+straightness ($p=0.014$), with trimmed means matching. Neither reproduces on
+the plain configuration, however, so the effect is conditional on the
+whole-level odour this comparison carries.
 
 The arm controls bound the claim, and correct a natural reading of it. Neither
 effect appears with the retina mirrored ($+0.009\pm0.035$ spin) or frozen
