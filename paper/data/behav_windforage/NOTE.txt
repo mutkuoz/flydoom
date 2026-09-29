@@ -47,6 +47,38 @@ collisions -0.64 +- 2.11, none significant -- so this is not a case of the
 health column missing something the movement column would show, which is the
 failure mode this project has already had once.
 
+WHY, AND THE PREMISE WAS ALREADY REFUTED BEFORE THE RUN.
+
+It is not a floor effect. Starting spin is the same in both arenas, 0.167 in
+the fly arena and 0.164 here, so there was equal room to improve. What differs
+is how strongly wind acts:
+
+    arena     spin no wind   wind effect on spin   vision->steer r
+    fly           0.167      -0.0391 +- 0.0296*        +0.037
+    forage        0.164      -0.0161 +- 0.0254         -0.084
+
+The wind effect is two and a half times weaker here and loses significance, and
+the column that explains it is the last one: the visual steering correlation
+has OPPOSITE SIGN in the two arenas, because the forage arena inverted the
+polarity of the structure the model steers by.
+
+That matters because wind's stabilisation was already known not to be
+standalone. The arm controls in behav_wind show it only appears with the retina
+intact -- mirrored +0.009 +- 0.035, frozen -0.034 +- 0.037, neither
+significant. Airflow does not substitute for a visual course signal; it works
+WITH one. Invert that signal and the two stop pulling together.
+
+So the prediction this run was built on -- that wind's steadiness was being
+wasted walking into walls, and would pay off once the walls stopped pulling --
+assumed the benefit was independent of vision and would carry across arenas.
+The arm controls had already shown it is not, two days before this ran. The
+experiment was worth doing and the premise was inconsistent with a result
+already in this directory.
+
+The mechanism above is consistent with the data rather than proven by it. The
+direct test is wind in an arena where the visual steering sign is positive
+again, which is buildable, since the sign follows the walls' contrast polarity.
+
 WORTH KEEPING FOR THE METHOD. A mean of +6.87 with 21 of 60 seeds positive is
 exactly what an outlier-driven non-result looks like, and quoting the mean
 alone would have made it a finding. Report the per-seed sign alongside any
