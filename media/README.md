@@ -179,6 +179,29 @@ mirrored one, 14.12 → 19.12, while mirrored barely moves. The model does not
 stop needing its eyes. It stops *using* eyes that still work, which is a worse
 failure and a more precise one.
 
+**It is the cables, not the room.** The striped arena compresses this exact
+contrast, so the null might have belonged to the arena. It does not
+([`../paper/data/behav_all_forage/NOTE.txt`](../paper/data/behav_all_forage/NOTE.txt)):
+
+| configuration | arena | intact | mirrored | sign test |
+|---|---|---|---|---|
+| plain | striped | 14.12 | 20.12 | 45/15, **p = 1.4e-04** |
+| plain | forage fixed | 14.46 | 20.67 | 42/16, **p = 8.6e-04** |
+| everything | striped | 19.24 | 18.03 | 30/28, p = 0.90 |
+| everything | forage fixed | 20.43 | 19.38 | 31/28, p = 0.80 |
+
+The plain fly is vision-dependent in both arenas at effect sizes agreeing to
+within 4% — which nothing forced on two rooms sharing no texture, geometry or
+food appearance. This one is blind in both.
+
+**And its higher score was the arena all along.** The claim above that it "plays
+about as well" rests on +9.60 health over matched random in the striped arena.
+In the rebuilt arena that falls to +3.60 (`p = 0.418`), because removing the
+tall dark bar helps the *random* agent more than it helps this fly. So in a fair
+room it scores no better, collides more than the plain model (20.43 against
+14.46), and is still blind to its own retina. There is nothing left to
+recommend it — which is why it no longer holds the name `best`.
+
 Adding the fifth thing — airflow — to this configuration is what collapses it
 entirely, to `p = 0.743`
 ([`../paper/data/behav_fly_canonical/`](../paper/data/behav_fly_canonical)).

@@ -140,6 +140,31 @@ At n = 120 the whole panel moves, including the two measures that had been flat:
       health              21.80 -> 14.00    52 up /  31 down, 37 tied  p = 2.8e-02
       survival (tics)    445.07 -> 420.56   53 up /  36 down, 31 tied  p = 8.9e-02
 
+BOTH CONTROLS PASS HERE, WHICH THEY DO NOT IN THE STRIPED ARENA.
+
+The paper records that the frozen-retina arm "is not clean" and that the
+dissociation therefore rests on the mirror control alone. That is true where it
+was measured and false here. Scored on collisions, intact against each control:
+
+    arena            control     intact    ctrl     gap     n   up / down        p
+    fly, striped     mirrored     14.12   20.12   +6.00    60   45 / 15   1.4e-04
+                     frozen       14.12   16.08   +1.96    60   36 / 23   0.117
+    forage, fixed    mirrored     14.64   20.36   +5.72   120   84 / 33   2.7e-06
+                     frozen       14.64   18.99   +4.36   120   81 / 38   1.0e-04
+
+Freezing the retina on one frame costs the model 4.36 collisions per 1k tics in
+this arena and is not distinguishable from noise in the striped one. So the
+dissociation rests on both controls here, not on the mirror alone. Note this
+frozen arm carries no --head, so the control-validity bug recorded in
+behav_all/NOTE.txt -- where a movable head turns the eyes across a held frame
+and feeds the no-vision arm self-generated motion -- does not apply to it.
+
+On health the frozen arm still misbehaves, and in the familiar direction:
+intact +5.04 (p = 0.115), mirrored +0.73 (p = 0.416), frozen +3.92 (p = 0.017).
+The arm that should be worst is the only one significant. That is the same
+quantisation problem as everywhere else in this file -- 41 of 120 seeds tie --
+and it is why the collision table above is the one to read.
+
 The health line retires a limitation recorded in the paper. Measured in the
 striped arena, intact-minus-mirrored health was +3.50 +- 4.63 at n = 120 and we
 calculated that roughly 210 seeds would be needed to resolve it, declining to

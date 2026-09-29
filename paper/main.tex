@@ -1652,7 +1652,11 @@ On the first sixty seeds alone the contrast is sharper still: 28 levels up
 against 10 down ($p=0.005$) for the intact model, and exactly 21 against 21 for
 the mirrored one. The frozen arm is not clean ($p=0.015$ on health): freezing
 the retina weakens the advantage without abolishing it, so the dissociation
-rests on the mirror control rather than on both.
+rests on the mirror control rather than on both --- in this arena and on this
+measure. Sec.~\ref{sec:forage} recovers the second control: scored on collisions
+in the rebuilt arena, freezing the retina costs $4.36$ per $1$k tics
+($81/38$, $p=1.0\times10^{-4}$) where in the striped arena it costs $1.96$ and
+does not separate ($p=0.117$).
 
 \emph{How well it replicates.} The fly-arena result was first measured on seeds
 40--99 and gave $+7.53\pm6.66$ health and $+34.00\pm25.27$ tics. Sixty fresh
@@ -1890,6 +1894,73 @@ room and the measure, not the sample size.
 One caveat remains. The three arenas are not independent evidence in the strong
 sense, since the same model and the same seed generator appear in all of them;
 what the second block establishes is out-of-sample stability, not independence.
+
+\emph{Both controls pass here, which they do not in the striped arena.} We
+recorded above that the frozen-retina arm is not clean and that the dissociation
+therefore rests on the mirror alone. That holds where it was measured and not
+here. Scored on collisions, the intact model against each control:
+
+\begin{center}
+\small
+\begin{tabular}{llrrrl}
+\toprule
+arena & control & intact & control & gap & sign test\\
+\midrule
+fly, striped & mirrored & $14.12$ & $20.12$ & $+6.00$ & $45/15$, $p=1.4\times10^{-4}$\\
+($n=60$)     & frozen   & $14.12$ & $16.08$ & $+1.96$ & $36/23$, $p=0.117$\\
+forage, fixed & mirrored & $14.64$ & $20.36$ & $+5.72$ & $84/33$, $p=2.7\times10^{-6}$\\
+($n=120$)     & frozen   & $14.64$ & $18.99$ & $+4.36$ & $81/38$, $p=1.0\times10^{-4}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Freezing the retina costs $4.36$ collisions per $1$k tics in the rebuilt arena
+and is indistinguishable from noise in the striped one. This frozen arm carries
+no movable head, so the control-validity bug of Sec.~\ref{sec:assembly} --- a
+held frame that the eyes continue to turn across --- does not apply to it. On
+health the frozen arm still misbehaves in the familiar direction (intact
+$p=0.115$, mirrored $p=0.416$, frozen $p=0.017$: the arm that should be worst is
+the only significant one), which is the quantisation problem again, $41$ of $120$
+seeds tying.
+
+\emph{The additions fail here too, and one of their reported gains was the
+arena.} Sec.~\ref{sec:assembly} reports that applying dendritic cables, a neck
+and whole-level odour together removes the model's dependence on vision. That
+was measured on health, which this section has just shown cannot resolve the
+contrast at all; re-scored on collisions it survives, and a second run places it
+in the rebuilt arena:
+
+\begin{center}
+\small
+\begin{tabular}{llrrl}
+\toprule
+configuration & arena & intact & mirrored & sign test\\
+\midrule
+plain      & striped      & $14.12$ & $20.12$ & $45/15$, $p=1.4\times10^{-4}$\\
+plain      & forage fixed & $14.46$ & $20.67$ & $42/16$, $p=8.6\times10^{-4}$\\
+everything & striped      & $19.24$ & $18.03$ & $30/28$, $p=0.90$\\
+everything & forage fixed & $20.43$ & $19.38$ & $31/28$, $p=0.80$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The plain configuration is vision-dependent in both arenas at effect sizes
+agreeing to within $4\%$, which nothing forced on two arenas sharing no texture,
+geometry or food appearance. The assembled configuration is vision-blind in
+both. Configuration decides the outcome and the arena does not touch it, so the
+null belongs to the cables rather than to the room. The mechanism is also not
+the one we described: the cables do not raise the mirrored arm to meet the
+intact one, they lower the intact arm to the mirrored one ($14.12\to19.24$
+striped, $14.46\to20.43$ rebuilt) while the mirrored arm barely moves. The model
+does not stop needing its eyes; it stops using eyes that still work.
+
+Finally, the assembled configuration's \emph{advantage} was the striped arena.
+Its health margin over matched random is $+9.60$ ($p=0.012$) there and $+3.60$
+($p=0.418$) here, because the rebuilt arena improves the random agent more than
+it improves this model. Sec.~\ref{sec:assembly} concluded that the assembly
+scores slightly higher while no longer needing its eyes. In a room that is not a
+trap it scores no higher, collides more than the plain model ($20.43$ against
+$14.46$), and is still blind to its own retina.
 
 \emph{One earlier claim is withdrawn.} The broken forage arena produced an
 inversion --- the intact model scored $5.00$ \emph{below} its matched random

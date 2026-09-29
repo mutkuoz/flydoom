@@ -1,0 +1,68 @@
+THE CABLES BREAK THE CONTROL WHEREVER IT IS MEASURED
+
+behav_all reported that applying dendritic cables, a neck and whole-level odour
+together destroys the vision control. That was measured on health, and
+behav_forage2 has since shown health cannot resolve the intact-minus-mirrored
+contrast at sixty seeds in that arena at all -- on health every configuration
+sits at p = 0.15 to 0.76. The conclusion had been read off a blind instrument.
+
+Re-scoring the archived runs on collisions rescued the claim (behav_all/NOTE.txt)
+but left one thing open: the striped arena compresses exactly this contrast, so
+the null might have belonged to the room rather than to the cables. This run
+settles that. Everything-applied on the FIXED forage arena, same seeds and
+controls as behav_forage2, so the only difference from behav_all is the arena.
+
+PRE-STATED in run.sh before it ran, with both outcomes named. Outcome 1 -- the
+cables break the control wherever it is measured -- is what happened.
+
+  intact vs mirrored, collisions per 1k tics, ties excluded
+
+    plain      / striped        14.12 -> 20.12   +6.00   45 up / 15 down  p = 1.4e-04
+    plain      / forage fixed   14.46 -> 20.67   +6.21   42 up / 16 down  p = 8.6e-04
+    everything / striped        19.24 -> 18.03   -1.20   30 up / 28 down  p = 0.90
+    everything / forage fixed   20.43 -> 19.38   -1.05   31 up / 28 down  p = 0.80
+
+A clean two-by-two. The plain configuration is vision-dependent in BOTH arenas
+and at almost identical effect size, +6.00 against +6.21 -- which is itself
+worth noting, because nothing forced two arenas sharing no texture, geometry or
+food appearance to agree to within 4%. The everything-applied configuration is
+vision-blind in BOTH, and its sign counts are coin flips in both (30/28, 31/28).
+
+The factor that decides the outcome is the configuration. The arena does not
+touch it. So the null is a property of the cables, and behav_all's finding was
+not arena-bound.
+
+AND THE HEALTH ADVANTAGE WAS THE ARENA ALL ALONG.
+
+    everything, health vs matched random
+      striped        intact  +9.60   29/12   p = 0.012
+                     mirrored +6.17   23/16   p = 0.337
+      forage fixed   intact  +3.60   22/16   p = 0.418
+                     mirrored -1.27   20/18   p = 0.871
+
+behav_all's headline was that everything-applied scores slightly HIGHER than
+plain while no longer needing its eyes, and that this was the disturbing part:
+the effect changing its source rather than growing. In an arena that is not a
+trap, the higher score is gone too -- +9.60 falls to +3.60 and stops being
+significant. It was never the model being better. It was the striped arena
+punishing its matched random agent harder than it punished this fly, and
+behav_forage2 already showed why: remove the tall dark bar and the random
+walker improves by more than four health.
+
+So everything-applied is not "about as good and a worse experiment", which is
+how behav_all put it. Measured in a fair room it is worse on the task, worse on
+collisions (20.43 against plain's 14.46), and blind to its own retina. There is
+nothing left to recommend it.
+
+WHAT THIS DOES NOT SHOW. The cables remain the largest single open-loop gain in
+the project (T5 mirror-pair separation 0.005 -> 0.064, M17). Nothing here
+touches that. What it shows is that the gain does not survive contact with a
+closed loop, and that per-cell selectivity measured open loop is not a proxy
+for a model that uses its eyes. Those two measures point opposite ways here,
+and the closed loop is the one that answers the question the paper asks.
+
+The frozen arm is deliberately not run: with --head 20 a frozen frame is not
+frozen input, because the eyes keep turning across it. That control-validity
+bug is recorded in behav_all/NOTE.txt and would make the arm meaningless.
+
+    bash paper/data/behav_all_forage/run.sh
