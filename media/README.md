@@ -105,12 +105,29 @@ the comparison is paired and isolates exactly these three changes.
   **frozen on one frame** beats chance outright (+6.53 ± 5.97 health). It
   scores marginally higher and no longer needs its eyes to do it.
 
-Since this clip was filmed, each of its three additions has been run alone, and
-a fourth (airflow) was added and run too. Every one costs something, and the
-combination of all five cannot beat chance at all (sign test $p=0.743$).
-`flydoom.mp4` is the fly that works; **this one is the cautionary counterexample**,
-and it is kept under that name because the name was the request and the link
-should stay stable. Read it as "everything applied", not as "best".
+**It plays about as well and it is a worse experiment**, which is a different
+and more interesting complaint. Scored by a sign test over the levels that
+moved:
+
+  | | intact | mirrored |
+  |---|---|---|
+  | `flydoom.mp4` (the model) | 28 up / 10 down, **p = 0.005** | 21/21, **p = 1.000** |
+  | `best.mp4` (this clip) | 29 up / 12 down, p = 0.012 | 23/16, p = 0.337 |
+
+The task scores are comparable. What differs is the control: the model's
+mirrored arm is an exact coin flip, and this one leans positive. Its advantage
+no longer depends on the eyes being right, and the decomposition attributes
+that to the dendritic cables
+([`../paper/data/behav_cables/NOTE.txt`](../paper/data/behav_cables/NOTE.txt)).
+
+Adding the fifth thing — airflow — to this configuration is what collapses it
+entirely, to `p = 0.743`
+([`../paper/data/behav_fly_canonical/`](../paper/data/behav_fly_canonical)).
+That number belongs to that run, not to this clip; an earlier version of this
+file attached it here, which was wrong.
+
+Read the name as "everything applied", not as "best". It is kept because the
+name was the request and links should stay stable.
 
   | addition | what it costs |
   |---|---|
