@@ -1,5 +1,43 @@
 EVERYTHING APPLIED AT ONCE, AND THE CONTROL THAT BROKE
 
+    *** RE-SCORED 2026-09-29, AND THE CENTRAL CLAIM SURVIVES ON BETTER
+    *** EVIDENCE THAN IT WAS MADE WITH.
+    ***
+    *** Point 3 below -- "the vision dependence is gone" -- rested on
+    *** intact-minus-mirrored HEALTH being -0.50 +- 7.73, i.e. on a null.
+    *** behav_forage2 has since established that health cannot resolve that
+    *** contrast at sixty seeds in this arena at all (it needs roughly 210),
+    *** so the null was read off a blind instrument and proved nothing. On
+    *** health every configuration below sits at p = 0.15 to 0.76; the metric
+    *** does not distinguish any of them.
+    ***
+    *** Re-scored on collisions per 1k tics, same seeds, ties excluded:
+    ***
+    ***   plain                14.12 -> 20.12   45 up / 15 down   p = 1.4e-04
+    ***   neck only            14.59 -> 23.26   48 up / 11 down   p = 1.2e-06
+    ***   odour only           14.34 -> 20.76   44 up / 14 down   p = 1.0e-04
+    ***   cables only          19.12 -> 19.08   29 up / 31 down   p = 0.90
+    ***   everything applied   19.24 -> 18.03   30 up / 28 down   p = 0.90
+    ***
+    *** The claim stands, and now it has a positive control: neck and odour
+    *** both KEEP the effect at p <= 1e-04, so the two nulls are the cables
+    *** doing something specific, not the measure going blind. The split
+    *** recorded at the bottom of this file -- cables carry the performance
+    *** and break the control, neck lifts the frozen arm, odour does nothing
+    *** -- is confirmed on a metric with the power to see it.
+    ***
+    *** THE MECHANISM IS NOT WHAT THIS FILE SAYS, THOUGH. It describes the
+    *** advantage as no longer needing eyes. What actually happens is that
+    *** the cables drag the INTACT arm down to the mirrored one: intact
+    *** collisions go 14.12 -> 19.12 while mirrored stays at 20.12 -> 19.08.
+    *** Mirroring does not get better. Seeing gets worse. The model does not
+    *** stop needing its eyes; it stops using eyes that still work, which is
+    *** a worse failure and a more specific one.
+    ***
+    *** Whether that is a property of the cables or of this striped arena --
+    *** which behav_forage2 showed compresses exactly this contrast -- is
+    *** behav_all_forage.
+
 Three things built after the 120-seed tables had never been run in closed loop,
 each because nothing wired them into the agent: three-compartment dendritic
 cables with inputs placed by retinotopic offset (M17), a neck that turns the

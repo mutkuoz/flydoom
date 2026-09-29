@@ -37,14 +37,32 @@ daylight.
 | `mirrored.mp4` | the same brain with its retina mirrored left-to-right — the control that removes the behavioural advantage |
 | `comparison.mp4` | the two stacked, intact on top |
 | `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
-| `best.mp4` · `best.gif` | the same fly and level with everything applied — dendritic cables, a neck, and odour that passes through walls |
+| `best.mp4` · `best.gif` | **the fly at its best.** The same configuration as `flydoom.mp4`, in the rebuilt arena, on the best of 120 levels |
+| `everything.mp4` · `everything.gif` | everything applied — dendritic cables, a neck, odour through walls. Kept as a cautionary clip; see below |
 | `forage.mp4` · `forage.gif` | the arena rebuilt to mean to a fly what it looks like: dark food, walls with no bar to walk into, **and walls it can tell from the ground** |
 | `forage_vision.mp4` | **the vision result.** Intact on top, mirrored retina below, same level. The lower fly collides 43% more |
 
+### `best.mp4` used to be the wrong fly
+
+It held the everything-applied configuration, on the assumption that more
+biology meant a better model. It does not: that fly's collision rate is
+*identical* with its retina mirrored (30 up / 28 down, `p = 0.90`), so it has
+stopped using eyes that still work. Leaving the word "best" on it and explaining
+in a README that best does not mean best was the wrong fix — the name belongs to
+the fly that earned it, and the old clip is now `everything.mp4`.
+
+`best.mp4` is therefore the plain configuration, filmed in the fixed forage
+arena, on **seed 96** — health 128 against a median of 20, collisions 5.72
+against a median of 13.42 and against the mirrored arm's 20.36, surviving all
+700 tics. That is deliberately the best of the 120 levels rather than a typical
+one, because this is a showcase clip and one level is an illustration, never
+evidence. For a typical level see `forage.mp4` (seed 40); for the effect at its
+*median*, `forage_vision.mp4` (seed 52).
+
 ## Why some clips still have striped walls
 
-`flydoom.mp4`, `mirrored.mp4`, `comparison.mp4` and `best.mp4` are filmed in
-`health_gathering_fly`, whose walls are a tall dark bar tiled edge to edge. That
+`flydoom.mp4`, `mirrored.mp4`, `comparison.mp4` and `everything.mp4` are filmed
+in `health_gathering_fly`, whose walls are a tall dark bar tiled edge to edge. That
 arena is criticised at length below — it is the strongest fixation target a fly
 could be shown, and we built it and then called the animal foolish for walking
 into it. The clips stay because **that is the arena the 120-level tables were
@@ -87,7 +105,7 @@ looks like fixation and is not — a fly with a frozen retina does the same, and
 so does one in the cylinder with no bar at all. See
 [`../paper/data/m18_stripe/NOTE.txt`](../paper/data/m18_stripe/NOTE.txt).
 
-## best.mp4 — everything applied
+## everything.mp4 — everything applied, and why it is not the best
 
 `flydoom.mp4` is the configuration the 120-level tables were measured with.
 Three things built after it were never in those tables, each simply because
@@ -103,7 +121,7 @@ nothing wired them into the agent:
   was visible, which hid 82% of the items in the level, and medkits carried a
   fifth of the odour strength they carry now.
 
-`media/record_best.sh` rebuilds it, on the same arena and seed as `flydoom.mp4`
+`media/record_everything.sh` rebuilds it, on the same arena and seed as `flydoom.mp4`
 so the two are comparable frame for frame.
 
 **Is it actually better? No, and the question is now settled.**
@@ -128,7 +146,7 @@ moved:
   | | intact | mirrored |
   |---|---|---|
   | `flydoom.mp4` (the model) | 28 up / 10 down, **p = 0.005** | 21/21, **p = 1.000** |
-  | `best.mp4` (this clip) | 29 up / 12 down, p = 0.012 | 23/16, p = 0.337 |
+  | `everything.mp4` (this clip) | 29 up / 12 down, p = 0.012 | 23/16, p = 0.337 |
 
 The task scores are comparable. What differs is the control: the model's
 mirrored arm is an exact coin flip, and this one leans positive. Its advantage
@@ -136,14 +154,43 @@ no longer depends on the eyes being right, and the decomposition attributes
 that to the dendritic cables
 ([`../paper/data/behav_cables/NOTE.txt`](../paper/data/behav_cables/NOTE.txt)).
 
+**Re-scored on collisions, and the verdict holds on much better evidence.**
+Everything above rests on health, and health turns out to be unable to resolve
+the intact-versus-mirrored contrast at 60 seeds at all — on health every
+configuration below sits at `p = 0.15`–`0.76`, so "the control breaks" was a
+null read off a blind instrument. Scored on collisions per 1k tics instead,
+same seeds, ties excluded:
+
+| configuration | intact | mirrored | sign test |
+|---|---|---|---|
+| plain (`flydoom.mp4`) | 14.12 | 20.12 | 45/15, **p = 1.4e-04** |
+| neck only | 14.59 | 23.26 | 48/11, **p = 1.2e-06** |
+| odour through walls only | 14.34 | 20.76 | 44/14, **p = 1.0e-04** |
+| **cables only** | 19.12 | 19.08 | **29/31, p = 0.90** |
+| **everything applied** | 19.24 | 18.03 | **30/28, p = 0.90** |
+
+The neck and the odour rows are the positive controls that make the two nulls
+mean something: both *keep* the vision dependence at `p ≤ 1e-04`, so the metric
+has not gone blind — the cables are doing something specific.
+
+And the mechanism is not the one described above. The cables do not lift the
+mirrored arm up to meet the intact one; they drag the **intact** arm down to the
+mirrored one, 14.12 → 19.12, while mirrored barely moves. The model does not
+stop needing its eyes. It stops *using* eyes that still work, which is a worse
+failure and a more precise one.
+
 Adding the fifth thing — airflow — to this configuration is what collapses it
 entirely, to `p = 0.743`
 ([`../paper/data/behav_fly_canonical/`](../paper/data/behav_fly_canonical)).
 That number belongs to that run, not to this clip; an earlier version of this
 file attached it here, which was wrong.
 
-Read the name as "everything applied", not as "best". It is kept because the
-name was the request and links should stay stable.
+This clip was called `best.mp4` until 2026-09-29, and keeping it there was
+defended on the grounds that the name had been requested and links should stay
+stable. That was the wrong call: a file called "best" that requires a README to
+explain it is not the best misleads everyone who does not read the README. The
+name now belongs to the plain configuration, which earned it, and this clip is
+`everything.mp4` — what it always was.
 
   | addition | what it costs |
   |---|---|
