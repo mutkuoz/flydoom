@@ -1614,6 +1614,26 @@ is the attraction a fly shows to dark vertical objects, and maladaptive in a
 maze. What survives is a vision-dependent advantage over chance, confined to a
 world whose structure the animal can resolve.
 
+\emph{The configuration we report, and why it is that one.} Throughout, the
+model is the connectome with the whole visual field (three $170^\circ$
+cameras), the eye map derived from the wiring, steering toward the more active
+side, \cell{MDN} read as bursts, spiking \cell{T4}/\cell{T5} at an optic gain
+of 16, \cell{DNp15} as the yaw channel, antennal contact, and odour gated on
+sight. Sec.~\ref{sec:assembly} reports five further additions, each defensible
+as biology, and each of which costs performance or interpretability. This is
+not an ablation chosen for convenience; it is what survives measurement.
+
+Over the pooled 120 seeds, and scored by a sign test over the levels that moved
+--- health collected is quantised, so a third of seeds tie exactly and counting
+ties as failures understates the effect badly --- the intact model beats its
+matched random agent on health ($p=0.010$) and on survival ($p=0.045$), while
+the mirrored arm is indistinguishable from chance ($p=0.731$ and $p=0.567$).
+On the first sixty seeds alone the contrast is sharper still: 28 levels up
+against 10 down ($p=0.005$) for the intact model, and exactly 21 against 21 for
+the mirrored one. The frozen arm is not clean ($p=0.015$ on health): freezing
+the retina weakens the advantage without abolishing it, so the dissociation
+rests on the mirror control rather than on both.
+
 \emph{How well it replicates.} The fly-arena result was first measured on seeds
 40--99 and gave $+7.53\pm6.66$ health and $+34.00\pm25.27$ tics. Sixty fresh
 seeds, run identically, give $+3.80\pm7.16$ and $+8.02\pm29.04$ --- half the
@@ -1861,6 +1881,54 @@ a reference that does not move. And removing the baseline subtraction
 altogether collapses heading concentration from $0.639$ to $0.032$, the
 standing \cell{DNp15} asymmetry then dominating, so that subtraction is what
 makes orientation possible rather than what prevents it.
+
+\subsection{Five additions, each defensible, each costly}
+\label{sec:assembly}
+
+A real animal is not a menu of options, so the question of which single
+configuration best models a fly deserves an answer rather than a list. We
+tested five additions, each of which a fly demonstrably has, against the
+configuration above on its own seeds and controls.
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+addition & effect on the advantage & what it costs\\
+\midrule
+whole-level odour & $+7.53\to+3.80$ & a direction-free scalar: drive without\\
+                  &                 & information, so more of it is worse\\
+\addlinespace
+dendritic cables  & $+7.53\to+7.60$ & removes the dependence on vision; a\\
+on \cell{T4}/\cell{T5} &            & mirrored retina then scores $+7.53$\\
+\addlinespace
+a movable head    & $+7.53\to+2.67$ & the frozen-retina control ceases to be\\
+                  &                 & one: the eyes turn across a held frame\\
+\addlinespace
+airflow           & 28/10 $\to$ 16/18 & destroys the advantage ($p=0.86$ from\\
+at the antennae   & ($p=0.005\to0.86$) & $p=0.005$); no stabilisation either\\
+\addlinespace
+all five together & $p=0.743$        & nothing survives\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two of these deserve comment because they are instructive rather than merely
+negative. The dendritic cables are the only change in this work that raised
+per-cell motion selectivity by an order of magnitude (Sec.~\ref{sec:dendrite}),
+and the reason they remove the vision dependence was predicted by that same
+measurement: what the cable buys is electrotonic placement rather than
+retinotopic order, and a benefit indifferent to the ordering of a cell's inputs
+has no reason to depend on the handedness of the retina. Airflow is the only
+sensory channel here that reaches the steering neurons with a consistent sign
+across seeds, moving \cell{DNp15}'s left--right differential by $8$\,Hz, and it
+still costs the behaviour.
+
+The general point is not about any one component. Each is a faithful addition,
+each is individually reasonable, and the model that contains all of them cannot
+beat chance. Faithfulness and performance are not the same axis in a model of
+this kind, and a configuration assembled by adding everything the animal has
+will not be the configuration that works.
 
 \subsection{Where the activity stops}
 \label{sec:silence}

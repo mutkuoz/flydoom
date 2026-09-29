@@ -4,6 +4,22 @@ Every clip is a real run: no cuts, no speed-ups, and the dashboard is drawn from
 the same tic the frame came from. All of them were recorded with
 `scripts/record_gameplay.py`, whose flags are printed in each clip's banner.
 
+## The configuration that works
+
+`flydoom.mp4` is the model the paper reports, and it is worth naming because
+five later additions each made it worse:
+
+```
+--wide --eye-map anatomical --fixed-turn --phasic-mdn
+--spiking-t4 --optic-gain 16 --yaw-source DNp15 --touch --smell
+```
+
+Over 120 held-out levels it beats a command-matched random agent on health
+(sign test p=0.010) and survival (p=0.045), and a mirrored retina removes that
+(p=0.731). Dendritic cables, a movable head, whole-level odour and airflow are
+all real fly biology and all four cost performance, interpretability or both.
+The model is not an ablation; it is what survives measurement.
+
 ## Current
 
 Both recorded on **the same level** (`health_gathering_fly`, seed 40) through the
@@ -17,7 +33,7 @@ daylight.
 
 | file | what it is |
 |---|---|
-| `flydoom.mp4` · `flydoom.gif` | the model as it now stands, with stock Doom beside it |
+| `flydoom.mp4` · `flydoom.gif` | **the model.** The configuration the paper reports, and the one that works |
 | `mirrored.mp4` | the same brain with its retina mirrored left-to-right — the control that removes the behavioural advantage |
 | `comparison.mp4` | the two stacked, intact on top |
 | `drum.mp4` | the laboratory arena: one dark bar on a uniformly bright cylinder, the fly tethered at the centre |
@@ -74,7 +90,7 @@ nothing wired them into the agent:
 `media/record_best.sh` rebuilds it, on the same arena and seed as `flydoom.mp4`
 so the two are comparable frame for frame.
 
-**Is it actually better? No — and the file name is a request, not a finding.**
+**Is it actually better? No, and the question is now settled.**
 The measurement is in [`../paper/data/behav_all/NOTE.txt`](../paper/data/behav_all/NOTE.txt):
 60 seeds, the same ones and the same controls as the plain configuration, so
 the comparison is paired and isolates exactly these three changes.
@@ -89,10 +105,23 @@ the comparison is paired and isolates exactly these three changes.
   **frozen on one frame** beats chance outright (+6.53 ± 5.97 health). It
   scores marginally higher and no longer needs its eyes to do it.
 
-So watch this clip as the configuration it is, not as an improvement. The
-likely cause is whole-level odour, which reaches every medkit at five times the
-old strength with no line of sight, and which neither mirroring nor freezing
-touches — `paper/data/behav_smell/` isolates that flag to find out.
+Since this clip was filmed, each of its three additions has been run alone, and
+a fourth (airflow) was added and run too. Every one costs something, and the
+combination of all five cannot beat chance at all (sign test $p=0.743$).
+`flydoom.mp4` is the fly that works; **this one is the cautionary counterexample**,
+and it is kept under that name because the name was the request and the link
+should stay stable. Read it as "everything applied", not as "best".
+
+  | addition | what it costs |
+  |---|---|
+  | whole-level odour | +7.53 → +3.80: a direction-free scalar, so more is worse |
+  | dendritic cables | removes the dependence on vision — mirrored scores the same as intact |
+  | a movable head | the frozen-retina control stops being one |
+  | airflow | destroys the advantage: 16 seeds up against 18 down |
+
+Details in [`../paper/data/behav_plainwind/NOTE.txt`](../paper/data/behav_plainwind/NOTE.txt),
+which answers the question these clips raise: which single configuration is the
+best model of a fly.
 
 ## forage.mp4 — an arena that means what it looks like
 

@@ -242,6 +242,25 @@ grey at the fly's resolution, it does no better than chance at all. So: vision h
 only when there is something to see, only on health and survival, and freezing the eyes only
 weakens the effect rather than cleanly removing it.
 
+**We tried to build a more complete fly, five times, and every addition made it worse.**
+A real animal isn't a menu of flags, so the obvious question is which single setup best
+models one. The answer turned out to be the setup with *fewer* features than we know flies
+have:
+
+| addition (all real fly biology) | what it cost |
+|---|---|
+| odour that works through walls | +7.5 → +3.8 — a direction-free scalar, so more of it is just noise |
+| dendrites on the motion detectors | keeps the score, **removes the need for eyes** — a mirrored retina does as well |
+| a movable neck | the frozen-retina control stops being a control |
+| wind at the antennae | **destroys the advantage** — 16 levels up, 18 down |
+| all five together | beats chance **not at all** (p = 0.74) |
+
+Each one is defensible biology. Together they can't play the game. The configuration in the
+paper isn't an ablation chosen for convenience — it's what survives measurement.
+
+<details>
+<summary><b>The earlier framing of this, kept because it was how we found it</b></summary>
+
 **Applying every later improvement at once made it worse, and broke the control.**
 Dendritic cables, a neck, and odour that reaches the whole level, run together
 on the same 60 levels: the score doesn't move (health −0.1 ± 6.9), the movement
@@ -252,6 +271,8 @@ stops removing the advantage. We guessed strong odour was letting it find medkit
 seeing — running that flag alone disproves it (no advantage at all, mirrored
 +0.4), so the cause is the cables or the neck and is still open. Details:
 [`paper/data/behav_all/NOTE.txt`](paper/data/behav_all/NOTE.txt).
+
+</details>
 
 Three more things it is honest to say. **The first 60 levels oversold it.** That block gave
 +7.5 health and +34.0 tics; a fresh 60, run identically, gave +3.8 and +8.0 — half the size,
