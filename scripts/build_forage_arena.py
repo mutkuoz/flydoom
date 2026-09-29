@@ -95,6 +95,37 @@ BANDWIDTH = 1.2            # cycles; how tightly power sits on the period
 WALL_MEAN = 175.0
 WALL_HALF = 70.0
 
+# GROUND, and it must not look like the wall. Measured on the first version,
+# the two textures had contrast 0.126 against 0.122 and the same dominant
+# spatial period -- identical statistics with a brightness offset. That is no
+# cue at all to a fly, whose photoreceptors adapt the mean away; what is left
+# to tell a surface by is the SCALE and CONTRAST of its structure. So the
+# ground is built coarse and soft where the wall is fine and hard.
+FLOOR_MEAN = 118.0
+FLOOR_PERIOD_PX = 128      # as coarse as a 128 px tile can hold
+
+# Contrast is the cue that survives, so it is set explicitly rather than left
+# to whatever the noise happens to produce. Scale separation is limited here by
+# geometry -- the ground is nearer than the wall, so equal world-sized features
+# subtend MORE angle on the floor, which works against making the floor look
+# coarser. Contrast and mean do not have that problem.
+WALL_CONTRAST = 0.22       # sd/mean: hard-edged, and what the detectors read
+FLOOR_CONTRAST = 0.08      # soft, a third of the wall's
+
+
+def _to_contrast(img, mean: float, contrast: float):
+    """Rescale a zero-mean pattern to an exact mean and sd/mean ratio.
+
+    Setting the amplitude and hoping is how the wall and the ground ended up
+    with contrasts of 0.126 and 0.122 -- indistinguishable -- while their
+    nominal half-ranges differed by half. What a fly discriminates surfaces by
+    is contrast, because adaptation removes the mean, so contrast is the thing
+    to set exactly rather than approximately.
+    """
+    z = img - img.mean()
+    z = z / (z.std() + 1e-9)
+    return mean + z * (mean * contrast)
+
 
 def wall_texture(size: int = 128, seed: int = 7) -> Image.Image:
     """Band-pass noise: local vertical edges everywhere, no tall bar anywhere.
@@ -138,9 +169,30 @@ def wall_texture(size: int = 128, seed: int = 7) -> Image.Image:
     phase = rng.uniform(0, 2 * np.pi, (size, size))
     img = np.real(np.fft.ifft2(ring * np.exp(1j * phase)))
     img -= img.mean(axis=0, keepdims=True)      # kill the tall-bar component
-    img = img / (np.abs(img).max() + 1e-9)
-    img = WALL_MEAN + img * WALL_HALF           # brighter than the ground
+    img = _to_contrast(img, WALL_MEAN, WALL_CONTRAST)
     rgb = np.stack([img * 0.55, img, img * 0.75], axis=-1)   # green-weighted
+    return Image.fromarray(rgb.clip(0, 255).astype("uint8"))
+
+
+def floor_texture(size: int = 128, seed: int = 11) -> Image.Image:
+    """Ground: coarse, soft, and dimmer than the wall.
+
+    A walking fly reads its ventral optic flow off this, so it needs structure;
+    what it must NOT have is the wall's structure. The wall is fine, hard-edged
+    and bright, so the ground is built three times coarser, at two thirds the
+    contrast, and darker. Those are three independent cues, and unlike a
+    brightness offset they survive photoreceptor adaptation, which removes the
+    mean and leaves the scale and the contrast.
+    """
+    rng = np.random.default_rng(seed)
+    fy, fx = np.meshgrid(np.fft.fftfreq(size) * size,
+                         np.fft.fftfreq(size) * size, indexing="ij")
+    f0 = size / FLOOR_PERIOD_PX
+    ring = np.exp(-((np.hypot(fy, fx) - f0) ** 2) / (2 * 0.8 ** 2))
+    img = np.real(np.fft.ifft2(ring * np.exp(
+        1j * rng.uniform(0, 2 * np.pi, (size, size)))))
+    img = _to_contrast(img, FLOOR_MEAN, FLOOR_CONTRAST)
+    rgb = np.stack([img * 0.5, img * 0.9, img * 0.65], axis=-1)
     return Image.fromarray(rgb.clip(0, 255).astype("uint8"))
 
 
@@ -274,14 +326,12 @@ def main() -> int:
 
     wall = args.out / "forage_wall.png"
     wall_texture().save(wall)
-    floor = args.out / "fly_floor.png"          # the bright ground, unchanged
+    floor = args.out / "forage_floor.png"
     sky = args.out / "sky_day.png"
-    if not floor.exists() or not sky.exists():
-        from build_fly_arena import floor_texture, sky_texture
-        if not floor.exists():
-            floor_texture().save(floor)
-        if not sky.exists():
-            sky_texture(sky)
+    floor_texture().save(floor)
+    if not sky.exists():
+        from build_fly_arena import sky_texture
+        sky_texture(sky)
 
     food = patch(blob(args.food_radius, FOOD_CORE, FOOD_EDGE))
     poison = patch(blob(args.poison_radius, POISON_CORE, POISON_EDGE))
